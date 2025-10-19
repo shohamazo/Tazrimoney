@@ -6,6 +6,7 @@ import { Pencil, Utensils, Car, PartyPopper, Home, Receipt, Package, AlertTriang
 import { cn } from '@/lib/utils';
 import { CircularProgress } from './circular-progress';
 import React from 'react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface BudgetCardProps {
   budget: Budget;
@@ -53,7 +54,16 @@ export function BudgetCard({ budget, onEdit }: BudgetCardProps) {
         <div className="relative">
           <CircularProgress progress={percentage} color={progressColor} />
           <div className="absolute inset-0 flex items-center justify-center">
-            <Icon className="h-8 w-8" style={{ color: progressColor }} />
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Icon className="h-8 w-8" style={{ color: progressColor }} />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>{percentage.toFixed(0)}% מהתקציב</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
         <div className="text-center">
