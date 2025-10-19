@@ -54,16 +54,7 @@ export function BudgetCard({ budget, onEdit }: BudgetCardProps) {
         <div className="relative">
           <CircularProgress progress={percentage} color={progressColor} />
           <div className="absolute inset-0 flex items-center justify-center">
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Icon className="h-8 w-8" style={{ color: progressColor }} />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>{percentage.toFixed(0)}% מהתקציב</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
+            <Icon className="h-8 w-8" style={{ color: progressColor }} />
           </div>
         </div>
         <div className="text-center">
@@ -75,6 +66,9 @@ export function BudgetCard({ budget, onEdit }: BudgetCardProps) {
                 <p className="text-2xl font-bold">₪{remaining.toLocaleString()}</p>
             )}
             <p className="text-xs text-muted-foreground">נשאר</p>
+            <p className="text-sm font-medium text-muted-foreground mt-1">
+                ({percentage.toFixed(0)}% מהתקציב)
+            </p>
         </div>
         {thresholdExceeded && !overspent && (
              <div className="flex items-center text-sm text-destructive">
