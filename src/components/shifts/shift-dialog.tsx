@@ -19,6 +19,7 @@ import { he } from 'date-fns/locale';
 import { useFirebase } from '@/firebase';
 import { doc, setDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const shiftSchema = z.object({
   jobId: z.string().min(1, "יש לבחור עבודה"),
@@ -50,6 +51,10 @@ interface ShiftDialogProps {
   jobs: Job[];
 }
 
+const toDate = (date: Date | Timestamp): Date => {
+  return date instanceof Timestamp ? date.toDate() : date;
+};
+
 export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogProps) {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
@@ -67,8 +72,8 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
   useEffect(() => {
     if (isOpen) {
       if (shift) {
-        const start = (shift.start as unknown as Timestamp).toDate();
-        const end = (shift.end as unknown as Timestamp).toDate();
+        const start = toDate(shift.start);
+        const end = toDate(shift.end);
         reset({
           jobId: shift.jobId,
           startDate: start,
@@ -88,7 +93,7 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
     }
   }, [shift, isOpen, reset]);
 
-  const onSubmit = async (data: ShiftFormData) => {
+  const onSubmit = (data: ShiftFormData) => {
     if (!firestore || !user) return;
 
     const startDateTime = new Date(data.startDate);
@@ -105,21 +110,16 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
         end: Timestamp.fromDate(endDateTime),
     };
 
-    try {
-        if (shift) {
-            const shiftRef = doc(firestore, 'users', user.uid, 'shifts', shift.id);
-            await setDoc(shiftRef, shiftData, { merge: true });
-            toast({ title: "משמרת עודכנה", description: "המשמרת עודכנה בהצלחה." });
-        } else {
-            const shiftsCol = collection(firestore, 'users', user.uid, 'shifts');
-            await addDoc(shiftsCol, shiftData);
-            toast({ title: "משמרת נוספה", description: "המשמרת החדשה נוספה בהצלחה." });
-        }
-        onOpenChange(false);
-    } catch (error) {
-        console.error("Error saving shift: ", error);
-        toast({ variant: "destructive", title: "שגיאה", description: "הייתה בעיה בשמירת המשמרת." });
+    if (shift) {
+        const shiftRef = doc(firestore, 'users', user.uid, 'shifts', shift.id);
+        setDocumentNonBlocking(shiftRef, shiftData, { merge: true });
+        toast({ title: "משמרת עודכנה", description: "המשמרת עודכנה בהצלחה." });
+    } else {
+        const shiftsCol = collection(firestore, 'users', user.uid, 'shifts');
+        addDocumentNonBlocking(shiftsCol, shiftData);
+        toast({ title: "משמרת נוספה", description: "המשמרת החדשה נוספה בהצלחה." });
     }
+    onOpenChange(false);
   };
 
   return (
