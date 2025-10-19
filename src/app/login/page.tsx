@@ -17,8 +17,8 @@ import * as z from 'zod';
 import { PiggyBank, Loader2 } from 'lucide-react';
 import {
   handleGoogleSignIn,
-  handlePhoneSignUp,
-  handlePhoneSignIn,
+  handlePasswordSignUp,
+  handlePasswordSignIn,
 } from '@/firebase/auth-actions';
 import { useTransition } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -27,9 +27,15 @@ const phoneRegex = new RegExp(
   /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
 );
 
+const loginIdentifierSchema = z.union([
+    z.string().email('אנא הזן כתובת אימייל או מספר טלפון תקין.'),
+    z.string().regex(phoneRegex, 'אנא הזן כתובת אימייל או מספר טלפון תקין.'),
+]);
+
+
 const signUpSchema = z
   .object({
-    phone: z.string().regex(phoneRegex, 'מספר טלפון לא תקין.'),
+    identifier: loginIdentifierSchema,
     password: z.string().min(6, 'הסיסמה חייבת להכיל לפחות 6 תווים.'),
     confirmPassword: z.string(),
   })
@@ -39,7 +45,7 @@ const signUpSchema = z
   });
 
 const signInSchema = z.object({
-  phone: z.string().regex(phoneRegex, 'מספר טלפון לא תקין.'),
+  identifier: loginIdentifierSchema,
   password: z.string().min(1, 'יש להזין סיסמה.'),
 });
 
@@ -73,22 +79,26 @@ export default function LoginPage() {
   };
   const onSignUp = (data: SignUpFormData) => {
     startTransition(() => {
-      handlePhoneSignUp(data.phone, data.password).catch((error) => {
+      handlePasswordSignUp(data.identifier, data.password).catch((error) => {
+        let message = 'שגיאת הרשמה. אנא נסה שוב.';
+        if (error.code === 'auth/email-already-in-use') {
+            message = 'משתמש עם כתובת אימייל או מספר טלפון זה כבר קיים.';
+        }
         toast({
           variant: 'destructive',
           title: 'שגיאת הרשמה',
-          description: error.message,
+          description: message,
         });
       });
     });
   };
   const onSignIn = (data: SignInFormData) => {
     startTransition(() => {
-      handlePhoneSignIn(data.phone, data.password).catch((error) => {
+      handlePasswordSignIn(data.identifier, data.password).catch((error) => {
         toast({
           variant: 'destructive',
           title: 'שגיאת התחברות',
-          description: 'מספר טלפון או סיסמה שגויים. נסה שוב.',
+          description: 'פרטי ההתחברות שגויים. נסה שוב.',
         });
       });
     });
@@ -122,16 +132,16 @@ export default function LoginPage() {
                 <form onSubmit={handleSubmitSignIn(onSignIn)}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="phone-in">מספר טלפון</Label>
+                      <Label htmlFor="identifier-in">אימייל או מספר טלפון</Label>
                       <Input
-                        id="phone-in"
-                        type="tel"
-                        placeholder="050-123-4567"
-                        {...registerSignIn('phone')}
+                        id="identifier-in"
+                        type="text"
+                        placeholder="email@example.com / 0501234567"
+                        {...registerSignIn('identifier')}
                       />
-                      {signInErrors.phone && (
+                      {signInErrors.identifier && (
                         <p className="text-xs text-destructive">
-                          {signInErrors.phone.message}
+                          {signInErrors.identifier.message}
                         </p>
                       )}
                     </div>
@@ -177,16 +187,16 @@ export default function LoginPage() {
                 <form onSubmit={handleSubmitSignUp(onSignUp)}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="phone-up">מספר טלפון</Label>
+                      <Label htmlFor="identifier-up">אימייל או מספר טלפון</Label>
                       <Input
-                        id="phone-up"
-                        type="tel"
-                        placeholder="050-123-4567"
-                        {...registerSignUp('phone')}
+                        id="identifier-up"
+                        type="text"
+                        placeholder="email@example.com / 0501234567"
+                        {...registerSignUp('identifier')}
                       />
-                      {signUpErrors.phone && (
+                      {signUpErrors.identifier && (
                         <p className="text-xs text-destructive">
-                          {signUpErrors.phone.message}
+                          {signUpErrors.identifier.message}
                         </p>
                       )}
                     </div>

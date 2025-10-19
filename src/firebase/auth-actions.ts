@@ -12,11 +12,15 @@ import {
   deleteUser,
 } from 'firebase/auth';
 import { initializeFirebase } from './index';
+import { z } from 'zod';
 
 async function getFirebaseAuth() {
   const { auth } = initializeFirebase();
   return auth;
 }
+
+const isEmail = (identifier: string) => z.string().email().safeParse(identifier).success;
+
 
 export async function handleGoogleSignIn() {
   const auth = await getFirebaseAuth();
@@ -29,26 +33,53 @@ export async function handleGoogleSignIn() {
   }
 }
 
-const formatPhoneAsEmail = (phone: string) => `${phone.replace(/\D/g, '')}@tazrimony.app`;
 
-export async function handlePhoneSignUp(phone: string, password: string) {
+export async function handlePasswordSignUp(identifier: string, password: string) {
   const auth = await getFirebaseAuth();
-  const email = formatPhoneAsEmail(phone);
+  let email: string;
+  let phoneNumber: string | undefined = undefined;
+
+  if (isEmail(identifier)) {
+    email = identifier;
+  } else {
+    // Firebase requires phone numbers to be in E.164 format.
+    // For this implementation, we assume a simple transformation.
+    // A more robust solution would use a library like libphonenumber-js.
+    const numericPhone = identifier.replace(/\D/g, '');
+    phoneNumber = `+972${numericPhone.startsWith('0') ? numericPhone.substring(1) : numericPhone}`;
+    // We still use an email for the underlying account, as Firebase requires it for password auth.
+    // This email is internal and not exposed to the user.
+    email = `${phoneNumber}@tazrimony.app`;
+  }
+  
   try {
-    await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    // If it was a phone number, we save it to the user's profile
+    if (phoneNumber) {
+      await updateProfile(userCredential.user, { displayName: phoneNumber });
+    }
   } catch (error) {
-    console.error('Phone Sign-Up Error:', error);
+    console.error('Password Sign-Up Error:', error);
     throw error;
   }
 }
 
-export async function handlePhoneSignIn(phone: string, password: string) {
+export async function handlePasswordSignIn(identifier: string, password: string) {
   const auth = await getFirebaseAuth();
-  const email = formatPhoneAsEmail(phone);
+  let email: string;
+
+  if (isEmail(identifier)) {
+    email = identifier;
+  } else {
+    const numericPhone = identifier.replace(/\D/g, '');
+    const phoneNumber = `+972${numericPhone.startsWith('0') ? numericPhone.substring(1) : numericPhone}`;
+    email = `${phoneNumber}@tazrimony.app`;
+  }
+
   try {
     await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
-    console.error('Phone Sign-In Error:', error);
+    console.error('Password Sign-In Error:', error);
     throw error;
   }
 }

@@ -37,6 +37,8 @@ import {
 import { useTheme } from '@/components/theme/theme-provider';
 import { themes } from '@/lib/themes';
 import { cn } from '@/lib/utils';
+import { getIdentifierForUser } from '@/lib/utils';
+
 
 const profileSchema = z.object({
   displayName: z.string().min(2, 'השם חייב להכיל לפחות 2 תווים.'),
@@ -118,6 +120,8 @@ export default function SettingsPage() {
   };
   
   const isGoogleLinked = user?.providerData.some(p => p.providerId === 'google.com');
+  const identifier = user ? getIdentifierForUser(user) : 'לא זמין';
+  const confirmationText = user?.email || identifier;
 
   if (isUserLoading || !user) {
     return (
@@ -138,7 +142,7 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><User /> פרופיל אישי</CardTitle>
           <CardDescription>
-            שם זה יוצג באפליקציה. כתובת האימייל שלך משמשת להתחברות.
+            שם זה יוצג באפליקציה.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onProfileSubmit)}>
@@ -153,8 +157,8 @@ export default function SettingsPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label>כתובת אימייל / טלפון</Label>
-              <Input value={user.email || user.phoneNumber || 'לא זמין'} disabled />
+              <Label>אימייל / טלפון</Label>
+              <Input value={identifier} disabled />
             </div>
           </CardContent>
           <CardFooter className="border-t px-6 py-4">
@@ -247,19 +251,19 @@ export default function SettingsPage() {
                         <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
                         <AlertDialogDescription>
                             פעולה זו תמחק את חשבונך וכל הנתונים המשוייכים אליו לצמיתות.
-                            כדי לאשר, הקלד "{user.email}" בתיבה למטה.
+                            כדי לאשר, הקלד "{confirmationText}" בתיבה למטה.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <Input 
                         value={deleteConfirmation}
                         onChange={(e) => setDeleteConfirmation(e.target.value)}
-                        placeholder={user.email || ''}
+                        placeholder={confirmationText}
                     />
                     <AlertDialogFooter>
                         <AlertDialogCancel>ביטול</AlertDialogCancel>
                         <AlertDialogAction 
                             onClick={onDeleteUser}
-                            disabled={deleteConfirmation !== user.email || isPending}
+                            disabled={deleteConfirmation !== confirmationText || isPending}
                         >
                              {isPending ? <Loader2 className="animate-spin ms-2" /> : 'אני מבין, מחק את החשבון'}
                         </AlertDialogAction>
