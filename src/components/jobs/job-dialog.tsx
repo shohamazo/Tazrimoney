@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +9,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import type { Job } from '@/lib/types';
+import { useFirebase } from '@/firebase';
+import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 const jobSchema = z.object({
   name: z.string().min(2, "שם העבודה חייב להכיל לפחות 2 תווים"),
@@ -31,6 +27,8 @@ interface JobDialogProps {
 }
 
 export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
+  const { firestore, user } = useFirebase();
+  const { toast } = useToast();
   const {
     register,
     handleSubmit,
@@ -50,10 +48,24 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
     }
   }, [job, isOpen, reset]);
 
-  const onSubmit = (data: JobFormData) => {
-    console.log(data);
-    // In a real app, you would save this data
-    onOpenChange(false);
+  const onSubmit = async (data: JobFormData) => {
+    if (!firestore || !user) return;
+
+    try {
+        if (job) {
+            const jobRef = doc(firestore, 'users', user.uid, 'jobs', job.id);
+            await setDoc(jobRef, data, { merge: true });
+            toast({ title: "עבודה עודכנה", description: "פרטי העבודה עודכנו בהצלחה." });
+        } else {
+            const jobsCol = collection(firestore, 'users', user.uid, 'jobs');
+            await addDoc(jobsCol, data);
+            toast({ title: "עבודה נוספה", description: "העבודה החדשה נוספה בהצלחה." });
+        }
+        onOpenChange(false);
+    } catch (error) {
+        console.error("Error saving job: ", error);
+        toast({ variant: "destructive", title: "שגיאה", description: "הייתה בעיה בשמירת העבודה." });
+    }
   };
 
   return (

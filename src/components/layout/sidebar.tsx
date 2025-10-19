@@ -10,6 +10,8 @@ import {
   AreaChart,
   Target,
   PiggyBank,
+  LogIn,
+  Loader2,
 } from 'lucide-react';
 import {
   SidebarHeader,
@@ -19,6 +21,9 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { useFirebase } from '@/firebase';
+import { Button } from '../ui/button';
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 
 const navItems = [
   { href: '/', label: 'לוח בקרה', icon: LayoutDashboard },
@@ -31,6 +36,13 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { auth, user, isUserLoading } = useFirebase();
+
+  const handleLogin = () => {
+    if (auth) {
+      initiateAnonymousSignIn(auth);
+    }
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -52,6 +64,7 @@ export function AppSidebar() {
                   isActive={pathname === item.href}
                   tooltip={item.label}
                   asChild
+                  disabled={!user}
                 >
                   <a>
                     <item.icon />
@@ -65,16 +78,28 @@ export function AppSidebar() {
       </div>
 
       <SidebarFooter className="mt-auto border-t border-sidebar-border p-2">
-        <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarImage src="https://picsum.photos/seed/user/40/40" data-ai-hint="person portrait" />
-            <AvatarFallback>UN</AvatarFallback>
-          </Avatar>
-          <div className="group-data-[collapsible=icon]:hidden">
-            <p className="text-sm font-medium text-white">משתמש</p>
-            <p className="text-xs text-sidebar-foreground">user@example.com</p>
+        {isUserLoading ? (
+            <div className="flex items-center justify-center p-2">
+                <Loader2 className="h-6 w-6 animate-spin text-sidebar-foreground" />
+            </div>
+        ) : user ? (
+          <div className="flex items-center gap-3">
+            <Avatar>
+              <AvatarFallback>U</AvatarFallback>
+            </Avatar>
+            <div className="group-data-[collapsible=icon]:hidden">
+              <p className="text-sm font-medium text-white">משתמש אנונימי</p>
+              <p className="text-xs text-sidebar-foreground">{user.uid.slice(0,10)}...</p>
+            </div>
           </div>
-        </div>
+        ) : (
+            <div className="group-data-[collapsible=icon]:hidden">
+                <Button className="w-full" variant="secondary" onClick={handleLogin}>
+                    <LogIn className="ms-2" />
+                    התחברות
+                </Button>
+            </div>
+        )}
       </SidebarFooter>
     </div>
   );

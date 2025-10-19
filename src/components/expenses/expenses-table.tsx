@@ -4,15 +4,32 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { expenses } from '@/lib/data';
 import type { Expense } from '@/lib/types';
 import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Timestamp, doc, deleteDoc } from 'firebase/firestore';
+import { useFirebase } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
 
-export function ExpensesTable({ onEdit }: { onEdit: (expense: Expense) => void }) {
+export function ExpensesTable({ expenses, onEdit }: { expenses: Expense[], onEdit: (expense: Expense) => void }) {
+    const { firestore, user } = useFirebase();
+    const { toast } = useToast();
+
     const sortedExpenses = useMemo(() => {
-        return [...expenses].sort((a, b) => b.date.getTime() - a.date.getTime());
-    }, []);
+        return expenses.map(e => ({...e, date: (e.date as unknown as Timestamp).toDate()}));
+    }, [expenses]);
+
+    const handleDelete = async (expenseId: string) => {
+        if (!firestore || !user) return;
+        const expenseRef = doc(firestore, 'users', user.uid, 'expenses', expenseId);
+        try {
+            await deleteDoc(expenseRef);
+            toast({ title: "הוצאה נמחקה", description: "ההוצאה נמחקה בהצלחה." });
+        } catch (error) {
+            console.error("Error deleting expense: ", error);
+            toast({ variant: "destructive", title: "שגיאה", description: "הייתה בעיה במחיקת ההוצאה." });
+        }
+    };
 
     const formatDate = (date: Date) => date.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -50,7 +67,7 @@ export function ExpensesTable({ onEdit }: { onEdit: (expense: Expense) => void }
                                             <Pencil className="ms-2 h-4 w-4" />
                                             <span>עריכה</span>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                        <DropdownMenuItem onClick={() => handleDelete(expense.id)} className="text-destructive focus:text-destructive">
                                             <Trash2 className="ms-2 h-4 w-4" />
                                             <span>מחיקה</span>
                                         </DropdownMenuItem>

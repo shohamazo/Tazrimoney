@@ -2,14 +2,27 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import { ExpensesTable } from '@/components/expenses/expenses-table';
 import { ExpenseDialog } from '@/components/expenses/expense-dialog';
 import type { Expense } from '@/lib/types';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 
 export default function ExpensesPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [selectedExpense, setSelectedExpense] = React.useState<Expense | null>(null);
+
+  const { firestore, user, isUserLoading } = useFirebase();
+
+  const expensesQuery = useMemoFirebase(
+    () =>
+      firestore && user
+        ? query(collection(firestore, 'users', user.uid, 'expenses'), orderBy('date', 'desc'))
+        : null,
+    [firestore, user]
+  );
+  const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesQuery);
 
   const handleEdit = (expense: Expense) => {
     setSelectedExpense(expense);
@@ -26,6 +39,8 @@ export default function ExpensesPage() {
     setSelectedExpense(null);
   };
 
+  const isLoading = isUserLoading || expensesLoading;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -38,7 +53,11 @@ export default function ExpensesPage() {
           הוסף הוצאה
         </Button>
       </div>
-      <ExpensesTable onEdit={handleEdit} />
+      {isLoading ? (
+         <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+      ) : (
+        <ExpensesTable expenses={expenses || []} onEdit={handleEdit} />
+      )}
       <ExpenseDialog
         isOpen={dialogOpen}
         onOpenChange={handleDialogClose}

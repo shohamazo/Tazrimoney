@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { MainLayout } from '@/components/layout/main-layout';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'Tazrimony',
@@ -26,9 +27,11 @@ export default function RootLayout({
         />
       </head>
       <body className={cn('font-body antialiased')}>
-        <SidebarProvider>
-          <MainLayout>{children}</MainLayout>
-        </SidebarProvider>
+        <FirebaseClientProvider>
+          <SidebarProvider>
+            <MainLayout>{children}</MainLayout>
+          </SidebarProvider>
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>

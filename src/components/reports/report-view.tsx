@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { generateReportAction } from '@/app/reports/actions';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { useFirebase } from '@/firebase';
 
 const chartData = [
   { name: 'שבוע 1', income: 1200, expenses: 800 },
@@ -29,14 +30,30 @@ export function ReportView() {
   });
   const [summary, setSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { auth } = useFirebase();
 
   const handleGenerateReport = () => {
-    if (!date?.from || !date?.to) return;
+    if (!date?.from || !date?.to || !auth.currentUser) return;
     
     startTransition(async () => {
       setError(null);
       setSummary(null);
-      const result = await generateReportAction({ startDate: date.from!, endDate: date.to! });
+
+      const token = await auth.currentUser?.getIdToken();
+      const headers = new Headers();
+      headers.append('Authorization', `Bearer ${token}`);
+      
+      const actionWithAuth = async () => {
+        const response = await fetch('/api/report', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ startDate: date.from, endDate: date.to }),
+        });
+        return response.json();
+      }
+
+      const result = await actionWithAuth();
+
       if (result.error) {
         setError(result.error);
       } else {
@@ -49,8 +66,7 @@ export function ReportView() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>הפקת דוח</CardTitle>
-          <CardDescription>בחר טווח תאריכים להפקת דוח כספי.</CardDescription>
+          <CardTitle>הפקת דוח</CardTitle>          <CardDescription>בחר טווח תאריכים להפקת דוח כספי.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row gap-4 items-center">
             <Popover>
@@ -90,7 +106,7 @@ export function ReportView() {
                 />
                 </PopoverContent>
             </Popover>
-            <Button onClick={handleGenerateReport} disabled={isPending}>
+            <Button onClick={handleGenerateReport} disabled={isPending || !auth.currentUser}>
                 {isPending ? (
                     <Loader2 className="ms-2 h-4 w-4 animate-spin" />
                 ) : (

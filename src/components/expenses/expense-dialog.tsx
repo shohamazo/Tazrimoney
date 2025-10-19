@@ -12,11 +12,14 @@ import { CalendarIcon } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { expenseCategories } from '@/lib/data';
 import type { Expense } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { useFirebase } from '@/firebase';
+import { doc, setDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { budgetCategories } from '@/app/budget/page';
 
 const expenseSchema = z.object({
   description: z.string().min(2, "תיאור חייב להכיל לפחות 2 תווים"),
@@ -35,6 +38,8 @@ interface ExpenseDialogProps {
 }
 
 export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogProps) {
+  const { firestore, user } = useFirebase();
+  const { toast } = useToast();
   const { control, register, handleSubmit, reset, formState: { errors } } = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
   });
@@ -42,7 +47,7 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
   useEffect(() => {
     if (isOpen) {
       if (expense) {
-        reset(expense);
+        reset({...expense, date: (expense.date as unknown as Timestamp).toDate()});
       } else {
         reset({
           description: '',
@@ -55,9 +60,29 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
     }
   }, [expense, isOpen, reset]);
 
-  const onSubmit = (data: ExpenseFormData) => {
-    console.log(data);
-    onOpenChange(false);
+  const onSubmit = async (data: ExpenseFormData) => {
+    if (!firestore || !user) return;
+
+    const expenseData = {
+        ...data,
+        date: Timestamp.fromDate(data.date),
+    };
+
+    try {
+        if (expense) {
+            const expenseRef = doc(firestore, 'users', user.uid, 'expenses', expense.id);
+            await setDoc(expenseRef, expenseData, { merge: true });
+            toast({ title: "הוצאה עודכנה", description: "ההוצאה עודכנה בהצלחה." });
+        } else {
+            const expensesCol = collection(firestore, 'users', user.uid, 'expenses');
+            await addDoc(expensesCol, expenseData);
+            toast({ title: "הוצאה נוספה", description: "ההוצאה החדשה נוספה בהצלחה." });
+        }
+        onOpenChange(false);
+    } catch (error) {
+        console.error("Error saving expense: ", error);
+        toast({ variant: "destructive", title: "שגיאה", description: "הייתה בעיה בשמירת ההוצאה." });
+    }
   };
 
   return (
@@ -82,9 +107,9 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
             <div className="space-y-2">
               <Label>קטגוריה</Label>
               <Controller name="category" control={control} render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                   <SelectTrigger><SelectValue placeholder="בחר קטגוריה" /></SelectTrigger>
-                  <SelectContent>{expenseCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent>
+                  <SelectContent>{budgetCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent>
                 </Select>
               )} />
               {errors.category && <p className="text-red-500 text-xs">{errors.category.message}</p>}
@@ -92,7 +117,7 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
             <div className="space-y-2">
               <Label>סוג</Label>
               <Controller name="type" control={control} render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                   <SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="one-time">חד פעמית</SelectItem>

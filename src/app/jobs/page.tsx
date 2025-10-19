@@ -2,14 +2,24 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import { JobsList } from '@/components/jobs/jobs-list';
 import { JobDialog } from '@/components/jobs/job-dialog';
 import type { Job } from '@/lib/types';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 export default function JobsPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [selectedJob, setSelectedJob] = React.useState<Job | null>(null);
+
+  const { firestore, user, isUserLoading } = useFirebase();
+
+  const jobsQuery = useMemoFirebase(
+    () => (firestore && user ? collection(firestore, 'users', user.uid, 'jobs') : null),
+    [firestore, user]
+  );
+  const { data: jobs, isLoading: jobsLoading } = useCollection<Job>(jobsQuery);
 
   const handleEdit = (job: Job) => {
     setSelectedJob(job);
@@ -25,6 +35,8 @@ export default function JobsPage() {
     setDialogOpen(false);
     setSelectedJob(null);
   };
+  
+  const isLoading = isUserLoading || jobsLoading;
 
   return (
     <div className="space-y-6">
@@ -38,7 +50,11 @@ export default function JobsPage() {
           הוסף עבודה
         </Button>
       </div>
-      <JobsList onEdit={handleEdit} />
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+      ) : (
+        <JobsList jobs={jobs || []} onEdit={handleEdit} />
+      )}
       <JobDialog
         isOpen={dialogOpen}
         onOpenChange={handleDialogClose}

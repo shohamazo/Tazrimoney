@@ -1,13 +1,15 @@
+'use client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { shifts, expenses, jobs } from '@/lib/data';
 import { Clock, Wallet } from 'lucide-react';
+import type { Shift, Expense, Job } from '@/lib/types';
+import { Timestamp } from 'firebase/firestore';
 
-function getJobName(jobId: string) {
+function getJobName(jobId: string, jobs: Job[]) {
     return jobs.find(j => j.id === jobId)?.name || 'Unknown Job';
 }
 
-export function RecentActivity() {
+export function RecentActivity({ shifts, expenses, jobs }: { shifts: Shift[], expenses: Expense[], jobs: Job[]}) {
     const recentShifts = shifts.slice(0, 2);
     const recentExpenses = expenses.slice(0, 3);
   
@@ -21,17 +23,20 @@ export function RecentActivity() {
         <div>
             <h3 className="text-sm font-medium mb-2 flex items-center gap-2"><Clock className="size-4" />משמרות אחרונות</h3>
             <div className="space-y-4">
-            {recentShifts.map((shift) => (
-                <div key={shift.id} className="flex items-center">
-                <Avatar className="h-9 w-9">
-                    <AvatarFallback className="bg-blue-100 dark:bg-blue-900"><Clock className="size-5 text-blue-500" /></AvatarFallback>
-                </Avatar>
-                <div className="ms-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">{getJobName(shift.jobId)}</p>
-                    <p className="text-sm text-muted-foreground">{shift.start.toLocaleDateString('he-IL')} - {shift.start.toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}</p>
-                </div>
-                </div>
-            ))}
+            {recentShifts.map((shift) => {
+                const startTime = (shift.start as Timestamp).toDate();
+                return (
+                    <div key={shift.id} className="flex items-center">
+                    <Avatar className="h-9 w-9">
+                        <AvatarFallback className="bg-blue-100 dark:bg-blue-900"><Clock className="size-5 text-blue-500" /></AvatarFallback>
+                    </Avatar>
+                    <div className="ms-4 space-y-1">
+                        <p className="text-sm font-medium leading-none">{getJobName(shift.jobId, jobs)}</p>
+                        <p className="text-sm text-muted-foreground">{startTime.toLocaleDateString('he-IL')} - {startTime.toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}</p>
+                    </div>
+                    </div>
+                )
+            })}
             </div>
         </div>
         <div>

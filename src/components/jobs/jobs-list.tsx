@@ -4,10 +4,27 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { jobs } from '@/lib/data';
 import type { Job } from '@/lib/types';
+import { useFirebase } from '@/firebase';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
-export function JobsList({ onEdit }: { onEdit: (job: Job) => void }) {
+export function JobsList({ jobs, onEdit }: { jobs: Job[], onEdit: (job: Job) => void }) {
+    const { firestore, user } = useFirebase();
+    const { toast } = useToast();
+
+    const handleDelete = async (jobId: string) => {
+        if (!firestore || !user) return;
+        const jobRef = doc(firestore, 'users', user.uid, 'jobs', jobId);
+        try {
+            await deleteDoc(jobRef);
+            toast({ title: "עבודה נמחקה", description: "העבודה נמחקה בהצלחה." });
+        } catch (error) {
+            console.error("Error deleting job: ", error);
+            toast({ variant: "destructive", title: "שגיאה", description: "הייתה בעיה במחיקת העבודה." });
+        }
+    };
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {jobs.map((job) => (
@@ -29,7 +46,7 @@ export function JobsList({ onEdit }: { onEdit: (job: Job) => void }) {
                   <Pencil className="ms-2 h-4 w-4" />
                   <span>עריכה</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                <DropdownMenuItem onClick={() => handleDelete(job.id)} className="text-destructive focus:text-destructive">
                   <Trash2 className="ms-2 h-4 w-4" />
                   <span>מחיקה</span>
                 </DropdownMenuItem>

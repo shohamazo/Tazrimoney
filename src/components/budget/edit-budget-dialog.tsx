@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +9,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import type { Budget } from '@/lib/types';
+import { useFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 const budgetSchema = z.object({
   planned: z.coerce.number().min(0, "התקציב חייב להיות מספר אי-שלילי"),
@@ -30,6 +26,8 @@ interface EditBudgetDialogProps {
 }
 
 export function EditBudgetDialog({ isOpen, onOpenChange, budget }: EditBudgetDialogProps) {
+  const { firestore, user } = useFirebase();
+  const { toast } = useToast();
   const {
     register,
     handleSubmit,
@@ -45,9 +43,23 @@ export function EditBudgetDialog({ isOpen, onOpenChange, budget }: EditBudgetDia
     }
   }, [budget, isOpen, reset]);
 
-  const onSubmit = (data: BudgetFormData) => {
-    console.log({ ...budget, ...data });
-    onOpenChange(false);
+  const onSubmit = async (data: BudgetFormData) => {
+    if (!budget || !firestore || !user) return;
+
+    const budgetRef = doc(firestore, 'users', user.uid, 'budgets', budget.category);
+    const budgetData = {
+        category: budget.category,
+        planned: data.planned,
+    };
+    
+    try {
+        await setDoc(budgetRef, budgetData, { merge: true });
+        toast({ title: "תקציב עודכן", description: `התקציב עבור ${budget.category} עודכן.` });
+        onOpenChange(false);
+    } catch (error) {
+        console.error("Error updating budget:", error);
+        toast({ variant: "destructive", title: "שגיאה", description: "הייתה בעיה בעדכון התקציב." });
+    }
   };
 
   if (!budget) return null;

@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,11 +12,13 @@ import { CalendarIcon } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { jobs } from '@/lib/data';
-import type { Shift } from '@/lib/types';
+import type { Shift, Job } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { useFirebase } from '@/firebase';
+import { doc, setDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 const shiftSchema = z.object({
   jobId: z.string().min(1, "יש לבחור עבודה"),
@@ -31,6 +26,19 @@ const shiftSchema = z.object({
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "פורמט שעה לא תקין (HH:mm)"),
   endDate: z.date({ required_error: "יש לבחור תאריך סיום" }),
   endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "פורמט שעה לא תקין (HH:mm)"),
+}).refine(data => {
+    const startDateTime = new Date(data.startDate);
+    const [startHours, startMinutes] = data.startTime.split(':').map(Number);
+    startDateTime.setHours(startHours, startMinutes);
+
+    const endDateTime = new Date(data.endDate);
+    const [endHours, endMinutes] = data.endTime.split(':').map(Number);
+    endDateTime.setHours(endHours, endMinutes);
+
+    return endDateTime > startDateTime;
+}, {
+    message: "שעת הסיום חייבת להיות אחרי שעת ההתחלה",
+    path: ["endTime"],
 });
 
 type ShiftFormData = z.infer<typeof shiftSchema>;
@@ -39,9 +47,13 @@ interface ShiftDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   shift: Shift | null;
+  jobs: Job[];
 }
 
-export function ShiftDialog({ isOpen, onOpenChange, shift }: ShiftDialogProps) {
+export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogProps) {
+  const { firestore, user } = useFirebase();
+  const { toast } = useToast();
+
   const {
     control,
     handleSubmit,
@@ -55,12 +67,14 @@ export function ShiftDialog({ isOpen, onOpenChange, shift }: ShiftDialogProps) {
   useEffect(() => {
     if (isOpen) {
       if (shift) {
+        const start = (shift.start as unknown as Timestamp).toDate();
+        const end = (shift.end as unknown as Timestamp).toDate();
         reset({
           jobId: shift.jobId,
-          startDate: shift.start,
-          startTime: format(shift.start, 'HH:mm'),
-          endDate: shift.end,
-          endTime: format(shift.end, 'HH:mm'),
+          startDate: start,
+          startTime: format(start, 'HH:mm'),
+          endDate: end,
+          endTime: format(end, 'HH:mm'),
         });
       } else {
         reset({
@@ -74,7 +88,9 @@ export function ShiftDialog({ isOpen, onOpenChange, shift }: ShiftDialogProps) {
     }
   }, [shift, isOpen, reset]);
 
-  const onSubmit = (data: ShiftFormData) => {
+  const onSubmit = async (data: ShiftFormData) => {
+    if (!firestore || !user) return;
+
     const startDateTime = new Date(data.startDate);
     const [startHours, startMinutes] = data.startTime.split(':').map(Number);
     startDateTime.setHours(startHours, startMinutes, 0, 0);
@@ -83,9 +99,27 @@ export function ShiftDialog({ isOpen, onOpenChange, shift }: ShiftDialogProps) {
     const [endHours, endMinutes] = data.endTime.split(':').map(Number);
     endDateTime.setHours(endHours, endMinutes, 0, 0);
 
-    // In a real app, you would save this data
-    console.log({ ...data, start: startDateTime, end: endDateTime });
-    onOpenChange(false);
+    const shiftData = {
+        jobId: data.jobId,
+        start: Timestamp.fromDate(startDateTime),
+        end: Timestamp.fromDate(endDateTime),
+    };
+
+    try {
+        if (shift) {
+            const shiftRef = doc(firestore, 'users', user.uid, 'shifts', shift.id);
+            await setDoc(shiftRef, shiftData, { merge: true });
+            toast({ title: "משמרת עודכנה", description: "המשמרת עודכנה בהצלחה." });
+        } else {
+            const shiftsCol = collection(firestore, 'users', user.uid, 'shifts');
+            await addDoc(shiftsCol, shiftData);
+            toast({ title: "משמרת נוספה", description: "המשמרת החדשה נוספה בהצלחה." });
+        }
+        onOpenChange(false);
+    } catch (error) {
+        console.error("Error saving shift: ", error);
+        toast({ variant: "destructive", title: "שגיאה", description: "הייתה בעיה בשמירת המשמרת." });
+    }
   };
 
   return (
@@ -104,7 +138,7 @@ export function ShiftDialog({ isOpen, onOpenChange, shift }: ShiftDialogProps) {
               name="jobId"
               control={control}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="בחר עבודה" />
                   </SelectTrigger>
@@ -172,6 +206,8 @@ export function ShiftDialog({ isOpen, onOpenChange, shift }: ShiftDialogProps) {
             {errors.endDate && <p className="col-span-4 text-red-500 text-xs text-right">{errors.endDate.message}</p>}
             {errors.endTime && <p className="col-span-4 text-red-500 text-xs text-right">{errors.endTime.message}</p>}
           </div>
+           {errors.root && <p className="col-span-4 text-red-500 text-xs text-right">{errors.root.message}</p>}
+           {errors.endTime && <p className="col-span-4 text-red-500 text-xs text-right">{errors.endTime.message}</p>}
 
           <DialogFooter>
              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>ביטול</Button>
