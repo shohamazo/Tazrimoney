@@ -12,6 +12,7 @@ import {
   PiggyBank,
   LogOut,
   Loader2,
+  Settings,
 } from 'lucide-react';
 import {
   SidebarHeader,
@@ -25,6 +26,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useFirebase } from '@/firebase';
 import { Button } from '../ui/button';
 import { handleSignOut } from '@/firebase/auth-actions';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 const navItems = [
   { href: '/', label: 'לוח בקרה', icon: LayoutDashboard },
@@ -50,12 +58,12 @@ export function AppSidebar() {
   return (
     <div className="flex h-full flex-col">
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-3 p-2">
+        <Link href="/" className="flex items-center gap-3 p-2">
           <PiggyBank className="size-8 text-sidebar-primary" />
           <div className="group-data-[collapsible=icon]:hidden">
             <h1 className="font-bold text-lg text-white">Tazrimony</h1>
           </div>
-        </div>
+        </Link>
       </SidebarHeader>
 
       <div className="flex-1 overflow-y-auto">
@@ -87,7 +95,7 @@ export function AppSidebar() {
             </div>
         ) : user ? (
           <div className="group-data-[collapsible=icon]:hidden w-full space-y-2">
-            <div className="flex items-center gap-3 p-1">
+            <Link href="/settings" className="flex items-center gap-3 p-1 rounded-md hover:bg-sidebar-accent" onClick={handleLinkClick}>
                 <Avatar className="h-9 w-9">
                     {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>}
                     <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
@@ -96,7 +104,7 @@ export function AppSidebar() {
                     <p className="text-sm font-medium text-white truncate">{user.displayName || 'משתמש'}</p>
                     <p className="text-xs text-sidebar-foreground truncate">{user.email}</p>
                 </div>
-            </div>
+            </Link>
             <Button className="w-full" variant="secondary" size="sm" onClick={handleSignOut}>
                 <LogOut className="ms-2" />
                 התנתקות
@@ -112,6 +120,13 @@ export function AppSidebar() {
                     </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="right" align="center">
+                    <DropdownMenuItem asChild>
+                       <Link href="/settings">
+                        <Settings className="ms-2 h-4 w-4" />
+                        <span>הגדרות</span>
+                       </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
                         <LogOut className="ms-2 h-4 w-4" />
                         <span>התנתקות</span>
@@ -123,11 +138,3 @@ export function AppSidebar() {
     </div>
   );
 }
-
-// Add dropdown components for icon-only sidebar
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';

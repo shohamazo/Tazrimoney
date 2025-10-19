@@ -7,6 +7,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  updateProfile,
+  linkWithPopup,
+  deleteUser,
 } from 'firebase/auth';
 import { initializeFirebase } from './index';
 
@@ -20,25 +23,18 @@ export async function handleGoogleSignIn() {
   const provider = new GoogleAuthProvider();
   try {
     await signInWithPopup(auth, provider);
-    // The user object and redirect are handled by the AuthGuard
   } catch (error) {
     console.error('Google Sign-In Error:', error);
-    // Re-throw to be caught by the UI
     throw error;
   }
 }
 
-// This is a simplified version. A full implementation requires SMS verification.
-// For now, we create a user with an "email" that is the phone number.
-// This is NOT secure for production without SMS verification.
 const formatPhoneAsEmail = (phone: string) => `${phone.replace(/\D/g, '')}@tazrimony.app`;
 
 export async function handlePhoneSignUp(phone: string, password: string) {
   const auth = await getFirebaseAuth();
   const email = formatPhoneAsEmail(phone);
   try {
-    // Firebase Auth doesn't directly support phone+password. We simulate it
-    // by creating an email user with a formatted phone number.
     await createUserWithEmailAndPassword(auth, email, password);
   } catch (error) {
     console.error('Phone Sign-Up Error:', error);
@@ -61,11 +57,52 @@ export async function handleSignOut() {
   const auth = await getFirebaseAuth();
   try {
     await signOut(auth);
-    // Redirect is handled by the AuthGuard
   } catch (error) {
     console.error('Sign Out Error:', error);
     throw error;
   }
 }
 
-    
+export async function handleUpdateProfile(data: { displayName: string }) {
+    const auth = await getFirebaseAuth();
+    if (auth.currentUser) {
+        try {
+            await updateProfile(auth.currentUser, data);
+        } catch (error) {
+            console.error('Update Profile Error:', error);
+            throw error;
+        }
+    } else {
+        throw new Error("No user is currently signed in.");
+    }
+}
+
+export async function handleLinkGoogle() {
+    const auth = await getFirebaseAuth();
+    const provider = new GoogleAuthProvider();
+    if (auth.currentUser) {
+        try {
+            await linkWithPopup(auth.currentUser, provider);
+        } catch (error) {
+            console.error('Link Google Error:', error);
+            throw error;
+        }
+    } else {
+        throw new Error("No user is currently signed in to link a provider.");
+    }
+}
+
+export async function handleDeleteUser() {
+    const auth = await getFirebaseAuth();
+    const user = auth.currentUser;
+    if (user) {
+        try {
+            await deleteUser(user);
+        } catch (error) {
+            console.error("Delete User Error:", error);
+            throw error;
+        }
+    } else {
+        throw new Error("No user is currently signed in.");
+    }
+}

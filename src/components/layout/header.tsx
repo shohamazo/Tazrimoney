@@ -10,6 +10,7 @@ const pageTitles: { [key: string]: string } = {
   '/budget': 'ניהול תקציב',
   '/jobs': 'ניהול עבודות',
   '/reports': 'דוחות כספיים',
+  '/settings': 'הגדרות',
 };
 
 export function Header() {
