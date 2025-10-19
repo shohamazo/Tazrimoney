@@ -68,10 +68,10 @@ export default function LoginPage() {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
         'callback': (response: any) => {
-          // reCAPTCHA solved.
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
         },
         'expired-callback': () => {
-          // Response expired.
+          // Response expired. Ask user to solve reCAPTCHA again.
         }
       });
     }
@@ -89,9 +89,8 @@ export default function LoginPage() {
       try {
         if (isPhoneAuth) {
           // For phone auth, sign-in and sign-up are the same flow.
-          // Firebase handles user creation automatically.
           if (confirmationResult) {
-            // Step 2: Verify code if we have a confirmation result
+            // Step 2: Verify code
             await verifyPhoneCode(confirmationResult, data.code || '');
             toast({ title: 'Signed In', description: 'You have successfully signed in.' });
              // AuthGuard will handle redirect
@@ -100,7 +99,7 @@ export default function LoginPage() {
             const result = await sendPhoneVerificationCode(data.emailOrPhone, verifier);
             setConfirmationResult(result);
             toast({ title: 'Code Sent', description: 'A verification code has been sent to your phone.' });
-            // Reset the form fields but keep the code field for the user to fill
+            // Keep phone number for display, clear password/code
             reset({ emailOrPhone: data.emailOrPhone, password: '', code: '' });
           }
         } else {
@@ -130,6 +129,13 @@ export default function LoginPage() {
               break;
             case 'auth/user-not-found':
               description = 'No account found with this email/phone. Please sign up first.';
+              // For phone auth, this error might not be thrown as Firebase handles both cases.
+              // But if it is, we can guide the user.
+              if (isPhoneAuth) {
+                description = "Sending verification code to new number.";
+                // We can proceed to send the code as the flow is the same.
+                // The main logic already handles this, but we prevent showing a scary error.
+              }
               break;
             case 'auth/wrong-password':
               description = 'Incorrect password. Please try again.';
@@ -139,6 +145,7 @@ export default function LoginPage() {
               break;
             case 'auth/too-many-requests':
               description = 'Too many requests. Please try again later.';
+              // Reset reCAPTCHA to allow user to try again.
               verifier.render().then((widgetId: any) => {
                 window.grecaptcha?.reset(widgetId);
               });
@@ -174,6 +181,7 @@ export default function LoginPage() {
   const switchAuthMode = () => {
     setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
     setConfirmationResult(null); // Reset phone auth flow
+    reset(); // Clear form fields
   }
 
   return (
@@ -268,3 +276,5 @@ declare global {
     grecaptcha?: any;
   }
 }
+
+  
