@@ -98,7 +98,8 @@ export default function LoginPage() {
             const result = await sendPhoneVerificationCode(data.emailOrPhone, verifier);
             setConfirmationResult(result);
             toast({ title: 'Code Sent', description: 'A verification code has been sent to your phone.' });
-             reset({ emailOrPhone: '', password: '', code: '' });
+             // Correctly reset only the fields that need to be cleared.
+             reset({ ...data, password: '', code: '' });
           }
         } else {
           // Email/Password Auth
@@ -126,12 +127,10 @@ export default function LoginPage() {
               description = 'This email is already in use. Please try signing in instead.';
               break;
             case 'auth/user-not-found':
-              if (authMode === 'signin') {
-                description = 'No account found with this email/phone. Please sign up first.';
-              } else {
-                // For phone signup, we expect 'user-not-found' and proceed.
-                // The sending of the code happens outside this try/catch for phone.
-                // This logic needs to be revisited if we want strict sign-up only for phone.
+               if (authMode === 'signin' && !isPhoneAuth) {
+                description = 'No account found with this email. Please sign up first.';
+              } else if(authMode === 'signin' && isPhoneAuth) {
+                description = 'No account found with this phone number. Please sign up first.';
               }
               break;
             case 'auth/wrong-password':
@@ -154,15 +153,12 @@ export default function LoginPage() {
               description = error.message;
           }
         }
-        // Only show toast if a meaningful error description was set.
-        // For phone signup, 'user-not-found' is expected and doesn't need a user-facing error.
-        if (description !== 'An unexpected error occurred.' || error.code !== 'auth/user-not-found') {
-            toast({
-              variant: 'destructive',
-              title: `Error`,
-              description: description,
-            });
-        }
+        
+        toast({
+            variant: 'destructive',
+            title: `Error`,
+            description: description,
+        });
       }
     });
   };
