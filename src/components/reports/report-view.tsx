@@ -21,7 +21,7 @@ interface ChartData {
 }
 
 export function ReportView() {
-  const [isPending, startTransition] = useTransition();
+  const [isAiPending, startAiTransition] = useTransition();
   const [summary, setSummary] = useState<string | null>(null);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -57,61 +57,65 @@ export function ReportView() {
   }, [firestore, user, reportStartDate, reportEndDate]);
   const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesQuery);
 
-  const isLoading = isUserLoading || jobsLoading || shiftsLoading || expensesLoading;
+  const isDataLoading = isUserLoading || jobsLoading || shiftsLoading || expensesLoading;
 
-  // 2. Process data and generate report when all data is loaded
-  const handleGenerateReport = useCallback(() => {
-    if (!shifts || !expenses || !jobs || !user) return;
+  // 2. Process data for charts as soon as it's loaded
+  useEffect(() => {
+    if (isDataLoading || !shifts || !expenses || !jobs) return;
+     if (shifts.length === 0 && expenses.length === 0) {
+        setChartData([]);
+        setSummary("לא נמצאו נתונים כספיים ב-6 החודשים האחרונים.");
+        return;
+    }
+
+    const jobsMap = new Map(jobs.map(j => [j.id, j]));
+    const monthlyData: { [key: string]: { income: number; expenses: number } } = {};
+
+    for (let i = 5; i >= 0; i--) {
+        const date = subMonths(new Date(), i);
+        const monthKey = format(date, 'yyyy-MM');
+        monthlyData[monthKey] = { income: 0, expenses: 0 };
+    }
+
+    shifts.forEach(shift => {
+        const shiftDate = (shift.start as Timestamp).toDate();
+        const monthKey = format(shiftDate, 'yyyy-MM');
+        if (monthlyData[monthKey]) {
+        const job = jobsMap.get(shift.jobId);
+        monthlyData[monthKey].income += calculateShiftEarnings(shift, job).totalEarnings;
+        }
+    });
+
+    expenses.forEach(expense => {
+        const expenseDate = (expense.date as Timestamp).toDate();
+        const monthKey = format(expenseDate, 'yyyy-MM');
+        if (monthlyData[monthKey]) {
+        monthlyData[monthKey].expenses += expense.amount;
+        }
+    });
+
+    const finalChartData = Object.entries(monthlyData).map(([month, data]) => ({
+        name: format(new Date(month), 'MMM', { locale: he }),
+        income: parseFloat(data.income.toFixed(2)),
+        expenses: parseFloat(data.expenses.toFixed(2)),
+    }));
     
-    startTransition(async () => {
+    setChartData(finalChartData);
+
+  }, [isDataLoading, shifts, expenses, jobs]);
+
+
+  // 3. Generate AI summary after chart data is ready
+  useEffect(() => {
+    if (chartData.length === 0 || !expenses) return;
+
+    startAiTransition(async () => {
       setError(null);
       setSummary(null);
-      setChartData([]);
-
       try {
-        if (shifts.length === 0 && expenses.length === 0) {
-            setSummary("לא נמצאו נתונים כספיים ב-6 החודשים האחרונים.");
-            setChartData([]);
-            return;
-        }
-
-        const jobsMap = new Map(jobs.map(j => [j.id, j]));
-        const monthlyData: { [key: string]: { income: number; expenses: number } } = {};
-
-        for (let i = 5; i >= 0; i--) {
-            const date = subMonths(new Date(), i);
-            const monthKey = format(date, 'yyyy-MM');
-            monthlyData[monthKey] = { income: 0, expenses: 0 };
-        }
-
-        shifts.forEach(shift => {
-            const shiftDate = (shift.start as Timestamp).toDate();
-            const monthKey = format(shiftDate, 'yyyy-MM');
-            if (monthlyData[monthKey]) {
-            const job = jobsMap.get(shift.jobId);
-            monthlyData[monthKey].income += calculateShiftEarnings(shift, job).totalEarnings;
-            }
-        });
-
-        expenses.forEach(expense => {
-            const expenseDate = (expense.date as Timestamp).toDate();
-            const monthKey = format(expenseDate, 'yyyy-MM');
-            if (monthlyData[monthKey]) {
-            monthlyData[monthKey].expenses += expense.amount;
-            }
-        });
-
-        const finalChartData = Object.entries(monthlyData).map(([month, data]) => ({
-            name: format(new Date(month), 'MMM', { locale: he }),
-            income: data.income,
-            expenses: data.expenses,
-        }));
-        
-        setChartData(finalChartData);
-
         const dataForAI = {
             period: `Last 6 months (${format(reportStartDate, 'MMM yyyy')} - ${format(reportEndDate, 'MMM yyyy')})`,
-            monthlyBreakdown: finalChartData,
+            monthlyBreakdown: chartData,
             rawExpenses: expenses.map(e => ({ 
                 date: (e.date as Timestamp).toDate().toISOString(), 
                 amount: e.amount, 
@@ -123,44 +127,38 @@ export function ReportView() {
         const result = await generateFinancialReport({
           data: JSON.stringify(dataForAI, null, 2),
         });
-
         setSummary(result.summary);
-
       } catch (e) {
-        console.error("Failed to generate report:", e);
-        if (e instanceof Error) {
-            setError(e.message);
-        } else {
-            setError("An unexpected error occurred while generating the report.");
-        }
+        console.error("Failed to generate AI summary:", e);
+        setError(e instanceof Error ? e.message : "An unexpected error occurred while generating the summary.");
       }
     });
-  }, [shifts, expenses, jobs, user, reportStartDate, reportEndDate]);
+  }, [chartData, expenses, reportStartDate, reportEndDate]);
 
-  useEffect(() => {
-    if (!isLoading && user) {
-      handleGenerateReport();
-    }
-  }, [isLoading, user, handleGenerateReport]);
 
+  if (isDataLoading) {
+     return (
+         <div className="flex items-center justify-center p-8 h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ms-4">טוען נתונים...</p>
+         </div>
+      );
+  }
+
+  if (chartData.length === 0 && !isDataLoading) {
+    return (
+        <Card>
+            <CardHeader><CardTitle>אין נתונים להצגה</CardTitle></CardHeader>
+            <CardContent>
+                <p>לא נמצאו נתונים כספיים ב-6 החודשים האחרונים כדי להפיק דוח.</p>
+                <p>נסה להוסיף משמרות או הוצאות כדי לראות את הדוח שלך.</p>
+            </CardContent>
+        </Card>
+    )
+  }
 
   return (
     <div className="space-y-6">
-      {(isLoading || isPending) && (
-         <div className="flex items-center justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ms-4">מפיק את הדוח, נא להמתין...</p>
-         </div>
-      )}
-
-      {error && !isPending && (
-        <Alert variant="destructive">
-            <AlertTitle>שגיאה</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {!isLoading && !isPending && !error && (summary || chartData.length > 0) && (
         <div className="grid gap-6 lg:grid-cols-5">
             <Card className="lg:col-span-2 bg-primary/5 border-primary/20">
                 <CardHeader>
@@ -168,10 +166,24 @@ export function ReportView() {
                     <Wand2 className="text-primary"/>
                     סיכום AI
                 </CardTitle>
-                <CardDescription>ניתוח חכם של הפעילות הפיננסית שלך ב-6 החודשים האחרונים.</CardDescription>
+                <CardDescription>ניתוח חכם של הפעילות הפיננסית שלך.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                <p className="whitespace-pre-wrap leading-relaxed">{summary}</p>
+                {isAiPending && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin"/>
+                        <span>מפיק תובנות...</span>
+                    </div>
+                )}
+                {error && !isAiPending && (
+                    <Alert variant="destructive" className="bg-destructive/10">
+                        <AlertTitle>שגיאה בסיכום</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
+                {!isAiPending && summary && (
+                    <p className="whitespace-pre-wrap leading-relaxed">{summary}</p>
+                )}
                 </CardContent>
             </Card>
 
@@ -197,20 +209,6 @@ export function ReportView() {
                 </CardContent>
             </Card>
         </div>
-      )}
-      
-       {!isLoading && !isPending && !error && !summary && chartData.length === 0 && (
-         <Card>
-            <CardHeader>
-                <CardTitle>אין נתונים להצגה</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p>לא נמצאו נתונים כספיים ב-6 החודשים האחרונים כדי להפיק דוח.</p>
-                <p>נסה להוסיף משמרות או הוצאות כדי לראות את הדוח שלך.</p>
-            </CardContent>
-        </Card>
-      )}
-
     </div>
   );
 }
