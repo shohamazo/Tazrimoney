@@ -24,7 +24,7 @@ import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Auth, RecaptchaVerifier } from 'firebase/auth';
+import { Auth, RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
 import { useFirebase } from '@/firebase';
 
 const identifierSchema = z.string().min(1, 'Please enter an email or phone number.');
@@ -41,33 +41,53 @@ export default function LoginPage() {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [identifier, setIdentifier] = useState('');
   const [isIdentifierEmail, setIsIdentifierEmail] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState<any>(null);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   const { toast } = useToast();
   const router = useRouter();
   const { auth } = useFirebase();
 
+  // This is a global declaration for Firebase's reCAPTCHA
+  declare global {
+    interface Window {
+        recaptchaVerifier?: RecaptchaVerifier;
+        grecaptcha?: any;
+    }
+  }
+
   // Initialize reCAPTCHA verifier
   useEffect(() => {
-    if (!auth || window.recaptchaVerifier) return;
-    
-    // Ensure the container is clean before rendering
-    const container = document.getElementById('recaptcha-container');
-    if(container) {
-      container.innerHTML = '';
+    if (!auth) return;
+
+    if (!window.recaptchaVerifier) {
+      // Ensure the container is clean before rendering
+      const container = document.getElementById('recaptcha-container');
+      if(container) {
+        container.innerHTML = '';
+      }
+
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          'size': 'normal', // Use a visible reCAPTCHA
+          'callback': () => {
+            // This callback is intentionally left blank.
+            // The phone code sending is triggered by a user button click, not the reCAPTCHA success.
+          },
+          'expired-callback': () => {
+             // Response expired. Ask user to solve reCAPTCHA again.
+             if (window.grecaptcha && typeof window.grecaptcha.reset === 'function') {
+                window.grecaptcha.reset();
+             }
+          }
+      });
+      window.recaptchaVerifier.render();
     }
 
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-      'callback': () => {
-        // reCAPTCHA solved, allow sign-in.
-        // The actual phone code sending is triggered by the user action.
-      }
-    });
-
-    window.recaptchaVerifier.render();
-
+    // Cleanup on unmount
     return () => {
       window.recaptchaVerifier?.clear();
+      const container = document.getElementById('recaptcha-container');
+      if (container) container.innerHTML = '';
+      window.recaptchaVerifier = undefined;
     };
   }, [auth]);
 
@@ -105,9 +125,16 @@ export default function LoginPage() {
     } else {
       // Phone number flow
       startTransition(async () => {
+        if (!window.recaptchaVerifier) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'reCAPTCHA not initialized. Please refresh the page.',
+            });
+            return;
+        }
         try {
-          const verifier = window.recaptchaVerifier;
-          const result = await sendPhoneVerificationCode(data.identifier, verifier);
+          const result = await sendPhoneVerificationCode(data.identifier, window.recaptchaVerifier);
           setConfirmationResult(result);
           setLoginStep('code');
           toast({ title: 'Code Sent', description: 'A verification code has been sent to your phone.' });
@@ -115,10 +142,10 @@ export default function LoginPage() {
           toast({
             variant: 'destructive',
             title: 'Error',
-            description: 'Could not send verification code. Please check the number and try again.',
+            description: error.message || 'Could not send verification code. Please check the number and try again.',
           });
           // Reset reCAPTCHA for another attempt
-           if (window.grecaptcha) {
+           if (window.grecaptcha && typeof window.grecaptcha.reset === 'function') {
             window.grecaptcha.reset();
            }
         }
@@ -149,6 +176,11 @@ export default function LoginPage() {
 
   const onCodeSubmit = (data: { code: string }) => {
     startTransition(async () => {
+      if (!confirmationResult) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Verification session expired. Please try again.' });
+          resetFlow();
+          return;
+      }
       try {
         await verifyPhoneCode(confirmationResult, data.code);
         // AuthGuard will redirect on success
@@ -187,7 +219,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmitPassword(onPasswordSubmit)}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">סיסמה</Label>
                 <Input id="password" type="password" {...registerPassword('password')} />
                 {passwordErrors.password && (
                   <p className="text-xs text-destructive">{passwordErrors.password.message}</p>
@@ -196,9 +228,9 @@ export default function LoginPage() {
             </CardContent>
             <CardFooter className="flex-col gap-4">
               <Button className="w-full" type="submit" disabled={isPending}>
-                {isPending ? <Loader2 className="animate-spin" /> : (authMode === 'signin' ? 'Sign In' : 'Create Account')}
+                {isPending ? <Loader2 className="animate-spin" /> : (authMode === 'signin' ? 'התחברות' : 'יצירת חשבון')}
               </Button>
-              <Button variant="link" size="sm" onClick={resetFlow}>Back</Button>
+              <Button variant="link" size="sm" onClick={resetFlow}>חזרה</Button>
             </CardFooter>
           </form>
         );
@@ -206,12 +238,12 @@ export default function LoginPage() {
         return (
           <form onSubmit={handleSubmitCode(onCodeSubmit)}>
             <CardHeader>
-                <CardTitle>Enter Code</CardTitle>
-                <CardDescription>Enter the 6-digit code sent to {identifier}.</CardDescription>
+                <CardTitle>הזן קוד</CardTitle>
+                <CardDescription>הזן את הקוד בן 6 הספרות שנשלח אל {identifier}.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="code">Verification Code</Label>
+                <Label htmlFor="code">קוד אימות</Label>
                 <Input id="code" type="text" {...registerCode('code')} />
                 {codeErrors.code && (
                   <p className="text-xs text-destructive">{codeErrors.code.message}</p>
@@ -220,9 +252,9 @@ export default function LoginPage() {
             </CardContent>
             <CardFooter className="flex-col gap-4">
               <Button className="w-full" type="submit" disabled={isPending}>
-                {isPending ? <Loader2 className="animate-spin" /> : 'Verify and Sign In'}
+                {isPending ? <Loader2 className="animate-spin" /> : 'אמת והתחבר'}
               </Button>
-               <Button variant="link" size="sm" onClick={resetFlow}>Use another number</Button>
+               <Button variant="link" size="sm" onClick={resetFlow}>השתמש במספר אחר</Button>
             </CardFooter>
           </form>
         );
@@ -231,24 +263,24 @@ export default function LoginPage() {
         return (
           <>
             <CardHeader className="text-center">
-              <CardTitle>{authMode === 'signin' ? 'Sign In' : 'Create Account'}</CardTitle>
-              <CardDescription>Enter your email or phone number to continue.</CardDescription>
+              <CardTitle>{authMode === 'signin' ? 'התחברות' : 'יצירת חשבון'}</CardTitle>
+              <CardDescription>הזן את כתובת המייל או מספר הטלפון שלך להמשיך.</CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmitIdentifier(handleIdentifierSubmit)}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="identifier">Email or Phone Number</Label>
+                  <Label htmlFor="identifier">אימייל או מספר טלפון</Label>
                   <Input id="identifier" type="text" placeholder="email@example.com or 0501234567" {...registerIdentifier('identifier')} />
                   {identifierErrors.identifier && (
                     <p className="text-xs text-destructive">{identifierErrors.identifier.message}</p>
                   )}
                 </div>
-                {/* reCAPTCHA container, only rendered for phone number flow */}
+                {/* reCAPTCHA container, rendered for phone number flow */}
                 <div id="recaptcha-container" className="flex justify-center" />
               </CardContent>
               <CardFooter>
                 <Button className="w-full" type="submit" disabled={isPending}>
-                  {isPending ? <Loader2 className="animate-spin" /> : 'Continue'}
+                  {isPending ? <Loader2 className="animate-spin" /> : 'המשך'}
                 </Button>
               </CardFooter>
             </form>
@@ -256,7 +288,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                    <span className="bg-background px-2 text-muted-foreground">או המשך עם</span>
                   </div>
                 </div>
                 <Button variant="outline" className="mt-4 w-full" onClick={handleGoogleSignInClick} disabled={isPending}>
@@ -264,9 +296,9 @@ export default function LoginPage() {
                 </Button>
             </div>
             <div className="mt-4 text-center text-sm">
-              {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}{' '}
+              {authMode === 'signin' ? "אין לך חשבון?" : "כבר יש לך חשבון?"}{' '}
               <Button variant="link" className="p-0 h-auto" onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}>
-                 {authMode === 'signin' ? 'Sign up' : 'Sign in'}
+                 {authMode === 'signin' ? 'הרשמה' : 'התחברות'}
               </Button>
             </div>
           </>
@@ -281,7 +313,7 @@ export default function LoginPage() {
           <div className="mb-8 flex flex-col items-center text-center lg:hidden">
             <PiggyBank className="size-12 text-primary" />
             <h1 className="mt-4 text-3xl font-bold tracking-tighter">Tazrimony</h1>
-            <p className="text-muted-foreground">Your personal finance manager for shift work.</p>
+            <p className="text-muted-foreground">מנהל הכספים האישי שלך לעבודה במשמרות.</p>
           </div>
           <Card className="border-0 shadow-none lg:border lg:shadow-sm">
             {renderStep()}
@@ -293,9 +325,9 @@ export default function LoginPage() {
             <PiggyBank className="size-24 text-primary mx-auto" />
             <h1 className="mt-6 text-4xl font-bold tracking-tighter">Tazrimony</h1>
             <p className="mt-4 text-lg text-muted-foreground">
-              Manage your finances, the smart way.
+              נהל את הכספים שלך, בדרך החכמה.
               <br />
-              Sign in to track your income and expenses.
+              התחבר כדי לעקוב אחר ההכנסות וההוצאות שלך.
             </p>
         </div>
       </div>

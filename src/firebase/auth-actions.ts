@@ -18,12 +18,6 @@ import {
 import { initializeFirebase } from './index';
 import { z } from 'zod';
 
-declare global {
-  interface Window {
-    recaptchaVerifier: RecaptchaVerifier;
-  }
-}
-
 async function getFirebaseAuth() {
   const { auth } = initializeFirebase();
   return auth;
@@ -71,7 +65,7 @@ export async function handlePasswordSignIn(email: string, password: string) {
   }
 }
 
-export async function sendPhoneVerificationCode(phoneNumber: string, verifier: RecaptchaVerifier) {
+export async function sendPhoneVerificationCode(phoneNumber: string, verifier: RecaptchaVerifier): Promise<ConfirmationResult> {
     const auth = await getFirebaseAuth();
     // Reformat phone number to E.164 standard for Firebase
     const numericPhone = phoneNumber.replace(/\D/g, '');
