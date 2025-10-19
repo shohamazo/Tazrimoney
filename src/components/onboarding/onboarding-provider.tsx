@@ -29,15 +29,12 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     [firestore, user]
   );
   
-  // We use our own state management here because useDoc can have delays
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProfileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
-    // Wait for user to be loaded
-    if (isUserLoading || !user || !userProfileRef) {
-      // If user is logged out, reset state
-      if (!user) {
+    // Wait for user to be loaded and not be anonymous
+    if (isUserLoading || !user || !userProfileRef || user.isAnonymous) {
+      if (!user || user.isAnonymous) {
         setProfileLoading(false);
         setDialogOpen(false);
       }
@@ -50,7 +47,6 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         const docSnap = await getDoc(userProfileRef);
         if (docSnap.exists()) {
           const profileData = docSnap.data() as UserProfile;
-          setUserProfile(profileData);
           if (profileData.onboardingComplete !== true) {
             setDialogOpen(true);
           } else {
@@ -61,12 +57,11 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
           const newProfile: Partial<UserProfile> = {
             id: user.uid,
             email: user.email || undefined,
-            displayName: user.displayName || undefined,
+            displayName: user.displayName || user.phoneNumber || undefined,
             photoURL: user.photoURL || undefined,
             onboardingComplete: false,
           };
           await setDoc(userProfileRef, newProfile, { merge: true });
-          setUserProfile(newProfile as UserProfile);
           setDialogOpen(true);
         }
       } catch (error) {
@@ -76,12 +71,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       }
     };
     
-    // Only run this logic for authenticated, non-anonymous users
-    if (!user.isAnonymous) {
-        checkAndCreateProfile();
-    } else {
-        setProfileLoading(false);
-    }
+    checkAndCreateProfile();
 
   }, [user, userProfileRef, isUserLoading]);
 
@@ -95,15 +85,13 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     try {
         // Use a blocking write here to ensure completion
         await setDoc(userProfileRef, { onboardingComplete: true }, { merge: true });
-        // Manually update local state to reflect the change immediately
-        setUserProfile(prev => prev ? { ...prev, onboardingComplete: true } : { id: userProfileRef.id, onboardingComplete: true });
         setDialogOpen(false);
     } catch (error) {
         console.error("Failed to mark onboarding as complete:", error);
     }
   };
   
-  if (isUserLoading || (isProfileLoading && !userProfile)) {
+  if (isUserLoading || isProfileLoading) {
      // Show nothing or a global loader while we determine the onboarding state
     return null;
   }
