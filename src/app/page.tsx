@@ -8,6 +8,7 @@ import { collection, query, where, Timestamp } from 'firebase/firestore';
 import { useMemo } from 'react';
 import type { Shift, Expense, Job } from '@/lib/types';
 import { startOfMonth, endOfMonth } from 'date-fns';
+import { calculateTotalEarningsForShifts } from '@/lib/calculator';
 
 export default function DashboardPage() {
   const { firestore, user, isUserLoading } = useFirebase();
@@ -38,26 +39,9 @@ export default function DashboardPage() {
   }, [firestore, user]);
   const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesQuery);
 
-
-  const calculateEarnings = (shift: Shift) => {
-    const job = jobs?.find(j => j.id === shift.jobId);
-    if (!job) return 0;
-    const start = (shift.start as unknown as Timestamp).toDate();
-    const end = (shift.end as unknown as Timestamp).toDate();
-    const durationInHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    return durationInHours > 0 ? durationInHours * job.hourlyRate : 0;
-  };
-
   const { totalEarnings, daysWorked } = useMemo(() => {
     if (!shifts || !jobs) return { totalEarnings: 0, daysWorked: 0 };
-    let earnings = 0;
-    const workedDays = new Set<string>();
-    shifts.forEach(shift => {
-      earnings += calculateEarnings(shift);
-      const start = (shift.start as unknown as Timestamp).toDate();
-      workedDays.add(start.toLocaleDateString());
-    });
-    return { totalEarnings: earnings, daysWorked: workedDays.size };
+    return calculateTotalEarningsForShifts(shifts, jobs);
   }, [shifts, jobs]);
 
   const totalSpent = useMemo(() => {
@@ -78,7 +62,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="סה״כ הכנסות"
-          value={`₪${totalEarnings.toLocaleString()}`}
+          value={`₪${totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={TrendingUp}
           description="הכנסות brutto החודש"
           color="text-green-500"
@@ -92,7 +76,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="מאזן נטו"
-          value={`₪${netBalance.toLocaleString()}`}
+          value={`₪${netBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={DollarSign}
           description="הכנסות פחות הוצאות"
           color={netBalance >= 0 ? 'text-green-500' : 'text-red-500'}

@@ -11,6 +11,7 @@ import { Timestamp, doc, deleteDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { calculateShiftEarnings } from '@/lib/calculator';
 
 function calculateDuration(start: Date, end: Date) {
     const diff = end.getTime() - start.getTime();
@@ -25,16 +26,11 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
     const { toast } = useToast();
 
     const shiftsWithDetails = useMemo(() => {
+        const jobsMap = new Map(jobs.map(j => [j.id, j]));
         return shifts.map(shift => {
-            const job = jobs.find(j => j.id === shift.jobId);
+            const job = jobsMap.get(shift.jobId);
             const start = (shift.start as unknown as Timestamp).toDate();
             const end = (shift.end as unknown as Timestamp).toDate();
-
-            const calculateEarnings = (): number => {
-                if (!job) return 0;
-                const durationInHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-                return durationInHours > 0 ? durationInHours * job.hourlyRate : 0;
-            }
 
             return {
                 ...shift,
@@ -43,7 +39,7 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
                 jobName: job?.name || 'Unknown',
                 hourlyRate: job?.hourlyRate || 0,
                 duration: calculateDuration(start, end),
-                earnings: calculateEarnings(),
+                earnings: calculateShiftEarnings(shift, job),
             }
         });
     }, [shifts, jobs]);

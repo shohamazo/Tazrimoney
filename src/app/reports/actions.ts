@@ -8,6 +8,7 @@ import { initializeApp, getApps } from 'firebase-admin/app';
 import { headers } from 'next/headers';
 import { endOfMonth, startOfMonth, subMonths, format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { calculateShiftEarnings } from '@/lib/calculator';
 
 const firebaseConfig = {
   "projectId": "studio-8929750933-770dd",
@@ -25,17 +26,6 @@ if (!getApps().length) {
 
 const db = getFirestore();
 const auth = getAuth();
-
-function calculateShiftEarnings(shift: Shift, jobs: Job[]): number {
-  const job = jobs.find(j => j.id === shift.jobId);
-  if (!job) return 0;
-  // @ts-ignore
-  const start = shift.start.toDate();
-  // @ts-ignore
-  const end = shift.end.toDate();
-  const durationInHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-  return durationInHours > 0 ? durationInHours * job.hourlyRate : 0;
-}
 
 export async function generateReportAction(values: any) {
   const headersList = headers();
@@ -62,6 +52,7 @@ export async function generateReportAction(values: any) {
   // Fetch all necessary data
   const jobsSnapshot = await db.collection(`users/${uid}/jobs`).get();
   const jobs = jobsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Job[];
+  const jobsMap = new Map(jobs.map(j => [j.id, j]));
 
   const shiftsSnapshot = await db.collection(`users/${uid}/shifts`)
       .where('start', '>=', startDate)
@@ -91,7 +82,8 @@ export async function generateReportAction(values: any) {
     // @ts-ignore
     const monthKey = format(shift.start.toDate(), 'yyyy-MM');
     if (monthlyData[monthKey]) {
-      monthlyData[monthKey].income += calculateShiftEarnings(shift, jobs);
+      const job = jobsMap.get(shift.jobId);
+      monthlyData[monthKey].income += calculateShiftEarnings(shift, job);
     }
   });
 
