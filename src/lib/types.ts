@@ -7,6 +7,7 @@ export type UserProfile = {
   displayName?: string;
   photoURL?: string;
   onboardingComplete?: boolean;
+  theme?: string;
 }
 
 export type Job = {

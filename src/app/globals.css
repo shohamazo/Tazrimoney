@@ -4,19 +4,19 @@
 
 @layer base {
   :root {
-    --background: 0 0% 96.1%; /* #F5F5F5 */
+    --background: 0 0% 96.1%;
     --foreground: 235 63% 20%;
     --card: 0 0% 100%;
     --card-foreground: 235 63% 20%;
     --popover: 0 0% 100%;
     --popover-foreground: 235 63% 20%;
-    --primary: 235 63% 30%; /* #1A237E */
+    --primary: 235 63% 30%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 92%;
     --secondary-foreground: 235 63% 20%;
     --muted: 0 0% 92%;
     --muted-foreground: 235 20% 45%;
-    --accent: 55 99% 61.6%; /* #FFEB3B */
+    --accent: 55 99% 61.6%;
     --accent-foreground: 235 63% 15%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -25,10 +25,9 @@
     --ring: 235 63% 50%;
     --radius: 0.5rem;
     
-    /* Custom sidebar colors based on primary */
-    --sidebar-background: 235 63% 30%; /* primary */
+    --sidebar-background: 235 63% 30%;
     --sidebar-foreground: 0 0% 92%;
-    --sidebar-primary: 55 99% 61.6%; /* accent */
+    --sidebar-primary: 55 99% 61.6%;
     --sidebar-primary-foreground: 235 63% 15%;
     --sidebar-accent: 235 63% 40%;
     --sidebar-accent-foreground: 0 0% 98%;
@@ -57,7 +56,6 @@
     --input: 233 30% 20%;
     --ring: 235 63% 55%;
     
-    /* Custom dark sidebar colors */
     --sidebar-background: 233 30% 14%;
     --sidebar-foreground: 0 0% 92%;
     --sidebar-primary: 55 99% 61.6%;
@@ -74,7 +72,9 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-body;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    @apply font-body;
   }
 }
 

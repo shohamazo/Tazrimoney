@@ -27,14 +27,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Separator } from '@/components/ui/separator';
-import { Loader2, User, KeyRound, AlertTriangle } from 'lucide-react';
+import { Loader2, User, KeyRound, AlertTriangle, Palette } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   handleLinkGoogle,
   handleUpdateProfile,
   handleDeleteUser,
 } from '@/firebase/auth-actions';
+import { useTheme } from '@/components/theme/theme-provider';
+import { themes } from '@/lib/themes';
+import { cn } from '@/lib/utils';
 
 const profileSchema = z.object({
   displayName: z.string().min(2, 'השם חייב להכיל לפחות 2 תווים.'),
@@ -47,6 +49,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const { theme, setTheme } = useTheme();
 
   const {
     register,
@@ -115,7 +118,6 @@ export default function SettingsPage() {
   };
   
   const isGoogleLinked = user?.providerData.some(p => p.providerId === 'google.com');
-  const isPhoneLinked = user?.providerData.some(p => p.providerId === 'phone');
 
   if (isUserLoading || !user) {
     return (
@@ -164,6 +166,39 @@ export default function SettingsPage() {
         </form>
       </Card>
       
+       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Palette /> מראה</CardTitle>
+          <CardDescription>
+            התאם את ערכת הצבעים של האפליקציה.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Object.values(themes).map((t) => (
+              <div key={t.name}>
+                <button
+                  onClick={() => setTheme(t.name)}
+                  className={cn(
+                    "w-full rounded-md border-2 p-2 flex flex-col items-start",
+                    theme.name === t.name
+                      ? "border-primary"
+                      : "border-transparent"
+                  )}
+                >
+                  <span className="text-sm font-medium mb-2">{t.label}</span>
+                  <div className="flex gap-1 w-full">
+                    <div className="h-6 w-full rounded" style={{ backgroundColor: `hsl(${t.colors.light.primary})` }} />
+                    <div className="h-6 w-full rounded" style={{ backgroundColor: `hsl(${t.colors.light.accent})` }} />
+                     <div className="h-6 w-full rounded" style={{ backgroundColor: `hsl(${t.colors.light.background})` }} />
+                  </div>
+                </button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><KeyRound /> אבטחה</CardTitle>
