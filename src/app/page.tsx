@@ -1,14 +1,15 @@
 'use client';
 import { StatCard } from '@/components/dashboard/stat-card';
-import { OverviewChart } from '@/components/dashboard/overview-chart';
+import { BudgetAlerts } from '@/components/dashboard/budget-alerts';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { TrendingDown, TrendingUp, DollarSign, Clock, Loader2 } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, Timestamp } from 'firebase/firestore';
 import { useMemo } from 'react';
-import type { Shift, Expense, Job } from '@/lib/types';
+import type { Shift, Expense, Job, Budget } from '@/lib/types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { calculateTotalEarningsForShifts } from '@/lib/calculator';
+import { simpleBudgetCategories } from '@/lib/expense-categories';
 
 export default function DashboardPage() {
   const { firestore, user, isUserLoading } = useFirebase();
@@ -39,6 +40,29 @@ export default function DashboardPage() {
   }, [firestore, user]);
   const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesQuery);
 
+  const budgetsQuery = useMemoFirebase(
+    () => (firestore && user ? collection(firestore, 'users', user.uid, 'budgets') : null),
+    [firestore, user]
+  );
+  const { data: budgetsData, isLoading: budgetsLoading } = useCollection<Budget>(budgetsQuery);
+
+  const budgets = useMemo(() => {
+    return simpleBudgetCategories.map(category => {
+      const budgetConfig = budgetsData?.find(b => b.category === category);
+      const spent = expenses
+        ?.filter(e => e.category === category)
+        .reduce((acc, e) => acc + e.amount, 0) || 0;
+      
+      return {
+        id: budgetConfig?.id || category,
+        category: category,
+        planned: budgetConfig?.planned ?? 1000,
+        spent: spent,
+        alertThreshold: budgetConfig?.alertThreshold ?? 80,
+      };
+    });
+  }, [budgetsData, expenses]);
+
   const { totalEarnings, daysWorked } = useMemo(() => {
     if (!shifts || !jobs) return { totalEarnings: 0, daysWorked: 0 };
     return calculateTotalEarningsForShifts(shifts, jobs);
@@ -51,7 +75,7 @@ export default function DashboardPage() {
   
   const netBalance = totalEarnings - totalSpent;
   
-  const isLoading = isUserLoading || jobsLoading || shiftsLoading || expensesLoading;
+  const isLoading = isUserLoading || jobsLoading || shiftsLoading || expensesLoading || budgetsLoading;
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -91,7 +115,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <OverviewChart />
+          <BudgetAlerts budgets={budgets} />
         </div>
         <div>
           <RecentActivity shifts={shifts || []} expenses={expenses || []} jobs={jobs || []}/>

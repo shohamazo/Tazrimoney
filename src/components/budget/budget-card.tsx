@@ -3,35 +3,17 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Budget } from '@/lib/types';
-import { Pencil, PiggyBank, Car, PartyPopper, Home, Receipt, Package, AlertTriangle, RotateCcw, Utensils, Briefcase, ShoppingCart, HeartPulse, GraduationCap, Shirt, Gamepad, CreditCard, Landmark, Dog, Plane, Sparkles, Baby } from 'lucide-react';
+import { Pencil, Package, AlertTriangle, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CircularProgress } from './circular-progress';
 import React from 'react';
+import { categoryIcons } from '@/lib/category-icons';
+
 
 interface BudgetCardProps {
   budget: Budget;
   onEdit: (budget: Budget) => void;
 }
-
-const categoryIcons: { [key: string]: React.ElementType } = {
-    'דיור': Home,
-    'קניות': ShoppingCart,
-    'תחבורה': Car,
-    'אוכל ושתיה': Utensils,
-    'חשבונות ושירותים': Receipt,
-    'בריאות': HeartPulse,
-    'חינוך': GraduationCap,
-    'ביגוד והנעלה': Shirt,
-    'בילוי ופנאי': Gamepad,
-    'תשלומים וחיובים': CreditCard,
-    'חיסכון והשקעות': Landmark,
-    'חיות מחמד': Dog,
-    'נסיעות': Plane,
-    'יופי וטיפוח': Sparkles,
-    'משפחה וילדים': Baby,
-    'הוצאות שונות': Package,
-};
-
 
 export function BudgetCard({ budget, onEdit }: BudgetCardProps) {
   const [isFlipped, setIsFlipped] = React.useState(false);
