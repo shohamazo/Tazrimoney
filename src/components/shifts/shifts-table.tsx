@@ -3,7 +3,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Info } from 'lucide-react';
 import type { Shift, Job } from '@/lib/types';
 import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,8 @@ import { Timestamp, doc, deleteDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { calculateShiftEarnings } from '@/lib/calculator';
+import { calculateShiftEarnings, EarningDetails } from '@/lib/calculator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function calculateDuration(start: Date, end: Date) {
     const diff = end.getTime() - start.getTime();
@@ -20,6 +21,32 @@ function calculateDuration(start: Date, end: Date) {
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
+
+const formatHours = (hours: number) => hours.toFixed(2);
+const formatCurrency = (amount: number) => `₪${amount.toFixed(2)}`;
+
+const CalculationTooltipContent = ({ details }: { details: EarningDetails }) => (
+    <div className="p-2 text-xs space-y-1">
+        <div className="font-bold text-center mb-2 border-b pb-1">פירוט רווח</div>
+        <div className="flex justify-between gap-4"><span>שעות רגילות:</span> <span className="font-mono">{formatHours(details.regularHours)}</span></div>
+        <div className="flex justify-between gap-4"><span>תשלום רגיל:</span> <span className="font-mono">{formatCurrency(details.regularPay)}</span></div>
+        
+        {details.overtime125Hours > 0 && <>
+            <div className="flex justify-between gap-4"><span>שעות נוספות (125%):</span> <span className="font-mono">{formatHours(details.overtime125Hours)}</span></div>
+            <div className="flex justify-between gap-4"><span>תשלום (125%):</span> <span className="font-mono">{formatCurrency(details.overtime125Pay)}</span></div>
+        </>}
+        {details.overtime150Hours > 0 && <>
+            <div className="flex justify-between gap-4"><span>שעות נוספות (150%):</span> <span className="font-mono">{formatHours(details.overtime150Hours)}</span></div>
+            <div className="flex justify-between gap-4"><span>תשלום (150%):</span> <span className="font-mono">{formatCurrency(details.overtime150Pay)}</span></div>
+        </>}
+        {details.shabbatHours > 0 && <>
+            <div className="flex justify-between gap-4"><span>שעות שבת (150%):</span> <span className="font-mono">{formatHours(details.shabbatHours)}</span></div>
+            <div className="flex justify-between gap-4"><span>תשלום שבת:</span> <span className="font-mono">{formatCurrency(details.shabbatPay)}</span></div>
+        </>}
+        <div className="font-bold flex justify-between gap-4 border-t pt-1 mt-1"><span>סה״כ:</span> <span className="font-mono">{formatCurrency(details.totalEarnings)}</span></div>
+    </div>
+);
+
 
 export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: Job[], onEdit: (shift: Shift) => void }) {
     const { firestore, user } = useFirebase();
@@ -31,6 +58,7 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
             const job = jobsMap.get(shift.jobId);
             const start = (shift.start as unknown as Timestamp).toDate();
             const end = (shift.end as unknown as Timestamp).toDate();
+            const earningsDetails = calculateShiftEarnings(shift, job);
 
             return {
                 ...shift,
@@ -39,7 +67,8 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
                 jobName: job?.name || 'Unknown',
                 hourlyRate: job?.hourlyRate || 0,
                 duration: calculateDuration(start, end),
-                earnings: calculateShiftEarnings(shift, job),
+                earnings: earningsDetails.totalEarnings,
+                earningsDetails: earningsDetails,
             }
         });
     }, [shifts, jobs]);
@@ -57,53 +86,67 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
     return (
         <div className="w-full rounded-lg border">
             <div className="w-full overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>עבודה</TableHead>
-                            <TableHead>תאריך</TableHead>
-                            <TableHead>התחלה</TableHead>
-                            <TableHead>סיום</TableHead>
-                            <TableHead>משך</TableHead>
-                            <TableHead>תעריף</TableHead>
-                            <TableHead>רווח (מוערך)</TableHead>
-                            <TableHead className="text-left"></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {shiftsWithDetails.map((shift) => (
-                            <TableRow key={shift.id}>
-                                <TableCell className="font-medium whitespace-nowrap"><Badge variant="secondary">{shift.jobName}</Badge></TableCell>
-                                <TableCell className="whitespace-nowrap">{formatDate(shift.start)}</TableCell>
-                                <TableCell>{formatTime(shift.start)}</TableCell>
-                                <TableCell>{formatTime(shift.end)}</TableCell>
-                                <TableCell>{shift.duration}</TableCell>
-                                <TableCell>₪{shift.hourlyRate.toFixed(2)}</TableCell>
-                                <TableCell className="text-green-600 font-medium whitespace-nowrap">₪{shift.earnings.toFixed(2)}</TableCell>
-                                <TableCell className="text-left">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                <span className="sr-only">פתח תפריט</span>
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => onEdit(shift)}>
-                                                <Pencil className="ms-2 h-4 w-4" />
-                                                <span>עריכה</span>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDelete(shift.id)} className="text-destructive focus:text-destructive">
-                                                <Trash2 className="ms-2 h-4 w-4" />
-                                                <span>מחיקה</span>
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
+                <TooltipProvider>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>עבודה</TableHead>
+                                <TableHead>תאריך</TableHead>
+                                <TableHead>התחלה</TableHead>
+                                <TableHead>סיום</TableHead>
+                                <TableHead>משך</TableHead>
+                                <TableHead>תעריף</TableHead>
+                                <TableHead>רווח (מוערך)</TableHead>
+                                <TableHead className="text-left"></TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {shiftsWithDetails.map((shift) => (
+                                <TableRow key={shift.id}>
+                                    <TableCell className="font-medium whitespace-nowrap"><Badge variant="secondary">{shift.jobName}</Badge></TableCell>
+                                    <TableCell className="whitespace-nowrap">{formatDate(shift.start)}</TableCell>
+                                    <TableCell>{formatTime(shift.start)}</TableCell>
+                                    <TableCell>{formatTime(shift.end)}</TableCell>
+                                    <TableCell>{shift.duration}</TableCell>
+                                    <TableCell>₪{shift.hourlyRate.toFixed(2)}</TableCell>
+                                    <TableCell className="text-green-600 font-medium whitespace-nowrap">
+                                        <div className="flex items-center gap-2">
+                                            <span>₪{shift.earnings.toFixed(2)}</span>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-5 w-5 opacity-50"><Info className="h-4 w-4" /></Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top" align="center">
+                                                    <CalculationTooltipContent details={shift.earningsDetails} />
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-left">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                                    <span className="sr-only">פתח תפריט</span>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={() => onEdit(shift)}>
+                                                    <Pencil className="ms-2 h-4 w-4" />
+                                                    <span>עריכה</span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleDelete(shift.id)} className="text-destructive focus:text-destructive">
+                                                    <Trash2 className="ms-2 h-4 w-4" />
+                                                    <span>מחיקה</span>
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TooltipProvider>
             </div>
         </div>
     );

@@ -27,23 +27,47 @@ function isShabbat(date: Date): boolean {
   return false;
 }
 
+export type EarningDetails = {
+  totalEarnings: number;
+  regularHours: number;
+  overtime125Hours: number;
+  overtime150Hours: number;
+  shabbatHours: number;
+  regularPay: number;
+  overtime125Pay: number;
+  overtime150Pay: number;
+  shabbatPay: number;
+};
+
+
 /**
  * Calculates shift earnings based on Israeli labor laws for overtime and Shabbat.
  * @param shift The shift object.
  * @param job The job object with the hourly rate.
- * @returns The total calculated earnings for the shift.
+ * @returns A detailed breakdown of the earnings for the shift.
  */
-export function calculateShiftEarnings(shift: Shift, job: Job | undefined): number {
-  if (!job) return 0;
+export function calculateShiftEarnings(shift: Shift, job: Job | undefined): EarningDetails {
+  const initialDetails: EarningDetails = {
+    totalEarnings: 0,
+    regularHours: 0,
+    overtime125Hours: 0,
+    overtime150Hours: 0,
+    shabbatHours: 0,
+    regularPay: 0,
+    overtime125Pay: 0,
+    overtime150Pay: 0,
+    shabbatPay: 0,
+  };
+
+  if (!job) return initialDetails;
 
   const start = toDate(shift.start);
   const end = toDate(shift.end);
   const { hourlyRate } = job;
   
-  if (start >= end) return 0;
+  if (start >= end) return initialDetails;
 
-  let totalEarnings = 0;
-  let regularHours = 0;
+  let totalRegularHoursInShift = 0;
   
   // Iterate hour by hour through the shift
   let currentHour = new Date(start.getTime());
@@ -55,28 +79,35 @@ export function calculateShiftEarnings(shift: Shift, job: Job | undefined): numb
       const durationInMinutes = (effectiveNextHour.getTime() - currentHour.getTime()) / (1000 * 60);
       const durationInHours = durationInMinutes / 60;
       
-      let currentRate = hourlyRate;
-
       if (isShabbat(currentHour)) {
           // Shabbat hours are paid at 150%
-          currentRate = hourlyRate * 1.5;
+          initialDetails.shabbatHours += durationInHours;
+          initialDetails.shabbatPay += durationInHours * hourlyRate * 1.5;
       } else {
-          regularHours += durationInHours;
-          if (regularHours > 10) {
+          totalRegularHoursInShift += durationInHours;
+          if (totalRegularHoursInShift > 10) {
               // Overtime hours 11+ are at 150%
-              currentRate = hourlyRate * 1.5;
-          } else if (regularHours > 8) {
+              initialDetails.overtime150Hours += durationInHours;
+              initialDetails.overtime150Pay += durationInHours * hourlyRate * 1.5;
+          } else if (totalRegularHoursInShift > 8) {
               // Overtime hours 9-10 are at 125%
-              currentRate = hourlyRate * 1.25;
+              initialDetails.overtime125Hours += durationInHours;
+              initialDetails.overtime125Pay += durationInHours * hourlyRate * 1.25;
+          } else {
+              // Regular hours
+              initialDetails.regularHours += durationInHours;
+              initialDetails.regularPay += durationInHours * hourlyRate;
           }
       }
       
-      totalEarnings += durationInHours * currentRate;
       currentHour = nextHour;
   }
   
-  return totalEarnings;
+  initialDetails.totalEarnings = initialDetails.regularPay + initialDetails.overtime125Pay + initialDetails.overtime150Pay + initialDetails.shabbatPay;
+
+  return initialDetails;
 }
+
 
 /**
  * Calculates earnings for a collection of shifts, using a map of jobs.
@@ -94,7 +125,7 @@ export function calculateTotalEarningsForShifts(shifts: Shift[], jobs: Job[]) {
     shifts.forEach(shift => {
       const job = jobsMap.get(shift.jobId);
       if (job) {
-          totalEarnings += calculateShiftEarnings(shift, job);
+          totalEarnings += calculateShiftEarnings(shift, job).totalEarnings;
           const start = toDate(shift.start);
           workedDays.add(start.toLocaleDateString('he-IL'));
       }

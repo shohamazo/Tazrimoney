@@ -1,4 +1,5 @@
 import type { Timestamp } from "firebase/firestore";
+import type { EarningDetails } from "./calculator";
 
 export type Job = {
   id: string;
@@ -12,6 +13,7 @@ export type Shift = {
   start: Date | Timestamp;
   end: Date | Timestamp;
   earnings?: number; // Will be calculated
+  earningsDetails?: EarningDetails;
 };
 
 export type Expense = {

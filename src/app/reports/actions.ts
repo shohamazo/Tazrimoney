@@ -83,7 +83,7 @@ export async function generateReportAction(values: any) {
     const monthKey = format(shift.start.toDate(), 'yyyy-MM');
     if (monthlyData[monthKey]) {
       const job = jobsMap.get(shift.jobId);
-      monthlyData[monthKey].income += calculateShiftEarnings(shift, job);
+      monthlyData[monthKey].income += calculateShiftEarnings(shift, job).totalEarnings;
     }
   });
 
