@@ -21,6 +21,7 @@ export type Expense = {
   description: string;
   amount: number;
   category: string;
+  subcategory: string;
   date: Date | Timestamp;
   type: 'one-time' | 'recurring';
 };

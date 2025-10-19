@@ -10,8 +10,7 @@ import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { startOfMonth } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-
-export const budgetCategories = ['אוכל', 'תחבורה', 'בילויים', 'שכר דירה', 'חשבונות', 'אחר'];
+import { simpleBudgetCategories } from '@/lib/expense-categories';
 
 export default function BudgetPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -38,7 +37,7 @@ export default function BudgetPage() {
   const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesQuery);
 
   const budgets = React.useMemo(() => {
-    return budgetCategories.map(category => {
+    return simpleBudgetCategories.map(category => {
       const budgetConfig = budgetsData?.find(b => b.category === category);
       const spent = expenses
         ?.filter(e => e.category === category)

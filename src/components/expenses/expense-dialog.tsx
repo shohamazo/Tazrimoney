@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
@@ -19,12 +19,13 @@ import { he } from 'date-fns/locale';
 import { useFirebase } from '@/firebase';
 import { doc, setDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { budgetCategories } from '@/app/budget/page';
+import { expenseCategories } from '@/lib/expense-categories';
 
 const expenseSchema = z.object({
   description: z.string().min(2, "תיאור חייב להכיל לפחות 2 תווים"),
   amount: z.coerce.number().positive("הסכום חייב להיות מספר חיובי"),
   category: z.string().min(1, "יש לבחור קטגוריה"),
+  subcategory: z.string().min(1, "יש לבחור תת-קטגוריה"),
   date: z.date({ required_error: "יש לבחור תאריך" }),
   type: z.enum(['one-time', 'recurring'], { required_error: "יש לבחור סוג" }),
 });
@@ -40,9 +41,11 @@ interface ExpenseDialogProps {
 export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogProps) {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
-  const { control, register, handleSubmit, reset, formState: { errors } } = useForm<ExpenseFormData>({
+  const { control, register, handleSubmit, reset, watch, formState: { errors } } = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
   });
+  
+  const selectedCategory = watch('category');
 
   useEffect(() => {
     if (isOpen) {
@@ -53,6 +56,7 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
           description: '',
           amount: 0,
           category: '',
+          subcategory: '',
           date: new Date(),
           type: 'one-time',
         });
@@ -109,10 +113,45 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
               <Controller name="category" control={control} render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                   <SelectTrigger><SelectValue placeholder="בחר קטגוריה" /></SelectTrigger>
-                  <SelectContent>{budgetCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {expenseCategories.map(cat => (
+                        <SelectItem key={cat.value} value={cat.label}>{cat.icon} {cat.label}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               )} />
               {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category.message}</p>}
+            </div>
+             <div className="space-y-2">
+              <Label>תת-קטגוריה</Label>
+              <Controller name="subcategory" control={control} render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value} dir="rtl" disabled={!selectedCategory}>
+                  <SelectTrigger><SelectValue placeholder="בחר תת-קטגוריה" /></SelectTrigger>
+                  <SelectContent>
+                      {expenseCategories.find(c => c.label === selectedCategory)?.subcategories.map(sub => (
+                          <SelectItem key={sub.value} value={sub.label}>{sub.label}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              )} />
+              {errors.subcategory && <p className="text-red-500 text-xs mt-1">{errors.subcategory.message}</p>}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <Label>תאריך</Label>
+                <Controller name="date" control={control} render={({ field }) => (
+                <Popover>
+                    <PopoverTrigger asChild>
+                    <Button variant={"outline"} className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground")}>
+                        <CalendarIcon className="ms-2 h-4 w-4" />
+                        {field.value ? format(field.value, 'PPP', { locale: he }) : <span>בחר תאריך</span>}
+                    </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={he} /></PopoverContent>
+                </Popover>
+                )} />
+                {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date.message}</p>}
             </div>
             <div className="space-y-2">
               <Label>סוג</Label>
@@ -127,21 +166,6 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
               )} />
               {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type.message}</p>}
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>תאריך</Label>
-            <Controller name="date" control={control} render={({ field }) => (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant={"outline"} className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground")}>
-                    <CalendarIcon className="ms-2 h-4 w-4" />
-                    {field.value ? format(field.value, 'PPP', { locale: he }) : <span>בחר תאריך</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={he} /></PopoverContent>
-              </Popover>
-            )} />
-            {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date.message}</p>}
           </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>ביטול</Button>
