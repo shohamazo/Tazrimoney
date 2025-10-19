@@ -12,7 +12,7 @@ import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { calculateShiftEarnings, EarningDetails } from '@/lib/calculator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 function calculateDuration(start: Date, end: Date) {
     const diff = end.getTime() - start.getTime();
@@ -86,7 +86,6 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
     return (
         <div className="w-full rounded-lg border">
             <div className="w-full overflow-x-auto">
-                <TooltipProvider>
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -112,14 +111,14 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
                                     <TableCell className="text-green-600 font-medium whitespace-nowrap">
                                         <div className="flex items-center gap-2">
                                             <span>₪{shift.earnings.toFixed(2)}</span>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="h-5 w-5 opacity-50"><Info className="h-4 w-4" /></Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent side="top" align="center">
+                                                </PopoverTrigger>
+                                                <PopoverContent side="top" align="center" className="w-auto">
                                                     <CalculationTooltipContent details={shift.earningsDetails} />
-                                                </TooltipContent>
-                                            </Tooltip>
+                                                </PopoverContent>
+                                            </Popover>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-left">
@@ -146,7 +145,6 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
                             ))}
                         </TableBody>
                     </Table>
-                </TooltipProvider>
             </div>
         </div>
     );
