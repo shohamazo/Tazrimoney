@@ -50,6 +50,7 @@ export default function LoginPage() {
     handleSubmit,
     watch,
     formState: { errors },
+    reset,
   } = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
   });
@@ -99,6 +100,8 @@ export default function LoginPage() {
             const result = await sendPhoneVerificationCode(data.emailOrPhone, verifier);
             setConfirmationResult(result);
             toast({ title: 'Code Sent', description: 'A verification code has been sent to your phone.' });
+            // Reset the form fields but keep the code field for the user to fill
+            reset({ emailOrPhone: '', password: '', code: '' });
           }
         } else {
           // Email/Password Auth
@@ -136,7 +139,7 @@ export default function LoginPage() {
               break;
             case 'auth/too-many-requests':
               description = 'Too many requests. Please try again later.';
-              verifier.render().then((widgetId) => {
+              verifier.render().then((widgetId: any) => {
                 window.grecaptcha?.reset(widgetId);
               });
               break;
