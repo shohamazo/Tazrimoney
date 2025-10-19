@@ -1,0 +1,289 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Tazrimony application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "User's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "User's last name."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "hourlyRate": {
+          "type": "number",
+          "description": "User's base hourly rate."
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "hourlyRate"
+      ]
+    },
+    "Shift": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Shift",
+      "type": "object",
+      "description": "Represents a work shift for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the shift."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Shift)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Start time of the shift.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "End time of the shift.",
+          "format": "date-time"
+        },
+        "jobType": {
+          "type": "string",
+          "description": "Type of job performed during the shift."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "startTime",
+        "endTime",
+        "jobType"
+      ]
+    },
+    "Expense": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Expense",
+      "type": "object",
+      "description": "Represents an expense incurred by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the expense."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Expense)"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount of the expense."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the expense (e.g., recurring, one-time)."
+        },
+        "date": {
+          "type": "string",
+          "description": "Date the expense was incurred.",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description of the expense."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "amount",
+        "category",
+        "date"
+      ]
+    },
+    "Budget": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Budget",
+      "type": "object",
+      "description": "Represents a user's budget for a specific category.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the budget entry."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Budget)"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category for the budget (e.g., recurring expenses)."
+        },
+        "plannedSpending": {
+          "type": "number",
+          "description": "Planned spending amount for the category."
+        },
+        "alertThreshold": {
+          "type": "number",
+          "description": "Threshold at which an alert is triggered."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "category",
+        "plannedSpending",
+        "alertThreshold"
+      ]
+    },
+    "Job": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Job",
+      "type": "object",
+      "description": "Represents a job managed by the user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the job."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Job)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the job."
+        },
+        "baseHourlyRate": {
+          "type": "number",
+          "description": "Base hourly rate for the job."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "baseHourlyRate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. All user-related data is stored under this path to simplify security rules.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/shifts/{shiftId}",
+        "definition": {
+          "entityName": "Shift",
+          "schema": {
+            "$ref": "#/backend/entities/Shift"
+          },
+          "description": "Stores shifts for a specific user. Accessible only by the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "shiftId",
+              "description": "The unique identifier for the shift."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/expenses/{expenseId}",
+        "definition": {
+          "entityName": "Expense",
+          "schema": {
+            "$ref": "#/backend/entities/Expense"
+          },
+          "description": "Stores expenses for a specific user. Accessible only by the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "expenseId",
+              "description": "The unique identifier for the expense."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/budgets/{budgetId}",
+        "definition": {
+          "entityName": "Budget",
+          "schema": {
+            "$ref": "#/backend/entities/Budget"
+          },
+          "description": "Stores budget information for a specific user. Accessible only by the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "budgetId",
+              "description": "The unique identifier for the budget."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/jobs/{jobId}",
+        "definition": {
+          "entityName": "Job",
+          "schema": {
+            "$ref": "#/backend/entities/Job"
+          },
+          "description": "Stores job information for a specific user. Accessible only by the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "jobId",
+              "description": "The unique identifier for the job."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to manage user data related to shifts, expenses, budgets, and jobs within the Tazrimony application. The structure prioritizes authorization independence and data clarity. User-owned data is stored under the `/users/{userId}` path, facilitating straightforward security rules based on user ID. Each subcollection (shifts, expenses, budgets, jobs) maintains this pattern, ensuring that all documents within a collection share the same security requirements, which simplifies rules and enhances security.  Authorization Independence is achieved by storing all data directly under the user's document, eliminating the need for `get()` calls in security rules. This approach ensures that security rules can be based solely on `request.auth.uid` and the path, enabling atomic operations.  QAPs are supported through structural segregation, ensuring that list operations are secure because each collection's security posture is homogeneous."
+  }
+}
