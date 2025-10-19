@@ -50,9 +50,9 @@ export function BudgetCard({ budget, onEdit }: BudgetCardProps) {
 
   return (
     <div className="perspective">
-      <Card className={cn("flex flex-col transform-style-3d transition-transform duration-700", (thresholdExceeded || overspent) && "border-destructive/50", isFlipped && "rotate-y-180")}>
+      <Card className={cn("flex flex-col transform-style-3d transition-transform duration-700 h-full", (thresholdExceeded || overspent) && "border-destructive/50", isFlipped && "rotate-y-180")}>
         {/* Front of the card */}
-        <div className="backface-hidden w-full h-full">
+        <div className="backface-hidden w-full h-full flex flex-col">
             <CardHeader className="flex-row items-center justify-between pb-2">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
                 {budget.category}
@@ -88,7 +88,7 @@ export function BudgetCard({ budget, onEdit }: BudgetCardProps) {
         </div>
 
         {/* Back of the card */}
-        <div className="backface-hidden w-full h-full absolute top-0 left-0 rotate-y-180">
+        <div className="backface-hidden w-full h-full absolute top-0 left-0 rotate-y-180 flex flex-col">
              <CardHeader className="flex-row items-center justify-between pb-2">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
                  {budget.category}
@@ -97,11 +97,13 @@ export function BudgetCard({ budget, onEdit }: BudgetCardProps) {
                     <RotateCcw className="h-4 w-4" />
                 </Button>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center flex-1 gap-4 text-center cursor-pointer h-full pt-12" onClick={handleFlip}>
+            <CardContent className="flex flex-col items-center justify-center flex-1 gap-4 text-center cursor-pointer" onClick={handleFlip}>
                 <p className="text-5xl font-bold" style={{ color: progressColor }}>
                     {percentage.toFixed(0)}%
                 </p>
-                <p className="text-muted-foreground">מהתקציב נוצלו</p>
+                <p className="text-muted-foreground">
+                    מהתקציב נוצלו
+                </p>
                  <p className="text-sm">
                     <span className="font-medium">₪{budget.spent.toLocaleString()}</span> מתוך <span className="font-medium">₪{budget.planned.toLocaleString()}</span>
                 </p>
