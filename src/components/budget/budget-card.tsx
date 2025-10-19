@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Budget } from '@/lib/types';
-import { Pencil, PiggyBank, Car, PartyPopper, Home, Receipt, Package, AlertTriangle, RotateCcw, Utensils, Briefcase, ShoppingCart, HeartPulse, GraduationCap, Shirt, Gamepad, CreditCard, Bank, Dog, Plane, Sparkles, Baby } from 'lucide-react';
+import { Pencil, PiggyBank, Car, PartyPopper, Home, Receipt, Package, AlertTriangle, RotateCcw, Utensils, Briefcase, ShoppingCart, HeartPulse, GraduationCap, Shirt, Gamepad, CreditCard, Landmark, Dog, Plane, Sparkles, Baby } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CircularProgress } from './circular-progress';
 import React from 'react';
@@ -24,7 +24,7 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'ביגוד והנעלה': Shirt,
     'בילוי ופנאי': Gamepad,
     'תשלומים וחיובים': CreditCard,
-    'חיסכון והשקעות': Bank,
+    'חיסכון והשקעות': Landmark,
     'חיות מחמד': Dog,
     'נסיעות': Plane,
     'יופי וטיפוח': Sparkles,

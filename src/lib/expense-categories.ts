@@ -72,7 +72,7 @@ export const expenseCategories: ExpenseCategory[] = [
         defaultFrequency: 'Monthly',
         subcategories: [
             { value: 'phone', label: 'טלפון' },
-            { value 'internet', label: 'אינטרנט' },
+            { value: 'internet', label: 'אינטרנט' },
             { value: 'cable', label: 'כבלים' },
             { value: 'streaming', label: 'מנויי סטרימינג', defaultFrequency: 'Monthly' },
         ],
@@ -199,7 +199,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'miscellaneous',
         label: 'הוצאות שונות',
         icon: '📈',
-        defaultFrequency: 'One-Time',
+        defaultFrequency: 'One-time',
         subcategories: [
             { value: 'app-subscriptions', label: 'מנויים לאפליקציות', defaultFrequency: 'Monthly' },
             { value: 'donations', label: 'תרומות' },
