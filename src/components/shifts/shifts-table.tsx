@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Timestamp, doc, deleteDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 function calculateDuration(start: Date, end: Date) {
     const diff = end.getTime() - start.getTime();
@@ -40,6 +41,7 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
                 start,
                 end,
                 jobName: job?.name || 'Unknown',
+                hourlyRate: job?.hourlyRate || 0,
                 duration: calculateDuration(start, end),
                 earnings: calculateEarnings(),
             }
@@ -49,13 +51,8 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
     const handleDelete = async (shiftId: string) => {
         if (!firestore || !user) return;
         const shiftRef = doc(firestore, 'users', user.uid, 'shifts', shiftId);
-        try {
-            await deleteDoc(shiftRef);
-            toast({ title: "משמרת נמחקה", description: "המשמרת נמחקה בהצלחה." });
-        } catch (error) {
-            console.error("Error deleting shift: ", error);
-            toast({ variant: "destructive", title: "שגיאה", description: "הייתה בעיה במחיקת המשמרת." });
-        }
+        deleteDocumentNonBlocking(shiftRef);
+        toast({ title: "משמרת נמחקה", description: "המשמרת נמחקה בהצלחה." });
     };
 
     const formatDate = (date: Date) => date.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -71,6 +68,7 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
                         <TableHead>שעת התחלה</TableHead>
                         <TableHead>שעת סיום</TableHead>
                         <TableHead>משך</TableHead>
+                        <TableHead>תעריף</TableHead>
                         <TableHead>רווח (מוערך)</TableHead>
                         <TableHead className="text-left"></TableHead>
                     </TableRow>
@@ -83,6 +81,7 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
                             <TableCell>{formatTime(shift.start)}</TableCell>
                             <TableCell>{formatTime(shift.end)}</TableCell>
                             <TableCell>{shift.duration}</TableCell>
+                            <TableCell>₪{shift.hourlyRate.toFixed(2)}</TableCell>
                             <TableCell className="text-green-600 font-medium">₪{shift.earnings.toFixed(2)}</TableCell>
                             <TableCell className="text-left">
                                 <DropdownMenu>
