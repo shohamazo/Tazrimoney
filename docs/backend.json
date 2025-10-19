@@ -33,8 +33,7 @@
         }
       },
       "required": [
-        "id",
-        "email"
+        "id"
       ]
     },
     "Shift": {
@@ -183,7 +182,8 @@
   "auth": {
     "providers": [
       "password",
-      "google.com"
+      "google.com",
+      "phone"
     ]
   },
   "firestore": {

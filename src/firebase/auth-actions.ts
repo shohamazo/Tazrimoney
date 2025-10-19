@@ -11,6 +11,9 @@ import {
   linkWithPopup,
   deleteUser,
   sendEmailVerification,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult,
 } from 'firebase/auth';
 import { initializeFirebase } from './index';
 
@@ -51,6 +54,36 @@ export async function handlePasswordSignIn(email: string, password: string) {
     throw error;
   }
 }
+
+export async function sendPhoneVerificationCode(phoneNumber: string, verifier: RecaptchaVerifier) {
+    const auth = await getFirebaseAuth();
+
+    // Remove non-digit characters and check prefix
+    let cleanNumber = phoneNumber.replace(/\D/g, '');
+    if (cleanNumber.startsWith('0')) {
+        cleanNumber = cleanNumber.substring(1);
+    }
+    const e164PhoneNumber = `+972${cleanNumber}`;
+    
+    try {
+        const confirmationResult = await signInWithPhoneNumber(auth, e164PhoneNumber, verifier);
+        return confirmationResult;
+    } catch (error) {
+        console.error('SMS Sending Error:', error);
+        throw error;
+    }
+}
+
+export async function verifyPhoneCode(confirmationResult: ConfirmationResult, code: string) {
+    try {
+        const userCredential = await confirmationResult.confirm(code);
+        return userCredential.user;
+    } catch (error) {
+        console.error('Phone Verification Error:', error);
+        throw error;
+    }
+}
+
 
 export async function handleSignOut() {
   const auth = await getFirebaseAuth();

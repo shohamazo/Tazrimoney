@@ -33,9 +33,16 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
+  const auth = getAuth(firebaseApp);
+  // This is the key for testing phone auth without a real device.
+  // IMPORTANT: This should ideally be wrapped in a process.env.NODE_ENV check
+  // to ensure it's not active in production.
+  if (process.env.NODE_ENV !== 'production') {
+    auth.settings.appVerificationDisabledForTesting = true;
+  }
   return {
     firebaseApp,
-    auth: getAuth(firebaseApp),
+    auth: auth,
     firestore: getFirestore(firebaseApp)
   };
 }
@@ -48,3 +55,5 @@ export * from './non-blocking-updates';
 export * from './non-blocking-login';
 export * from './errors';
 export * from './error-emitter';
+
+    

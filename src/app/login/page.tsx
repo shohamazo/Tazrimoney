@@ -15,63 +15,141 @@ import {
   handleGoogleSignIn,
   handlePasswordSignUp,
   handlePasswordSignIn,
+  sendPhoneVerificationCode,
+  verifyPhoneCode,
 } from '@/firebase/auth-actions';
-import { useTransition, useState } from 'react';
+import React, { useTransition, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ConfirmationResult, RecaptchaVerifier } from 'firebase/auth';
+import { useFirebase } from '@/firebase';
 
-const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address.'),
-  password: z.string().min(6, 'Password must be at least 6 characters.'),
+const formSchema = z.object({
+  emailOrPhone: z.string().min(1, 'Please enter an email or phone number.'),
+  password: z.string().optional(),
+  code: z.string().optional(),
 });
 
-type LoginFormInputs = z.infer<typeof loginSchema>;
+type FormInputs = z.infer<typeof formSchema>;
 
 export default function LoginPage() {
+  const { auth } = useFirebase();
   const [isPending, startTransition] = useTransition();
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [isPhoneAuth, setIsPhoneAuth] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+
   const { toast } = useToast();
   const router = useRouter();
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
-  } = useForm<LoginFormInputs>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<FormInputs>({
+    resolver: zodResolver(formSchema),
   });
+  
+  const emailOrPhone = watch('emailOrPhone');
 
-  const onSubmit = (data: LoginFormInputs) => {
+  useEffect(() => {
+    // Basic check to see if input is likely a phone number
+    setIsPhoneAuth(/^\+?[0-9\s-]{8,}$/.test(emailOrPhone));
+  }, [emailOrPhone]);
+
+  useEffect(() => {
+    if (!auth) return;
+
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+      });
+    }
+  }, [auth]);
+
+
+  const onSubmit = (data: FormInputs) => {
     startTransition(async () => {
+      const verifier = window.recaptchaVerifier;
+      if (!verifier) {
+          toast({ variant: 'destructive', title: 'Error', description: 'reCAPTCHA verifier not initialized.' });
+          return;
+      }
+      
       try {
-        if (authMode === 'signup') {
-          await handlePasswordSignUp(data.email, data.password);
-          toast({ title: 'Account Created', description: 'Please check your email to verify your account.' });
-          router.push('/verify-email');
+        if (isPhoneAuth) {
+          if (confirmationResult) {
+            // Step 2: Verify code
+            await verifyPhoneCode(confirmationResult, data.code || '');
+            toast({ title: 'Signed In', description: 'You have successfully signed in.' });
+          } else {
+            // Step 1: Send verification code
+            const result = await sendPhoneVerificationCode(data.emailOrPhone, verifier);
+            setConfirmationResult(result);
+            toast({ title: 'Code Sent', description: 'A verification code has been sent to your phone.' });
+          }
         } else {
-          await handlePasswordSignIn(data.email, data.password);
-          // AuthGuard will redirect on success
+          // Email/Password Auth
+          const email = data.emailOrPhone;
+          const password = data.password || '';
+          if (!password) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Password is required for email sign-in.' });
+            return;
+          }
+
+          if (authMode === 'signup') {
+            await handlePasswordSignUp(email, password);
+            toast({ title: 'Account Created', description: 'Please check your email to verify your account.' });
+            router.push('/verify-email');
+          } else {
+            await handlePasswordSignIn(email, password);
+            // AuthGuard will redirect on success
+          }
         }
       } catch (error: any) {
         let description = 'An unexpected error occurred.';
-        if (error.code === 'auth/email-already-in-use' && authMode === 'signup') {
-          description = 'This email is already in use. Please try signing in instead.';
-        } else if (error.code === 'auth/user-not-found' && authMode === 'signin') {
-            description = 'No account found with this email. Please sign up first.';
-        } else if (error.code === 'auth/wrong-password' && authMode === 'signin') {
-            description = 'Incorrect password. Please try again.';
-        } else {
-            description = error.message;
+         if (error.code) {
+          switch (error.code) {
+            case 'auth/email-already-in-use':
+              description = 'This email is already in use. Please try signing in instead.';
+              break;
+            case 'auth/user-not-found':
+              description = 'No account found with this email/phone. Please sign up first.';
+              break;
+            case 'auth/wrong-password':
+              description = 'Incorrect password. Please try again.';
+              break;
+            case 'auth/invalid-phone-number':
+              description = 'The phone number is not valid.';
+              break;
+            case 'auth/too-many-requests':
+              description = 'Too many requests. Please try again later.';
+              break;
+            case 'auth/invalid-verification-code':
+              description = 'The verification code is incorrect. Please try again.';
+              break;
+            default:
+              description = error.message;
+          }
         }
-
         toast({
           variant: 'destructive',
-          title: `Error ${authMode === 'signup' ? 'signing up' : 'signing in'}`,
+          title: `Error`,
           description: description,
         });
+         if (verifier.render) {
+            verifier.render().then((widgetId) => {
+                // @ts-ignore
+                if (window.grecaptcha) {
+                    // @ts-ignore
+                    window.grecaptcha.reset(widgetId);
+                }
+            });
+        }
       }
     });
   };
@@ -87,35 +165,61 @@ export default function LoginPage() {
       });
     });
   };
+  
+  const switchAuthMode = () => {
+    setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
+    setConfirmationResult(null); // Reset phone auth flow
+  }
 
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
+       <div id="recaptcha-container"></div>
       <div className="flex items-center justify-center p-6 lg:p-10">
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
             <CardTitle>{authMode === 'signin' ? 'התחברות' : 'יצירת חשבון'}</CardTitle>
-            <CardDescription>הזן את המייל והסיסמה שלך להמשיך.</CardDescription>
+            <CardDescription>הזן את המייל או הטלפון שלך להמשיך.</CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit(onSubmit)}>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">אימייל</Label>
-                <Input id="email" type="email" placeholder="mail@example.com" {...register('email')} />
-                {errors.email && (
-                  <p className="text-xs text-destructive">{errors.email.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">סיסמה</Label>
-                <Input id="password" type="password" {...register('password')} />
-                {errors.password && (
-                  <p className="text-xs text-destructive">{errors.password.message}</p>
-                )}
-              </div>
+              {confirmationResult ? (
+                 <div className="space-y-2">
+                    <Label htmlFor="code">קוד אימות</Label>
+                    <Input id="code" type="text" {...register('code')} placeholder="123456" />
+                     {errors.code && <p className="text-xs text-destructive">{errors.code.message}</p>}
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="emailOrPhone">אימייל או טלפון</Label>
+                    <Input id="emailOrPhone" placeholder="mail@example.com / 050-123-4567" {...register('emailOrPhone')} />
+                    {errors.emailOrPhone && (
+                      <p className="text-xs text-destructive">{errors.emailOrPhone.message}</p>
+                    )}
+                  </div>
+                  {!isPhoneAuth && (
+                    <div className="space-y-2">
+                      <Label htmlFor="password">סיסמה</Label>
+                      <Input id="password" type="password" {...register('password')} />
+                      {errors.password && (
+                        <p className="text-xs text-destructive">{errors.password.message}</p>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
             <CardFooter className="flex-col gap-4">
               <Button className="w-full" type="submit" disabled={isPending}>
-                {isPending ? <Loader2 className="animate-spin" /> : (authMode === 'signin' ? 'התחברות' : 'יצירת חשבון')}
+                {isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : confirmationResult ? (
+                  'אימות והתחברות'
+                ) : isPhoneAuth ? (
+                  'שלח קוד ב-SMS'
+                ) : (
+                  authMode === 'signin' ? 'התחברות' : 'יצירת חשבון'
+                )}
               </Button>
             </CardFooter>
           </form>
@@ -132,7 +236,7 @@ export default function LoginPage() {
           </div>
           <div className="mt-4 text-center text-sm">
             {authMode === 'signin' ? "אין לך חשבון?" : "כבר יש לך חשבון?"}{' '}
-            <Button variant="link" className="p-0 h-auto" onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}>
+            <Button variant="link" className="p-0 h-auto" onClick={switchAuthMode}>
                {authMode === 'signin' ? 'הרשמה' : 'התחברות'}
             </Button>
           </div>
@@ -151,6 +255,12 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+declare global {
+  interface Window {
+    recaptchaVerifier?: RecaptchaVerifier;
+  }
 }
 
     
