@@ -2,12 +2,12 @@
 
 import { generateFinancialReport } from '@/ai/flows/generate-financial-report';
 import type { Shift, Job, Expense } from '@/lib/types';
-import { z } from 'zod';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { headers } from 'next/headers';
-import { endOfMonth, startOfMonth, subMonths } from 'date-fns';
+import { endOfMonth, startOfMonth, subMonths, format } from 'date-fns';
+import { he } from 'date-fns/locale';
 
 const firebaseConfig = {
   "projectId": "studio-8929750933-770dd",
@@ -25,8 +25,6 @@ if (!getApps().length) {
 
 const db = getFirestore();
 const auth = getAuth();
-
-// No need for a Zod schema here since we are not taking user input for dates anymore.
 
 function calculateShiftEarnings(shift: Shift, jobs: Job[]): number {
   const job = jobs.find(j => j.id === shift.jobId);
@@ -83,7 +81,7 @@ export async function generateReportAction(values: any) {
 
   const monthlyData: { [key: string]: { income: number; expenses: number } } = {};
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 5; i >= 0; i--) {
     const date = subMonths(today, i);
     const monthKey = format(date, 'yyyy-MM');
     monthlyData[monthKey] = { income: 0, expenses: 0 };
@@ -109,7 +107,7 @@ export async function generateReportAction(values: any) {
     name: format(new Date(month), 'MMM', { locale: he }),
     income: data.income,
     expenses: data.expenses,
-  })).reverse();
+  }));
 
 
   const dataForAI = {
