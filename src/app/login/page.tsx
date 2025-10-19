@@ -49,10 +49,18 @@ export default function LoginPage() {
 
   // Initialize reCAPTCHA verifier
   useEffect(() => {
-    if (!auth) return;
+    if (!auth || window.recaptchaVerifier) return;
+    
+    // Ensure the container is clean before rendering
+    const container = document.getElementById('recaptcha-container');
+    if(container) {
+      container.innerHTML = '';
+    }
+
     window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
       'callback': () => {
-        // reCAPTCHA solved, allow sign-in
+        // reCAPTCHA solved, allow sign-in.
+        // The actual phone code sending is triggered by the user action.
       }
     });
 
@@ -106,6 +114,11 @@ export default function LoginPage() {
             variant: 'destructive',
             title: 'Error',
             description: 'Could not send verification code. Please check the number and try again.',
+          });
+          // Reset reCAPTCHA for another attempt
+           window.recaptchaVerifier?.render().then((widgetId) => {
+             // @ts-ignore
+            window.grecaptcha.reset(widgetId);
           });
         }
       });
@@ -229,6 +242,8 @@ export default function LoginPage() {
                     <p className="text-xs text-destructive">{identifierErrors.identifier.message}</p>
                   )}
                 </div>
+                {/* reCAPTCHA container, only rendered for phone number flow */}
+                <div id="recaptcha-container" className="flex justify-center" />
               </CardContent>
               <CardFooter>
                 <Button className="w-full" type="submit" disabled={isPending}>
@@ -260,7 +275,6 @@ export default function LoginPage() {
 
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
-      <div id="recaptcha-container" />
       <div className="flex items-center justify-center p-6 lg:p-10">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center text-center lg:hidden">
@@ -268,7 +282,7 @@ export default function LoginPage() {
             <h1 className="mt-4 text-3xl font-bold tracking-tighter">Tazrimony</h1>
             <p className="text-muted-foreground">Your personal finance manager for shift work.</p>
           </div>
-          <Card className="border-0 shadow-none">
+          <Card className="border-0 shadow-none lg:border lg:shadow-sm">
             {renderStep()}
           </Card>
         </div>
@@ -287,3 +301,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
