@@ -14,7 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import type { Expense } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useFirebase } from '@/firebase';
 import { doc, setDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
@@ -37,9 +37,10 @@ interface ExpenseDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   expense: Expense | null;
+  prefilledData?: Partial<Expense> | null;
 }
 
-export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogProps) {
+export function ExpenseDialog({ isOpen, onOpenChange, expense, prefilledData }: ExpenseDialogProps) {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
   const { control, register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<ExpenseFormData>({
@@ -80,6 +81,16 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
     if (isOpen) {
       if (expense) {
         reset({...expense, date: (expense.date as unknown as Timestamp).toDate()});
+      } else if (prefilledData) {
+        const date = prefilledData.date ? (typeof prefilledData.date === 'string' ? parseISO(prefilledData.date) : prefilledData.date) : new Date();
+        reset({
+          description: prefilledData.description || '',
+          amount: prefilledData.amount || 0,
+          category: prefilledData.category || '',
+          subcategory: prefilledData.subcategory || '',
+          date: date as Date,
+          type: prefilledData.type || 'one-time',
+        });
       } else {
         reset({
           description: '',
@@ -91,7 +102,7 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
         });
       }
     }
-  }, [expense, isOpen, reset]);
+  }, [expense, prefilledData, isOpen, reset]);
 
   const onSubmit = async (data: ExpenseFormData) => {
     if (!firestore || !user) return;
@@ -118,12 +129,15 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
     }
   };
 
+  const title = expense ? 'עריכת הוצאה' : prefilledData ? 'אישור פרטי קבלה' : 'הוספת הוצאה חדשה';
+  const description = expense ? 'עדכן את פרטי ההוצאה.' : prefilledData ? 'בדוק את הפרטים שחולצו מהקבלה ושמור.' : 'מלא את פרטי ההוצאה החדשה.';
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{expense ? 'עריכת הוצאה' : 'הוספת הוצאה חדשה'}</DialogTitle>
-          <DialogDescription>{expense ? 'עדכן את פרטי ההוצאה.' : 'מלא את פרטי ההוצאה החדשה.'}</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
           <div className="space-y-2">
