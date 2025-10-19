@@ -26,8 +26,8 @@ const db = getFirestore();
 const auth = getAuth();
 
 const actionSchema = z.object({
-  startDate: z.date(),
-  endDate: z.date(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
 });
 
 function calculateEarnings(shift: Shift, jobs: Job[]): number {
@@ -41,7 +41,7 @@ function calculateEarnings(shift: Shift, jobs: Job[]): number {
   return durationInHours > 0 ? durationInHours * job.hourlyRate : 0;
 }
 
-export async function generateReportAction(values: { startDate: Date; endDate: Date }) {
+export async function generateReportAction(values: { startDate: Date | string; endDate: Date | string }) {
   const headersList = headers();
   const authorization = headersList.get('Authorization');
   const token = authorization?.split('Bearer ')[1];
