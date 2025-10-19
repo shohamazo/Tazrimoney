@@ -120,24 +120,24 @@ export function ClockInOut({ jobs }: { jobs: Job[] }) {
         <CardTitle>שעון נוכחות</CardTitle>
         <CardDescription>התחל וסיים משמרת בלחיצת כפתור.</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col sm:flex-row items-center gap-4">
+      <CardContent className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
         {activeShift ? (
           <>
-            <div className="flex items-center gap-3 p-2 rounded-md bg-secondary flex-1 w-full">
+            <div className="flex items-center gap-3 p-3 rounded-md bg-secondary flex-1 w-full">
                 <Timer className="h-6 w-6 text-primary" />
                 <div className="flex-1">
                     <p className="text-sm text-muted-foreground">משמרת פעילה ב: <span className="font-bold text-foreground">{getJobName(activeShift.jobId)}</span></p>
                     <p className="text-2xl font-bold font-mono tracking-wider">{formatElapsedTime(elapsedTime)}</p>
                 </div>
             </div>
-            <Button onClick={handleClockOut} className="w-full sm:w-auto bg-destructive hover:bg-destructive/90">
+            <Button onClick={handleClockOut} className="w-full sm:w-auto bg-destructive hover:bg-destructive/90 flex-shrink-0">
               <Square className="ms-2 h-4 w-4" />
               סיום משמרת (Clock Out)
             </Button>
           </>
         ) : (
           <>
-            <div className="w-full sm:w-64">
+            <div className="w-full sm:w-64 flex-shrink-0">
               <Select onValueChange={setSelectedJobId} defaultValue={selectedJobId} dir="rtl">
                 <SelectTrigger>
                   <SelectValue placeholder="בחר עבודה" />
@@ -151,7 +151,7 @@ export function ClockInOut({ jobs }: { jobs: Job[] }) {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleClockIn} disabled={!selectedJobId} className="w-full sm:w-auto">
+            <Button onClick={handleClockIn} disabled={!selectedJobId} className="w-full sm:w-auto flex-shrink-0">
               <Play className="ms-2 h-4 w-4" />
               התחל משמרת (Clock In)
             </Button>

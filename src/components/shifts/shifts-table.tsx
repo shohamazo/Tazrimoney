@@ -59,14 +59,14 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
     const formatTime = (date: Date) => date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
 
     return (
-        <div className="rounded-lg border">
+        <div className="rounded-lg border overflow-x-auto">
             <Table>
                 <TableHeader>
                     <TableRow>
                         <TableHead>עבודה</TableHead>
                         <TableHead>תאריך</TableHead>
-                        <TableHead>שעת התחלה</TableHead>
-                        <TableHead>שעת סיום</TableHead>
+                        <TableHead>התחלה</TableHead>
+                        <TableHead>סיום</TableHead>
                         <TableHead>משך</TableHead>
                         <TableHead>תעריף</TableHead>
                         <TableHead>רווח (מוערך)</TableHead>
