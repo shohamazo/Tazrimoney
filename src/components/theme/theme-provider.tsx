@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { themes, type Theme } from '@/lib/themes';
 import { UserProfile } from '@/lib/types';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -47,24 +47,31 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.classList.remove(...Object.values(themes).map(t => t.name));
     root.classList.add(theme.name);
 
-    // Apply light mode colors
-    for (const [key, value] of Object.entries(theme.colors.light)) {
-      root.style.setProperty(`--${key}`, value);
-    }
-    
-    // Apply dark mode colors
-    const darkStyles = document.createElement('style');
-    darkStyles.innerHTML = `
-      .dark {
-        ${Object.entries(theme.colors.dark)
-          .map(([key, value]) => `--${key}: ${value};`)
-          .join('\n')}
+    const applyColors = (mode: 'light' | 'dark') => {
+      const colors = theme.colors[mode];
+      const prefix = mode === 'dark' ? '.dark' : ':root';
+      
+      let styleString = `${prefix} {\n`;
+      for (const [key, value] of Object.entries(colors)) {
+        if(value) {
+          styleString += `  --${key}: ${value};\n`;
+        }
       }
-    `;
-    document.head.appendChild(darkStyles);
+      styleString += '}\n';
+      return styleString;
+    }
+
+    const styleTag = document.createElement('style');
+    styleTag.id = 'dynamic-theme-styles';
+    styleTag.innerHTML = applyColors('light') + applyColors('dark');
+    
+    document.head.querySelector('#dynamic-theme-styles')?.remove();
+    document.head.appendChild(styleTag);
     
     return () => {
-        document.head.removeChild(darkStyles);
+      if (styleTag.parentNode) {
+        styleTag.parentNode.removeChild(styleTag);
+      }
     }
 
   }, [theme]);
