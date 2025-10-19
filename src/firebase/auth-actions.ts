@@ -11,19 +11,13 @@ import {
   linkWithPopup,
   deleteUser,
   sendEmailVerification,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  ConfirmationResult,
 } from 'firebase/auth';
 import { initializeFirebase } from './index';
-import { z } from 'zod';
 
 async function getFirebaseAuth() {
   const { auth } = initializeFirebase();
   return auth;
 }
-
-const isEmail = (identifier: string) => z.string().email().safeParse(identifier).success;
 
 export async function handleGoogleSignIn() {
   const auth = await getFirebaseAuth();
@@ -38,10 +32,6 @@ export async function handleGoogleSignIn() {
 
 export async function handlePasswordSignUp(email: string, password: string) {
   const auth = await getFirebaseAuth();
-  if (!isEmail(email)) {
-    throw new Error('Invalid email format for sign-up.');
-  }
-  
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await sendEmailVerification(userCredential.user);
@@ -54,9 +44,6 @@ export async function handlePasswordSignUp(email: string, password: string) {
 
 export async function handlePasswordSignIn(email: string, password: string) {
   const auth = await getFirebaseAuth();
-   if (!isEmail(email)) {
-    throw new Error('Invalid email format for sign-in.');
-  }
   try {
     await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
@@ -64,32 +51,6 @@ export async function handlePasswordSignIn(email: string, password: string) {
     throw error;
   }
 }
-
-export async function sendPhoneVerificationCode(phoneNumber: string, verifier: RecaptchaVerifier): Promise<ConfirmationResult> {
-    const auth = await getFirebaseAuth();
-    // Reformat phone number to E.164 standard for Firebase
-    const numericPhone = phoneNumber.replace(/\D/g, '');
-    const e164PhoneNumber = `+972${numericPhone.startsWith('0') ? numericPhone.substring(1) : numericPhone}`;
-
-    try {
-        const confirmationResult = await signInWithPhoneNumber(auth, e164PhoneNumber, verifier);
-        return confirmationResult;
-    } catch (error) {
-        console.error('SMS Sending Error:', error);
-        throw error;
-    }
-}
-
-export async function verifyPhoneCode(confirmationResult: ConfirmationResult, code: string) {
-    try {
-        const result = await confirmationResult.confirm(code);
-        return result.user;
-    } catch (error) {
-        console.error('Phone Verification Error:', error);
-        throw error;
-    }
-}
-
 
 export async function handleSignOut() {
   const auth = await getFirebaseAuth();
@@ -159,3 +120,5 @@ export async function resendVerificationEmail() {
     throw new Error('No user is currently signed in.');
   }
 }
+
+    
