@@ -49,24 +49,19 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
     }
   }, [job, isOpen, reset]);
 
-  const onSubmit = async (data: JobFormData) => {
+  const onSubmit = (data: JobFormData) => {
     if (!firestore || !user) return;
 
-    try {
-        if (job) {
-            const jobRef = doc(firestore, 'users', user.uid, 'jobs', job.id);
-            setDocumentNonBlocking(jobRef, data, { merge: true });
-            toast({ title: "עבודה עודכנה", description: "פרטי העבודה עודכנו בהצלחה." });
-        } else {
-            const jobsCol = collection(firestore, 'users', user.uid, 'jobs');
-            addDocumentNonBlocking(jobsCol, data);
-            toast({ title: "עבודה נוספה", description: "העבודה החדשה נוספה בהצלחה." });
-        }
-        onOpenChange(false);
-    } catch (error) {
-        console.error("Error saving job: ", error);
-        toast({ variant: "destructive", title: "שגיאה", description: "הייתה בעיה בשמירת העבודה." });
+    if (job) {
+        const jobRef = doc(firestore, 'users', user.uid, 'jobs', job.id);
+        setDocumentNonBlocking(jobRef, data, { merge: true });
+        toast({ title: "עבודה עודכנה", description: "פרטי העבודה עודכנו בהצלחה." });
+    } else {
+        const jobsCol = collection(firestore, 'users', user.uid, 'jobs');
+        addDocumentNonBlocking(jobsCol, data);
+        toast({ title: "עבודה נוספה", description: "העבודה החדשה נוספה בהצלחה." });
     }
+    onOpenChange(false);
   };
 
   return (
@@ -79,15 +74,15 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">שם העבודה</Label>
-            <Input id="name" {...register('name')} className="col-span-3" />
-            {errors.name && <p className="col-span-4 text-red-500 text-xs text-right">{errors.name.message}</p>}
+          <div className="space-y-2">
+            <Label htmlFor="name">שם העבודה</Label>
+            <Input id="name" {...register('name')} />
+            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="hourlyRate" className="text-right">תעריף שעתי (₪)</Label>
-            <Input id="hourlyRate" type="number" step="0.1" {...register('hourlyRate')} className="col-span-3" />
-            {errors.hourlyRate && <p className="col-span-4 text-red-500 text-xs text-right">{errors.hourlyRate.message}</p>}
+          <div className="space-y-2">
+            <Label htmlFor="hourlyRate">תעריף שעתי (₪)</Label>
+            <Input id="hourlyRate" type="number" step="0.1" {...register('hourlyRate')} />
+            {errors.hourlyRate && <p className="text-red-500 text-xs mt-1">{errors.hourlyRate.message}</p>}
           </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>ביטול</Button>

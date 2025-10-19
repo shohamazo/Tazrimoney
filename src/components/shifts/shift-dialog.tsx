@@ -124,7 +124,7 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{shift ? 'עריכת משמרת' : 'הוספת משמרת חדשה'}</DialogTitle>
           <DialogDescription>
@@ -132,14 +132,14 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="jobId" className="text-right">עבודה</Label>
+          <div className="space-y-2">
+            <Label htmlFor="jobId">עבודה</Label>
             <Controller
               name="jobId"
               control={control}
               render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                  <SelectTrigger className="col-span-3">
+                  <SelectTrigger>
                     <SelectValue placeholder="בחר עבודה" />
                   </SelectTrigger>
                   <SelectContent>
@@ -150,64 +150,66 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
                 </Select>
               )}
             />
-            {errors.jobId && <p className="col-span-4 text-red-500 text-xs text-right">{errors.jobId.message}</p>}
+            {errors.jobId && <p className="text-red-500 text-xs text-right mt-1">{errors.jobId.message}</p>}
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right">התחלה</Label>
-            <Controller
-              name="startDate"
-              control={control}
-              render={({ field }) => (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn("col-span-2 justify-start text-right font-normal", !field.value && "text-muted-foreground")}
-                    >
-                      <CalendarIcon className="ms-2 h-4 w-4" />
-                      {field.value ? format(field.value, 'PPP', { locale: he }) : <span>בחר תאריך</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={he} />
-                  </PopoverContent>
-                </Popover>
-              )}
-            />
-            <Input {...register('startTime')} id="startTime" className="col-span-1" type="time" step="60" />
-            {errors.startDate && <p className="col-span-4 text-red-500 text-xs text-right">{errors.startDate.message}</p>}
-            {errors.startTime && <p className="col-span-4 text-red-500 text-xs text-right">{errors.startTime.message}</p>}
+          <div className="space-y-2">
+             <Label>התחלה</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <Controller
+                name="startDate"
+                control={control}
+                render={({ field }) => (
+                    <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                        variant={"outline"}
+                        className={cn("sm:col-span-2 justify-start text-right font-normal", !field.value && "text-muted-foreground")}
+                        >
+                        <CalendarIcon className="ms-2 h-4 w-4" />
+                        {field.value ? format(field.value, 'PPP', { locale: he }) : <span>בחר תאריך</span>}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={he} />
+                    </PopoverContent>
+                    </Popover>
+                )}
+                />
+                <Input {...register('startTime')} id="startTime" className="col-span-1" type="time" step="60" />
+            </div>
+            {errors.startDate && <p className="text-red-500 text-xs text-right mt-1">{errors.startDate.message}</p>}
+            {errors.startTime && <p className="text-red-500 text-xs text-right mt-1">{errors.startTime.message}</p>}
           </div>
           
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right">סיום</Label>
-             <Controller
-              name="endDate"
-              control={control}
-              render={({ field }) => (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn("col-span-2 justify-start text-right font-normal", !field.value && "text-muted-foreground")}
-                    >
-                      <CalendarIcon className="ms-2 h-4 w-4" />
-                      {field.value ? format(field.value, 'PPP', { locale: he }) : <span>בחר תאריך</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={he} />
-                  </PopoverContent>
-                </Popover>
-              )}
-            />
-            <Input {...register('endTime')} id="endTime" className="col-span-1" type="time" step="60" />
-            {errors.endDate && <p className="col-span-4 text-red-500 text-xs text-right">{errors.endDate.message}</p>}
-            {errors.endTime && <p className="col-span-4 text-red-500 text-xs text-right">{errors.endTime.message}</p>}
+          <div className="space-y-2">
+            <Label>סיום</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <Controller
+                name="endDate"
+                control={control}
+                render={({ field }) => (
+                    <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                        variant={"outline"}
+                        className={cn("sm:col-span-2 justify-start text-right font-normal", !field.value && "text-muted-foreground")}
+                        >
+                        <CalendarIcon className="ms-2 h-4 w-4" />
+                        {field.value ? format(field.value, 'PPP', { locale: he }) : <span>בחר תאריך</span>}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={he} />
+                    </PopoverContent>
+                    </Popover>
+                )}
+                />
+                <Input {...register('endTime')} id="endTime" className="col-span-1" type="time" step="60" />
+            </div>
+             {errors.endDate && <p className="text-red-500 text-xs text-right mt-1">{errors.endDate.message}</p>}
+             {errors.endTime && <p className="text-red-500 text-xs text-right mt-1">{errors.endTime.message}</p>}
           </div>
-           {errors.root && <p className="col-span-4 text-red-500 text-xs text-right">{errors.root.message}</p>}
-           {errors.endTime && <p className="col-span-4 text-red-500 text-xs text-right">{errors.endTime.message}</p>}
 
           <DialogFooter>
              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>ביטול</Button>

@@ -87,7 +87,7 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{expense ? 'עריכת הוצאה' : 'הוספת הוצאה חדשה'}</DialogTitle>
           <DialogDescription>{expense ? 'עדכן את פרטי ההוצאה.' : 'מלא את פרטי ההוצאה החדשה.'}</DialogDescription>
@@ -96,14 +96,14 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
           <div className="space-y-2">
             <Label htmlFor="description">תיאור</Label>
             <Input id="description" {...register('description')} />
-            {errors.description && <p className="text-red-500 text-xs">{errors.description.message}</p>}
+            {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="amount">סכום (₪)</Label>
             <Input id="amount" type="number" step="0.01" {...register('amount')} />
-            {errors.amount && <p className="text-red-500 text-xs">{errors.amount.message}</p>}
+            {errors.amount && <p className="text-red-500 text-xs mt-1">{errors.amount.message}</p>}
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>קטגוריה</Label>
               <Controller name="category" control={control} render={({ field }) => (
@@ -112,7 +112,7 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
                   <SelectContent>{budgetCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent>
                 </Select>
               )} />
-              {errors.category && <p className="text-red-500 text-xs">{errors.category.message}</p>}
+              {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category.message}</p>}
             </div>
             <div className="space-y-2">
               <Label>סוג</Label>
@@ -125,7 +125,7 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
                   </SelectContent>
                 </Select>
               )} />
-              {errors.type && <p className="text-red-500 text-xs">{errors.type.message}</p>}
+              {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type.message}</p>}
             </div>
           </div>
           <div className="space-y-2">
@@ -141,7 +141,7 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
                 <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={he} /></PopoverContent>
               </Popover>
             )} />
-            {errors.date && <p className="text-red-500 text-xs">{errors.date.message}</p>}
+            {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date.message}</p>}
           </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>ביטול</Button>

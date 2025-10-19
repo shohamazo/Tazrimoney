@@ -123,7 +123,7 @@ export function ClockInOut({ jobs }: { jobs: Job[] }) {
       <CardContent className="flex flex-col sm:flex-row items-center gap-4">
         {activeShift ? (
           <>
-            <div className="flex items-center gap-3 p-2 rounded-md bg-secondary flex-1">
+            <div className="flex items-center gap-3 p-2 rounded-md bg-secondary flex-1 w-full">
                 <Timer className="h-6 w-6 text-primary" />
                 <div className="flex-1">
                     <p className="text-sm text-muted-foreground">משמרת פעילה ב: <span className="font-bold text-foreground">{getJobName(activeShift.jobId)}</span></p>
