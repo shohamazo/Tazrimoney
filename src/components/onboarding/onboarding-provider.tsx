@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
-import { doc, setDoc, getDoc, DocumentReference } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { OnboardingDialog } from './onboarding-dialog';
 
@@ -23,51 +23,66 @@ export const useOnboarding = () => {
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const { firestore, user, isUserLoading } = useFirebase();
-  const [isProfileLoading, setProfileLoading] = useState(true);
-
-  const checkAndCreateProfile = useCallback(async () => {
-    if (!firestore || !user || user.isAnonymous) {
-      setProfileLoading(false);
-      setDialogOpen(false);
-      return;
-    }
-
-    const userProfileRef = doc(firestore, 'users', user.uid);
-    
-    setProfileLoading(true);
-    try {
-      const docSnap = await getDoc(userProfileRef);
-      if (docSnap.exists()) {
-        const profileData = docSnap.data() as UserProfile;
-        if (profileData.onboardingComplete !== true) {
-          setDialogOpen(true);
-        } else {
-          setDialogOpen(false);
-        }
-      } else {
-        // Profile doesn't exist, create it and start onboarding
-        const newProfile: Partial<UserProfile> = {
-          id: user.uid,
-          email: user.email || undefined,
-          displayName: user.displayName || user.phoneNumber || undefined,
-          photoURL: user.photoURL || undefined,
-          onboardingComplete: false,
-        };
-        await setDoc(userProfileRef, newProfile, { merge: true });
-        setDialogOpen(true);
-      }
-    } catch (error) {
-      console.error("Error checking/creating user profile:", error);
-    } finally {
-      setProfileLoading(false);
-    }
-  }, [firestore, user]);
-
+  const [isLoading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isUserLoading) return; // Wait for user to be loaded
-    checkAndCreateProfile();
-  }, [user, isUserLoading, checkAndCreateProfile]);
+    // This function will run when user or isUserLoading state changes.
+    const checkAndSetOnboarding = async () => {
+      // Don't do anything until Firebase Auth has determined the user's state.
+      if (isUserLoading) {
+        setLoading(true);
+        return;
+      }
+
+      // If there's no user, onboarding is not relevant.
+      if (!user || !firestore) {
+        setLoading(false);
+        setDialogOpen(false);
+        return;
+      }
+
+      // At this point, we have a user. We need to check their profile in Firestore.
+      setLoading(true);
+      const userProfileRef = doc(firestore, 'users', user.uid);
+
+      try {
+        const docSnap = await getDoc(userProfileRef);
+
+        if (docSnap.exists()) {
+          // The user's profile document exists in Firestore.
+          const profileData = docSnap.data() as UserProfile;
+          if (profileData.onboardingComplete) {
+            // They have completed onboarding.
+            setDialogOpen(false);
+          } else {
+            // They have a profile but haven't finished onboarding.
+            setDialogOpen(true);
+          }
+        } else {
+          // The user's profile document does NOT exist. This is a brand new user.
+          // Create their profile and start the onboarding.
+          const newProfile: Partial<UserProfile> = {
+            id: user.uid,
+            email: user.email || undefined,
+            displayName: user.displayName || user.phoneNumber || undefined,
+            photoURL: user.photoURL || undefined,
+            onboardingComplete: false, // Explicitly set to false
+          };
+          await setDoc(userProfileRef, newProfile, { merge: true });
+          // Show the wizard.
+          setDialogOpen(true);
+        }
+      } catch (error) {
+        console.error("Error checking or creating user profile:", error);
+        // Fallback to not showing the dialog on error.
+        setDialogOpen(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAndSetOnboarding();
+  }, [user, isUserLoading, firestore]);
 
 
   const handleStartOnboarding = () => {
@@ -86,12 +101,12 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     }
   };
   
-  if (isUserLoading || isProfileLoading) {
-     // Show nothing or a global loader while we determine the onboarding state
+  if (isLoading) {
+     // Render nothing while we determine the onboarding state.
+     // This prevents a flash of the main app content.
     return null;
   }
   
-  // Render children immediately, the dialog will appear on top if needed
   return (
     <OnboardingContext.Provider value={{ startOnboarding: handleStartOnboarding }}>
       {children}
