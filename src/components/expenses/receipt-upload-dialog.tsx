@@ -181,7 +181,7 @@ export function ReceiptUploadDialog({ isOpen, onOpenChange, onReceiptAnalyzed }:
                             <div className={cn("relative w-full aspect-video rounded-md overflow-hidden border bg-black", !hasCameraPermission && "flex items-center justify-center")}>
                                 <video ref={videoRef} className={cn("w-full h-full object-contain", !hasCameraPermission && "hidden")} autoPlay muted playsInline />
                                 {hasCameraPermission === false && <p className="text-destructive-foreground p-4 text-center">נדרשת גישה למצלמה. אנא אפשר גישה בהגדרות הדפדפן שלך.</p>}
-                                {hasCamerašení === null && <Loader2 className="h-8 w-8 animate-spin text-white" />}
+                                {hasCameraPermission === null && <Loader2 className="h-8 w-8 animate-spin text-white" />}
                             </div>
                         )}
                          {preview && !file && (
