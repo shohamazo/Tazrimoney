@@ -51,7 +51,6 @@ export default function LoginPage() {
   useEffect(() => {
     if (!auth) return;
     window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-      'size': 'invisible',
       'callback': () => {
         // reCAPTCHA solved, allow sign-in
       }
