@@ -15,7 +15,7 @@ const pageTitles: { [key: string]: string } = {
 
 export function Header() {
   const pathname = usePathname();
-  const title = pageTitles[pathname] || 'Tazrimony';
+  const title = pageTitles[pathname] || 'Tazrimoney';
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">

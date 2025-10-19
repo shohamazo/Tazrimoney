@@ -61,7 +61,7 @@ export function AppSidebar() {
         <Link href="/" className="flex items-center gap-3 p-2">
           <PiggyBank className="size-8 text-sidebar-primary" />
           <div className="group-data-[collapsible=icon]:hidden">
-            <h1 className="font-bold text-lg text-sidebar-foreground">Tazrimony</h1>
+            <h1 className="font-bold text-lg text-sidebar-foreground">Tazrimoney</h1>
           </div>
         </Link>
       </SidebarHeader>

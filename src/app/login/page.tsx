@@ -88,8 +88,6 @@ export default function LoginPage() {
       
       try {
         if (isPhoneAuth) {
-          // For phone auth, sign-in and sign-up are the same flow on Firebase,
-          // but we can add a client-side check to guide the user.
           if (confirmationResult) {
             // Step 2: Verify code
             await verifyPhoneCode(confirmationResult, data.code || '');
@@ -100,8 +98,7 @@ export default function LoginPage() {
             const result = await sendPhoneVerificationCode(data.emailOrPhone, verifier);
             setConfirmationResult(result);
             toast({ title: 'Code Sent', description: 'A verification code has been sent to your phone.' });
-            // Keep phone number for display, clear password/code
-            reset({ emailOrPhone: data.emailOrPhone, password: '', code: '' });
+             reset({ emailOrPhone: '', password: '', code: '' });
           }
         } else {
           // Email/Password Auth
@@ -132,10 +129,9 @@ export default function LoginPage() {
               if (authMode === 'signin') {
                 description = 'No account found with this email/phone. Please sign up first.';
               } else {
-                // This is expected during signup, so we don't show an error.
-                // The phone verification code is sent anyway.
-                // We'll proceed with the flow set up by the `else` block outside the catch.
-                return; 
+                // For phone signup, we expect 'user-not-found' and proceed.
+                // The sending of the code happens outside this try/catch for phone.
+                // This logic needs to be revisited if we want strict sign-up only for phone.
               }
               break;
             case 'auth/wrong-password':
@@ -158,11 +154,15 @@ export default function LoginPage() {
               description = error.message;
           }
         }
-        toast({
-          variant: 'destructive',
-          title: `Error`,
-          description: description,
-        });
+        // Only show toast if a meaningful error description was set.
+        // For phone signup, 'user-not-found' is expected and doesn't need a user-facing error.
+        if (description !== 'An unexpected error occurred.' || error.code !== 'auth/user-not-found') {
+            toast({
+              variant: 'destructive',
+              title: `Error`,
+              description: description,
+            });
+        }
       }
     });
   };
@@ -259,7 +259,7 @@ export default function LoginPage() {
       <div className="hidden bg-muted lg:flex items-center justify-center p-10">
         <div className="text-center">
             <PiggyBank className="size-24 text-primary mx-auto" />
-            <h1 className="mt-6 text-4xl font-bold tracking-tighter">Tazrimony</h1>
+            <h1 className="mt-6 text-4xl font-bold tracking-tighter">Tazrimoney</h1>
             <p className="mt-4 text-lg text-muted-foreground">
               נהל את הכספים שלך, בדרך החכמה.
               <br />

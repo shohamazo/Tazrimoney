@@ -10,7 +10,7 @@ import { ThemeProvider } from '@/components/theme/theme-provider';
 import { OnboardingProvider } from '@/components/onboarding/onboarding-provider';
 
 export const metadata: Metadata = {
-  title: 'Tazrimony',
+  title: 'Tazrimoney',
   description: 'Your personal finance manager for shift work.',
 };
 
