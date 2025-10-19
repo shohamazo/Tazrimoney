@@ -17,11 +17,11 @@ import { Progress } from '@/components/ui/progress';
 import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { generateBudgetSuggestions, type BudgetSuggestionInput, type BudgetSuggestionOutput } from '@/ai/flows/generate-budget-suggestions';
-import { doc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface OnboardingDialogProps {
   isOpen: boolean;
-  onFinish: () => void;
+  onFinish: () => Promise<void>;
 }
 
 const STEPS = [
@@ -77,25 +77,27 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
     });
   }
   
-  const handleSaveBudgets = () => {
-    if(!firestore || !user || suggestions.length === 0) return;
+  const handleFinishAndSave = () => {
+    if(!firestore || !user || !onFinish) return;
 
-    startTransition(() => {
-        const batchPromises = suggestions.map(suggestion => {
-            const budgetRef = doc(firestore, 'users', user.uid, 'budgets', suggestion.category);
-            const budgetData = {
-                category: suggestion.category,
-                planned: suggestion.planned,
-                alertThreshold: 80, // Default threshold
-            };
-            // Using non-blocking update for better UX
-            return setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
-        });
-        
-        // No need to await promises here due to non-blocking nature
+    startTransition(async () => {
+        if(suggestions.length > 0) {
+            const batchPromises = suggestions.map(suggestion => {
+                const budgetRef = doc(firestore, 'users', user.uid, 'budgets', suggestion.category);
+                const budgetData = {
+                    category: suggestion.category,
+                    planned: suggestion.planned,
+                    alertThreshold: 80, // Default threshold
+                };
+                // Using non-blocking for budgets is fine
+                return setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
+            });
+        }
         
         toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
-        onFinish(); // This will close the dialog and set onboardingComplete flag
+        
+        // Crucially, wait for the final flag to be set before closing.
+        await onFinish();
     });
   }
   
@@ -262,7 +264,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                   {isPending ? <Loader2 className="animate-spin" /> : 'המשך לסיכום'}
                 </Button>
               ) : (
-                <Button onClick={handleSaveBudgets} disabled={isPending}>
+                <Button onClick={handleFinishAndSave} disabled={isPending}>
                     {isPending ? <Loader2 className="animate-spin" /> : 'התחל להשתמש'}
                 </Button>
               )
