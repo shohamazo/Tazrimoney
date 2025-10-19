@@ -1,16 +1,15 @@
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React, { useState, useTransition, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Calendar as CalendarIcon, Loader2, Wand2 } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
-import { addDays, format, startOfMonth } from 'date-fns';
+import { format, startOfMonth } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { generateReportAction } from '@/app/reports/actions';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { useFirebase } from '@/firebase';
@@ -30,43 +29,58 @@ export function ReportView() {
   });
   const [summary, setSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { auth } = useFirebase();
+  const { auth, user, isUserLoading } = useFirebase();
 
-  const handleGenerateReport = () => {
-    if (!date?.from || !date?.to || !auth.currentUser) return;
+  const handleGenerateReport = useCallback(() => {
+    if (!date?.from || !date?.to || !user) return;
     
     startTransition(async () => {
       setError(null);
       setSummary(null);
 
-      const token = await auth.currentUser?.getIdToken();
-      const headers = new Headers();
-      headers.append('Authorization', `Bearer ${token}`);
-      
-      const actionWithAuth = async () => {
+      try {
+        const token = await user.getIdToken();
+        const headers = new Headers();
+        headers.append('Authorization', `Bearer ${token}`);
+        headers.append('Content-Type', 'application/json');
+        
         const response = await fetch('/api/report', {
           method: 'POST',
           headers,
           body: JSON.stringify({ startDate: date.from, endDate: date.to }),
         });
-        return response.json();
-      }
 
-      const result = await actionWithAuth();
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
 
-      if (result.error) {
-        setError(result.error);
-      } else {
-        setSummary(result.summary);
+        if (result.error) {
+          setError(result.error);
+        } else {
+          setSummary(result.summary);
+        }
+      } catch (e) {
+        console.error("Failed to generate report:", e);
+        setError("An unexpected error occurred while generating the report.");
       }
     });
-  };
+  }, [date, user]);
+
+  useEffect(() => {
+    if (user) {
+      handleGenerateReport();
+    }
+  }, [user, date, handleGenerateReport]);
+
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>הפקת דוח</CardTitle>          <CardDescription>בחר טווח תאריכים להפקת דוח כספי.</CardDescription>
+          <CardTitle>הפקת דוח</CardTitle>          
+          <CardDescription>בחר טווח תאריכים כדי לראות דוח כספי.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row gap-4 items-center">
             <Popover>
@@ -103,17 +117,10 @@ export function ReportView() {
                     onSelect={setDate}
                     numberOfMonths={2}
                     locale={he}
+                    disabled={isPending}
                 />
                 </PopoverContent>
             </Popover>
-            <Button onClick={handleGenerateReport} disabled={isPending || !auth.currentUser}>
-                {isPending ? (
-                    <Loader2 className="ms-2 h-4 w-4 animate-spin" />
-                ) : (
-                    <Wand2 className="ms-2 h-4 w-4" />
-                )}
-                הפק דוח
-            </Button>
         </CardContent>
       </Card>
       
