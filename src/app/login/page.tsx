@@ -101,7 +101,7 @@ export default function LoginPage() {
             setConfirmationResult(result);
             toast({ title: 'Code Sent', description: 'A verification code has been sent to your phone.' });
             // Reset the form fields but keep the code field for the user to fill
-            reset({ emailOrPhone: '', password: '', code: '' });
+            reset({ emailOrPhone: data.emailOrPhone, password: '', code: '' });
           }
         } else {
           // Email/Password Auth
