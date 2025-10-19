@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { ShiftsTable } from '@/components/shifts/shifts-table';
@@ -9,11 +9,23 @@ import type { Shift, Job } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { ClockInOut } from '@/components/shifts/clock-in-out';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useRouter } from 'next/navigation';
 
 export default function ShiftsPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [selectedShift, setSelectedShift] = React.useState<Shift | null>(null);
-  
+  const [showNoJobsAlert, setShowNoJobsAlert] = useState(false);
+  const router = useRouter();
+
   const { firestore, user, isUserLoading } = useFirebase();
 
   const shiftsQuery = useMemoFirebase(
@@ -31,6 +43,16 @@ export default function ShiftsPage() {
   );
   const { data: jobs, isLoading: jobsLoading } = useCollection<Job>(jobsQuery);
 
+  const isLoading = isUserLoading || shiftsLoading || jobsLoading;
+
+  useEffect(() => {
+    // Only trigger the alert if loading is finished and there are no jobs.
+    if (!isLoading && jobs && jobs.length === 0) {
+      setShowNoJobsAlert(true);
+    }
+  }, [isLoading, jobs]);
+
+
   const handleEdit = (shift: Shift) => {
     setSelectedShift(shift);
     setDialogOpen(true);
@@ -41,7 +63,6 @@ export default function ShiftsPage() {
     setSelectedShift(null);
   };
 
-  const isLoading = isUserLoading || shiftsLoading || jobsLoading;
 
   return (
     <div className="space-y-6">
@@ -67,6 +88,21 @@ export default function ShiftsPage() {
         shift={selectedShift}
         jobs={jobs || []}
       />
+      <AlertDialog open={showNoJobsAlert} onOpenChange={setShowNoJobsAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>יש להגדיר עבודה תחילה</AlertDialogTitle>
+            <AlertDialogDescription>
+              כדי להתחיל לתעד משמרות או להשתמש בשעון הנוכחות, עליך להגדיר לפחות עבודה אחת עם תעריף שעתי.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => router.push('/jobs')}>
+              עבור לדף עבודות
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
