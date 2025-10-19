@@ -1,5 +1,5 @@
 'use client';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -17,26 +17,38 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { toast } = useToast();
 
-  const userProfileRef = useMemoFirebase(
-    () => (firestore && user ? doc(firestore, 'users', user.uid) : null),
-    [firestore, user]
-  );
-  
-  // We use our own state to manage loading and profile data
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isProfileLoading, setProfileLoading] = useState(true);
+  
+  const isPublicRoute = publicRoutes.includes(pathname);
 
   useEffect(() => {
-    if (isUserLoading) return; // Wait for Firebase Auth to be ready
-    if (!user || !firestore) {
-      setProfileLoading(false); // Not logged in, no profile to load
+    if (isUserLoading) return;
+    if (!user && !isPublicRoute) {
+      router.replace('/login');
+    }
+    if (user && isPublicRoute) {
+      router.replace('/');
+    }
+    if (user && user.providerData.some(p => p.providerId === 'password') && !user.emailVerified && pathname !== '/verify-email') {
+      router.replace('/verify-email');
+    }
+  }, [user, isUserLoading, pathname, isPublicRoute, router]);
+
+  useEffect(() => {
+    if (isUserLoading || !user || !firestore) {
+      if (!isUserLoading) {
+        setProfileLoading(false);
+      }
       return;
     }
+
+    const userProfileRef = doc(firestore, 'users', user.uid);
 
     const fetchOrCreateProfile = async () => {
       setProfileLoading(true);
       try {
-        const docSnap = await getDoc(userProfileRef!);
+        const docSnap = await getDoc(userProfileRef);
         if (docSnap.exists()) {
           setProfile(docSnap.data() as UserProfile);
         } else {
@@ -48,7 +60,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             photoURL: user.photoURL || null,
             onboardingComplete: false,
           };
-          await setDoc(userProfileRef!, newProfile);
+          await setDoc(userProfileRef, newProfile);
           setProfile(newProfile);
         }
       } catch (error) {
@@ -60,11 +72,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     };
 
     fetchOrCreateProfile();
-  }, [user, isUserLoading, firestore, userProfileRef, toast]);
+  }, [user, isUserLoading, firestore, toast]);
 
 
   const handleFinishOnboarding = async () => {
-    if (!userProfileRef) return;
+    if (!user || !firestore) return;
+    const userProfileRef = doc(firestore, 'users', user.uid);
     try {
       await setDoc(userProfileRef, { onboardingComplete: true }, { merge: true });
       // Manually update profile state to trigger re-render
@@ -78,44 +91,35 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // --- Decision Logic ---
 
+  const isLoading = isUserLoading || isProfileLoading;
+
   // 1. Show main loader while auth or profile state is being determined
-  if (isUserLoading || isProfileLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
-
-  const isPublicRoute = publicRoutes.includes(pathname);
-
-  // 2. If user is not logged in, redirect to login unless on a public route
+  
   if (!user && !isPublicRoute) {
-    router.replace('/login');
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
+     return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
   }
-
-  if (user) {
-    // 3. Handle redirects for logged-in users
-    if (isPublicRoute) {
-      router.replace('/');
-      return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
-    }
-    
-    if (user.providerData.some(p => p.providerId === 'password') && !user.emailVerified && pathname !== '/verify-email') {
-      router.replace('/verify-email');
+  
+  if (user && isPublicRoute) {
+     return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
+  }
+  
+   if (user && user.providerData.some(p => p.providerId === 'password') && !user.emailVerified && pathname !== '/verify-email') {
       return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
     }
 
-    // 4. CRITICAL: If onboarding is not complete, show the wizard and nothing else.
-    if (profile && !profile.onboardingComplete) {
-      return <OnboardingDialog isOpen={true} onFinish={handleFinishOnboarding} />;
-    }
+
+  // 4. CRITICAL: If onboarding is not complete, show the wizard and nothing else.
+  if (user && profile && !profile.onboardingComplete) {
+    return <OnboardingDialog isOpen={true} onFinish={handleFinishOnboarding} />;
   }
+
 
   // 5. If all checks pass, render the requested page
   return <>{children}</>;
