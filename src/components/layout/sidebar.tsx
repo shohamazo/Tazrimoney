@@ -10,7 +10,7 @@ import {
   AreaChart,
   Target,
   PiggyBank,
-  LogIn,
+  LogOut,
   Loader2,
 } from 'lucide-react';
 import {
@@ -24,7 +24,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useFirebase } from '@/firebase';
 import { Button } from '../ui/button';
-import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import { handleSignOut } from '@/firebase/auth-actions';
 
 const navItems = [
   { href: '/', label: 'לוח בקרה', icon: LayoutDashboard },
@@ -37,14 +37,9 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { auth, user, isUserLoading } = useFirebase();
+  const { user, isUserLoading } = useFirebase();
   const { isMobile, setOpenMobile } = useSidebar();
 
-  const handleLogin = () => {
-    if (auth) {
-      initiateAnonymousSignIn(auth);
-    }
-  };
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -91,24 +86,48 @@ export function AppSidebar() {
                 <Loader2 className="h-6 w-6 animate-spin text-sidebar-foreground" />
             </div>
         ) : user ? (
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarFallback>U</AvatarFallback>
-            </Avatar>
-            <div className="group-data-[collapsible=icon]:hidden">
-              <p className="text-sm font-medium text-white">משתמש אנונימי</p>
-              <p className="text-xs text-sidebar-foreground">{user.uid.slice(0,10)}...</p>
+          <div className="group-data-[collapsible=icon]:hidden w-full space-y-2">
+            <div className="flex items-center gap-3 p-1">
+                <Avatar className="h-9 w-9">
+                    {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>}
+                    <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                </Avatar>
+                <div className="truncate">
+                    <p className="text-sm font-medium text-white truncate">{user.displayName || 'משתמש'}</p>
+                    <p className="text-xs text-sidebar-foreground truncate">{user.email}</p>
+                </div>
             </div>
+            <Button className="w-full" variant="secondary" size="sm" onClick={handleSignOut}>
+                <LogOut className="ms-2" />
+                התנתקות
+            </Button>
           </div>
-        ) : (
-            <div className="group-data-[collapsible=icon]:hidden">
-                <Button className="w-full" variant="secondary" onClick={handleLogin}>
-                    <LogIn className="ms-2" />
-                    התחברות
-                </Button>
-            </div>
-        )}
+        ) : null}
+         {user && <div className="hidden group-data-[collapsible=icon]:block">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Avatar className="h-9 w-9 cursor-pointer">
+                        {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>}
+                        <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                    </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="center">
+                    <DropdownMenuItem onClick={handleSignOut}>
+                        <LogOut className="ms-2 h-4 w-4" />
+                        <span>התנתקות</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>}
       </SidebarFooter>
     </div>
   );
 }
+
+// Add dropdown components for icon-only sidebar
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';

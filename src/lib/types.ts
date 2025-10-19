@@ -3,6 +3,9 @@ import type { EarningDetails } from "./calculator";
 
 export type UserProfile = {
   id: string;
+  email?: string;
+  displayName?: string;
+  photoURL?: string;
   onboardingComplete?: boolean;
 }
 

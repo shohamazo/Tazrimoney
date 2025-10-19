@@ -6,6 +6,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { MainLayout } from '@/components/layout/main-layout';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { OnboardingProvider } from '@/components/onboarding/onboarding-provider';
+import { AuthGuard } from '@/components/auth/auth-guard';
 
 export const metadata: Metadata = {
   title: 'Tazrimony',
@@ -29,11 +30,13 @@ export default function RootLayout({
       </head>
       <body className={cn('font-body antialiased')}>
         <FirebaseClientProvider>
-          <OnboardingProvider>
-            <SidebarProvider>
-              <MainLayout>{children}</MainLayout>
-            </SidebarProvider>
-          </OnboardingProvider>
+          <AuthGuard>
+            <OnboardingProvider>
+              <SidebarProvider>
+                <MainLayout>{children}</MainLayout>
+              </SidebarProvider>
+            </OnboardingProvider>
+          </AuthGuard>
         </FirebaseClientProvider>
         <Toaster />
       </body>

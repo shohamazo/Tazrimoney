@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import {
   Sidebar,
   SidebarContent,
@@ -10,17 +11,24 @@ import { AppSidebar } from './sidebar';
 import { Header } from './header';
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <Sidebar side="right" variant="sidebar" collapsible="icon">
-        <SidebarContent>
-          <AppSidebar />
-        </SidebarContent>
-      </Sidebar>
-      <SidebarInset>
-        <Header />
-        <main className="p-4 sm:p-6 lg:p-8">{children}</main>
-      </SidebarInset>
-    </>
-  );
+    const pathname = usePathname();
+    
+    // Don't render the main layout on the login page
+    if (pathname === '/login') {
+        return <>{children}</>;
+    }
+
+    return (
+        <>
+        <Sidebar side="right" variant="sidebar" collapsible="icon">
+            <SidebarContent>
+            <AppSidebar />
+            </SidebarContent>
+        </Sidebar>
+        <SidebarInset>
+            <Header />
+            <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+        </SidebarInset>
+        </>
+    );
 }

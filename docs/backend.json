@@ -34,10 +34,7 @@
       },
       "required": [
         "id",
-        "firstName",
-        "lastName",
-        "email",
-        "hourlyRate"
+        "email"
       ]
     },
     "Shift": {
@@ -186,7 +183,7 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "google.com"
     ]
   },
   "firestore": {

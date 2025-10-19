@@ -32,12 +32,12 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     // Wait for user and profile to be loaded
-    if (isUserLoading || isProfileLoading) {
+    if (isUserLoading || isProfileLoading || !user) {
       return;
     }
     
     // If we have a user but their profile doesn't exist or onboarding isn't complete, start the process.
-    if (user && (!userProfile || userProfile.onboardingComplete !== true)) {
+    if (!user.isAnonymous && (!userProfile || userProfile.onboardingComplete !== true)) {
         setDialogOpen(true);
     }
   }, [user, userProfile, isUserLoading, isProfileLoading]);
@@ -56,6 +56,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         console.error("Failed to mark onboarding as complete:", error);
     }
   };
+  
+  if (!user) {
+    return <>{children}</>
+  }
 
   return (
     <OnboardingContext.Provider value={{ startOnboarding: handleStartOnboarding }}>
