@@ -9,7 +9,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { simpleBudgetCategories } from '@/lib/expense-categories';
 
 const BudgetSuggestionInputSchema = z.object({
   housing: z.string().describe('User\'s housing situation (e.g., "rent", "own", "live with parents")'),
@@ -30,9 +29,6 @@ const BudgetSuggestionOutputSchema = z.object({
 });
 export type BudgetSuggestionOutput = z.infer<typeof BudgetSuggestionOutputSchema>;
 
-export async function generateBudgetSuggestions(input: BudgetSuggestionInput): Promise<BudgetSuggestionOutput> {
-  return generateBudgetSuggestionsFlow(input);
-}
 
 const prompt = ai.definePrompt({
   name: 'generateBudgetSuggestionsPrompt',
@@ -83,3 +79,7 @@ const generateBudgetSuggestionsFlow = ai.defineFlow(
     return output!;
   }
 );
+
+export async function generateBudgetSuggestions(input: BudgetSuggestionInput): Promise<BudgetSuggestionOutput> {
+  return generateBudgetSuggestionsFlow(input);
+}

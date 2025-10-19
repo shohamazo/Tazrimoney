@@ -21,9 +21,6 @@ const GenerateFinancialReportOutputSchema = z.object({
 });
 export type GenerateFinancialReportOutput = z.infer<typeof GenerateFinancialReportOutputSchema>;
 
-export async function generateFinancialReport(input: GenerateFinancialReportInput): Promise<GenerateFinancialReportOutput> {
-  return generateFinancialReportFlow(input);
-}
 
 const prompt = ai.definePrompt({
   name: 'generateFinancialReportPrompt',
@@ -54,3 +51,7 @@ const generateFinancialReportFlow = ai.defineFlow(
     return output!;
   }
 );
+
+export async function generateFinancialReport(input: GenerateFinancialReportInput): Promise<GenerateFinancialReportOutput> {
+  return generateFinancialReportFlow(input);
+}

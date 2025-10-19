@@ -29,10 +29,6 @@ const AnalyzeReceiptOutputSchema = z.object({
 });
 export type AnalyzeReceiptOutput = z.infer<typeof AnalyzeReceiptOutputSchema>;
 
-export async function analyzeReceipt(input: AnalyzeReceiptInput): Promise<AnalyzeReceiptOutput> {
-  return analyzeReceiptFlow(input);
-}
-
 // Prepare categories for the prompt
 const categoryPromptData = expenseCategories.map(cat => ({
   label: cat.label,
@@ -75,3 +71,7 @@ const analyzeReceiptFlow = ai.defineFlow(
     return output!;
   }
 );
+
+export async function analyzeReceipt(input: AnalyzeReceiptInput): Promise<AnalyzeReceiptOutput> {
+  return analyzeReceiptFlow(input);
+}
