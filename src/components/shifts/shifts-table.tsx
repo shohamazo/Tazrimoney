@@ -59,7 +59,7 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
     const formatTime = (date: Date) => date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
 
     return (
-        <div className="rounded-lg border overflow-x-auto">
+        <div className="w-full overflow-x-auto rounded-lg border">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -76,13 +76,13 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
                 <TableBody>
                     {shiftsWithDetails.map((shift) => (
                         <TableRow key={shift.id}>
-                            <TableCell className="font-medium"><Badge variant="secondary">{shift.jobName}</Badge></TableCell>
-                            <TableCell>{formatDate(shift.start)}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap"><Badge variant="secondary">{shift.jobName}</Badge></TableCell>
+                            <TableCell className="whitespace-nowrap">{formatDate(shift.start)}</TableCell>
                             <TableCell>{formatTime(shift.start)}</TableCell>
                             <TableCell>{formatTime(shift.end)}</TableCell>
                             <TableCell>{shift.duration}</TableCell>
                             <TableCell>₪{shift.hourlyRate.toFixed(2)}</TableCell>
-                            <TableCell className="text-green-600 font-medium">₪{shift.earnings.toFixed(2)}</TableCell>
+                            <TableCell className="text-green-600 font-medium whitespace-nowrap">₪{shift.earnings.toFixed(2)}</TableCell>
                             <TableCell className="text-left">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
