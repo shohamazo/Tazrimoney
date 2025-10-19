@@ -19,6 +19,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useFirebase } from '@/firebase';
@@ -37,10 +38,17 @@ const navItems = [
 export function AppSidebar() {
   const pathname = usePathname();
   const { auth, user, isUserLoading } = useFirebase();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const handleLogin = () => {
     if (auth) {
       initiateAnonymousSignIn(auth);
+    }
+  };
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
     }
   };
 
@@ -59,7 +67,7 @@ export function AppSidebar() {
         <SidebarMenu className="p-2">
           {navItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href} passHref>
+              <Link href={item.href} passHref onClick={handleLinkClick}>
                 <SidebarMenuButton
                   isActive={pathname === item.href}
                   tooltip={item.label}
