@@ -58,13 +58,22 @@ export async function handlePasswordSignIn(email: string, password: string) {
 export async function sendPhoneVerificationCode(phoneNumber: string, verifier: RecaptchaVerifier) {
     const auth = await getFirebaseAuth();
 
-    // Remove non-digit characters and check prefix
-    let cleanNumber = phoneNumber.replace(/\D/g, '');
-    if (cleanNumber.startsWith('0')) {
-        cleanNumber = cleanNumber.substring(1);
+    // Sanitize the phone number to the E.164 format required by Firebase
+    let cleanNumber = phoneNumber.replace(/\D/g, ''); // Remove all non-digit characters
+
+    if (cleanNumber.startsWith('972')) {
+        // Number already has country code, just ensure it has a '+'
+        cleanNumber = `+${cleanNumber}`;
+    } else if (cleanNumber.startsWith('0')) {
+        // Replace leading 0 with country code
+        cleanNumber = `+972${cleanNumber.substring(1)}`;
+    } else {
+        // Assume it's a local number without a leading 0
+        cleanNumber = `+972${cleanNumber}`;
     }
-    const e164PhoneNumber = `+972${cleanNumber}`;
     
+    const e164PhoneNumber = cleanNumber;
+
     try {
         const confirmationResult = await signInWithPhoneNumber(auth, e164PhoneNumber, verifier);
         return confirmationResult;
@@ -73,6 +82,7 @@ export async function sendPhoneVerificationCode(phoneNumber: string, verifier: R
         throw error;
     }
 }
+
 
 export async function verifyPhoneCode(confirmationResult: ConfirmationResult, code: string) {
     try {
@@ -153,5 +163,3 @@ export async function resendVerificationEmail() {
     throw new Error('No user is currently signed in.');
   }
 }
-
-    
