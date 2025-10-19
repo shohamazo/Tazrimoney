@@ -53,7 +53,7 @@ export async function generateReportAction(values: any) {
   let uid;
   try {
     const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-    uid = decodedToken.uid;
+    uid = decodedToken.sub; // The 'sub' field contains the UID.
   } catch (error) {
     console.error('Error decoding token:', error);
     return { error: 'Invalid authentication token.' };
