@@ -19,7 +19,7 @@ import { he } from 'date-fns/locale';
 import { useFirebase } from '@/firebase';
 import { doc, setDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { expenseCategories } from '@/lib/expense-categories';
+import { expenseCategories, type ExpenseCategory, type ExpenseSubcategory } from '@/lib/expense-categories';
 
 const expenseSchema = z.object({
   description: z.string().min(2, "תיאור חייב להכיל לפחות 2 תווים"),
@@ -31,6 +31,7 @@ const expenseSchema = z.object({
 });
 
 type ExpenseFormData = z.infer<typeof expenseSchema>;
+type ExpenseType = 'one-time' | 'recurring';
 
 interface ExpenseDialogProps {
   isOpen: boolean;
@@ -41,11 +42,39 @@ interface ExpenseDialogProps {
 export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogProps) {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
-  const { control, register, handleSubmit, reset, watch, formState: { errors } } = useForm<ExpenseFormData>({
+  const { control, register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
   });
   
-  const selectedCategory = watch('category');
+  const selectedCategoryLabel = watch('category');
+  const selectedSubcategoryLabel = watch('subcategory');
+
+  // Smart Frequency Logic
+  useEffect(() => {
+    if (!selectedCategoryLabel || !selectedSubcategoryLabel) return;
+    
+    const category: ExpenseCategory | undefined = expenseCategories.find(c => c.label === selectedCategoryLabel);
+    if (!category) return;
+    
+    const subcategory: ExpenseSubcategory | undefined = category.subcategories.find(s => s.label === selectedSubcategoryLabel);
+
+    let frequency: 'Monthly' | 'One-Time' | undefined = undefined;
+
+    // Subcategory frequency takes precedence
+    if (subcategory?.defaultFrequency) {
+      frequency = subcategory.defaultFrequency;
+    } else if (category.defaultFrequency) {
+      // Fallback to parent category frequency
+      frequency = category.defaultFrequency;
+    }
+    
+    if (frequency) {
+        const expenseType: ExpenseType = frequency === 'Monthly' ? 'recurring' : 'one-time';
+        setValue('type', expenseType);
+    }
+
+  }, [selectedCategoryLabel, selectedSubcategoryLabel, setValue]);
+
 
   useEffect(() => {
     if (isOpen) {
@@ -111,7 +140,10 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
             <div className="space-y-2">
               <Label>קטגוריה</Label>
               <Controller name="category" control={control} render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                <Select onValueChange={(value) => {
+                    field.onChange(value);
+                    setValue('subcategory', ''); // Reset subcategory when category changes
+                }} value={field.value} dir="rtl">
                   <SelectTrigger><SelectValue placeholder="בחר קטגוריה" /></SelectTrigger>
                   <SelectContent>
                     {expenseCategories.map(cat => (
@@ -125,10 +157,10 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense }: ExpenseDialogPr
              <div className="space-y-2">
               <Label>תת-קטגוריה</Label>
               <Controller name="subcategory" control={control} render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value} dir="rtl" disabled={!selectedCategory}>
+                <Select onValueChange={field.onChange} value={field.value} dir="rtl" disabled={!selectedCategoryLabel}>
                   <SelectTrigger><SelectValue placeholder="בחר תת-קטגוריה" /></SelectTrigger>
                   <SelectContent>
-                      {expenseCategories.find(c => c.label === selectedCategory)?.subcategories.map(sub => (
+                      {expenseCategories.find(c => c.label === selectedCategoryLabel)?.subcategories.map(sub => (
                           <SelectItem key={sub.value} value={sub.label}>{sub.label}</SelectItem>
                       ))}
                   </SelectContent>
