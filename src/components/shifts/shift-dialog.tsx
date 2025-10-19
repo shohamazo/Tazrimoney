@@ -175,7 +175,7 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
                 </Popover>
               )}
             />
-            <Input {...register('startTime')} id="startTime" className="col-span-1" type="time" step="900" />
+            <Input {...register('startTime')} id="startTime" className="col-span-1" type="time" step="60" />
             {errors.startDate && <p className="col-span-4 text-red-500 text-xs text-right">{errors.startDate.message}</p>}
             {errors.startTime && <p className="col-span-4 text-red-500 text-xs text-right">{errors.startTime.message}</p>}
           </div>
@@ -202,7 +202,7 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
                 </Popover>
               )}
             />
-            <Input {...register('endTime')} id="endTime" className="col-span-1" type="time" step="900" />
+            <Input {...register('endTime')} id="endTime" className="col-span-1" type="time" step="60" />
             {errors.endDate && <p className="col-span-4 text-red-500 text-xs text-right">{errors.endDate.message}</p>}
             {errors.endTime && <p className="col-span-4 text-red-500 text-xs text-right">{errors.endTime.message}</p>}
           </div>
