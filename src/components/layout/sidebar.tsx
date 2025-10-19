@@ -61,7 +61,7 @@ export function AppSidebar() {
         <Link href="/" className="flex items-center gap-3 p-2">
           <PiggyBank className="size-8 text-sidebar-primary" />
           <div className="group-data-[collapsible=icon]:hidden">
-            <h1 className="font-bold text-lg text-white">Tazrimony</h1>
+            <h1 className="font-bold text-lg text-sidebar-foreground">Tazrimony</h1>
           </div>
         </Link>
       </SidebarHeader>
@@ -101,7 +101,7 @@ export function AppSidebar() {
                     <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
                 <div className="truncate">
-                    <p className="text-sm font-medium text-white truncate">{user.displayName || 'משתמש'}</p>
+                    <p className="text-sm font-medium text-sidebar-foreground truncate">{user.displayName || 'משתמש'}</p>
                     <p className="text-xs text-sidebar-foreground truncate">{user.email}</p>
                 </div>
             </Link>
