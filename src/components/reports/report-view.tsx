@@ -39,11 +39,12 @@ export function ReportView() {
         const response = await fetch('/api/report', {
           method: 'POST',
           headers,
-          // No body is needed as the server action calculates the date range
+          body: JSON.stringify({}), // Sending an empty body for the POST request
         });
 
         if (!response.ok) {
-          throw new Error(`Server error: ${response.statusText}`);
+           const errorResult = await response.json();
+           throw new Error(errorResult.error || `Server error: ${response.statusText}`);
         }
         
         const result = await response.json();
@@ -56,7 +57,11 @@ export function ReportView() {
         }
       } catch (e) {
         console.error("Failed to generate report:", e);
-        setError("An unexpected error occurred while generating the report.");
+        if (e instanceof Error) {
+            setError(e.message);
+        } else {
+            setError("An unexpected error occurred while generating the report.");
+        }
       }
     });
   }, [user]);
@@ -85,7 +90,7 @@ export function ReportView() {
         </Alert>
       )}
 
-      {!isPending && (summary || chartData.length > 0) && (
+      {!isPending && !error && (summary || chartData.length > 0) && (
         <div className="grid gap-6 lg:grid-cols-5">
             <Card className="lg:col-span-2 bg-primary/5 border-primary/20">
                 <CardHeader>
@@ -122,6 +127,18 @@ export function ReportView() {
                 </CardContent>
             </Card>
         </div>
+      )}
+      
+      {!isPending && !error && !summary && chartData.length === 0 && (
+         <Card>
+            <CardHeader>
+                <CardTitle>אין נתונים להצגה</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p>לא נמצאו נתונים כספיים ב-6 החודשים האחרונים כדי להפיק דוח.</p>
+                <p>נסה להוסיף משמרות או הוצאות כדי לראות את הדוח שלך.</p>
+            </CardContent>
+        </Card>
       )}
 
     </div>
