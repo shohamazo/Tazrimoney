@@ -60,35 +60,27 @@ export default function LoginPage() {
     if (!auth) return;
 
     if (!window.recaptchaVerifier) {
-      // Ensure the container is clean before rendering
-      const container = document.getElementById('recaptcha-container');
-      if(container) {
-        container.innerHTML = '';
-      }
-
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          'size': 'normal', // Use a visible reCAPTCHA
+          'size': 'invisible', // Use an invisible reCAPTCHA
           'callback': () => {
-            // This callback is intentionally left blank.
-            // The phone code sending is triggered by a user button click, not the reCAPTCHA success.
+            // This callback is for success. The actual phone sending logic
+            // is triggered by the form submission which programmatically executes the verifier.
           },
           'expired-callback': () => {
              // Response expired. Ask user to solve reCAPTCHA again.
+             toast({
+                variant: 'destructive',
+                title: 'reCAPTCHA Expired',
+                description: 'Please try sending the code again.',
+            });
              if (window.grecaptcha && typeof window.grecaptcha.reset === 'function') {
-                window.grecaptcha.reset();
+                window.grecaptcha.reset(window.recaptchaVerifier?.widgetId);
              }
           }
       });
-      window.recaptchaVerifier.render();
     }
 
-    // Cleanup on unmount
-    return () => {
-      window.recaptchaVerifier?.clear();
-      const container = document.getElementById('recaptcha-container');
-      if (container) container.innerHTML = '';
-      window.recaptchaVerifier = undefined;
-    };
+    // No direct render call is needed for invisible reCAPTCHA
   }, [auth]);
 
   const {
@@ -125,7 +117,8 @@ export default function LoginPage() {
     } else {
       // Phone number flow
       startTransition(async () => {
-        if (!window.recaptchaVerifier) {
+        const verifier = window.recaptchaVerifier;
+        if (!verifier) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
@@ -134,7 +127,8 @@ export default function LoginPage() {
             return;
         }
         try {
-          const result = await sendPhoneVerificationCode(data.identifier, window.recaptchaVerifier);
+          // Programmatically invoke the invisible reCAPTCHA
+          const result = await sendPhoneVerificationCode(data.identifier, verifier);
           setConfirmationResult(result);
           setLoginStep('code');
           toast({ title: 'Code Sent', description: 'A verification code has been sent to your phone.' });
@@ -146,7 +140,7 @@ export default function LoginPage() {
           });
           // Reset reCAPTCHA for another attempt
            if (window.grecaptcha && typeof window.grecaptcha.reset === 'function') {
-            window.grecaptcha.reset();
+             window.grecaptcha.reset(verifier.widgetId);
            }
         }
       });
@@ -275,8 +269,6 @@ export default function LoginPage() {
                     <p className="text-xs text-destructive">{identifierErrors.identifier.message}</p>
                   )}
                 </div>
-                {/* reCAPTCHA container, rendered for phone number flow */}
-                <div id="recaptcha-container" className="flex justify-center" />
               </CardContent>
               <CardFooter>
                 <Button className="w-full" type="submit" disabled={isPending}>
@@ -315,6 +307,7 @@ export default function LoginPage() {
             <h1 className="mt-4 text-3xl font-bold tracking-tighter">Tazrimony</h1>
             <p className="text-muted-foreground">מנהל הכספים האישי שלך לעבודה במשמרות.</p>
           </div>
+          <div id="recaptcha-container" />
           <Card className="border-0 shadow-none lg:border lg:shadow-sm">
             {renderStep()}
           </Card>
