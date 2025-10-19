@@ -8,10 +8,11 @@ export async function POST(request: Request) {
         const result = await generateReportAction(body);
         return NextResponse.json(result);
     } catch (error) {
-        console.error(error);
+        console.error('Error in /api/report:', error);
         if (error instanceof Error) {
+            // Return the actual error message for better debugging
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: 'An unknown internal server error occurred.' }, { status: 500 });
     }
 }
