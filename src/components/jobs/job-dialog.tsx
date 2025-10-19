@@ -12,6 +12,7 @@ import type { Job } from '@/lib/types';
 import { useFirebase } from '@/firebase';
 import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const jobSchema = z.object({
   name: z.string().min(2, "שם העבודה חייב להכיל לפחות 2 תווים"),
@@ -54,11 +55,11 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
     try {
         if (job) {
             const jobRef = doc(firestore, 'users', user.uid, 'jobs', job.id);
-            await setDoc(jobRef, data, { merge: true });
+            setDocumentNonBlocking(jobRef, data, { merge: true });
             toast({ title: "עבודה עודכנה", description: "פרטי העבודה עודכנו בהצלחה." });
         } else {
             const jobsCol = collection(firestore, 'users', user.uid, 'jobs');
-            await addDoc(jobsCol, data);
+            addDocumentNonBlocking(jobsCol, data);
             toast({ title: "עבודה נוספה", description: "העבודה החדשה נוספה בהצלחה." });
         }
         onOpenChange(false);

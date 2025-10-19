@@ -166,7 +166,7 @@
           "type": "string",
           "description": "Name of the job."
         },
-        "baseHourlyRate": {
+        "hourlyRate": {
           "type": "number",
           "description": "Base hourly rate for the job."
         }
@@ -175,7 +175,7 @@
         "id",
         "userId",
         "name",
-        "baseHourlyRate"
+        "hourlyRate"
       ]
     }
   },
