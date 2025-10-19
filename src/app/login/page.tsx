@@ -64,6 +64,8 @@ export default function LoginPage() {
       }
     });
 
+    window.recaptchaVerifier.render();
+
     return () => {
       window.recaptchaVerifier?.clear();
     };
@@ -116,10 +118,9 @@ export default function LoginPage() {
             description: 'Could not send verification code. Please check the number and try again.',
           });
           // Reset reCAPTCHA for another attempt
-           window.recaptchaVerifier?.render().then((widgetId) => {
-             // @ts-ignore
-            window.grecaptcha.reset(widgetId);
-          });
+           if (window.grecaptcha) {
+            window.grecaptcha.reset();
+           }
         }
       });
     }
@@ -301,5 +302,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
