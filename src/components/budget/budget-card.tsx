@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Budget } from '@/lib/types';
@@ -26,18 +27,17 @@ export function BudgetCard({ budget, onEdit }: BudgetCardProps) {
   const remaining = budget.planned - budget.spent;
   
   const thresholdExceeded = budget.planned > 0 && percentage >= budget.alertThreshold;
+  const nearingThreshold = budget.planned > 0 && percentage >= (budget.alertThreshold - 20) && !thresholdExceeded;
   const overspent = remaining < 0;
 
   const Icon = categoryIcons[budget.category] || Package;
 
-  let progressColor = "hsl(var(--primary))";
-  if (thresholdExceeded) {
-    progressColor = "hsl(var(--destructive))";
+  let progressColor = "hsl(var(--primary))"; // Default green-ish (using primary for now)
+  if (overspent || thresholdExceeded) {
+    progressColor = "hsl(var(--destructive))"; // Red
+  } else if (nearingThreshold) {
+    progressColor = "hsl(var(--accent))"; // Yellow
   }
-  if(overspent) {
-    progressColor = "hsl(var(--destructive))";
-  }
-
 
   return (
     <Card className={cn("flex flex-col", (thresholdExceeded || overspent) && "border-destructive/50")}>
