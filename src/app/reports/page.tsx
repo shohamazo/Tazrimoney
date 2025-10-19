@@ -6,7 +6,7 @@ export default function ReportsPage() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">דוחות כספיים</h2>
         <p className="text-muted-foreground">
-          הפק דוחות חודשיים, נתח את ההכנסות וההוצאות, וקבל סיכום חכם בעזרת AI.
+          סקירה אוטומטית של 6 החודשים האחרונים וניתוח חכם בעזרת AI.
         </p>
       </div>
       <ReportView />

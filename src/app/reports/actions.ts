@@ -1,12 +1,13 @@
 'use server';
 
-import { summarizeShiftData } from '@/ai/flows/summarize-shift-data';
-import type { Shift, Job } from '@/lib/types';
+import { generateFinancialReport } from '@/ai/flows/generate-financial-report';
+import type { Shift, Job, Expense } from '@/lib/types';
 import { z } from 'zod';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { headers } from 'next/headers';
+import { endOfMonth, startOfMonth, subMonths } from 'date-fns';
 
 const firebaseConfig = {
   "projectId": "studio-8929750933-770dd",
@@ -25,12 +26,9 @@ if (!getApps().length) {
 const db = getFirestore();
 const auth = getAuth();
 
-const actionSchema = z.object({
-  startDate: z.coerce.date(),
-  endDate: z.coerce.date(),
-});
+// No need for a Zod schema here since we are not taking user input for dates anymore.
 
-function calculateEarnings(shift: Shift, jobs: Job[]): number {
+function calculateShiftEarnings(shift: Shift, jobs: Job[]): number {
   const job = jobs.find(j => j.id === shift.jobId);
   if (!job) return 0;
   // @ts-ignore
@@ -41,7 +39,7 @@ function calculateEarnings(shift: Shift, jobs: Job[]): number {
   return durationInHours > 0 ? durationInHours * job.hourlyRate : 0;
 }
 
-export async function generateReportAction(values: { startDate: Date | string; endDate: Date | string }) {
+export async function generateReportAction(values: any) {
   const headersList = headers();
   const authorization = headersList.get('Authorization');
   const token = authorization?.split('Bearer ')[1];
@@ -59,15 +57,11 @@ export async function generateReportAction(values: { startDate: Date | string; e
     return { error: 'Authentication token not found' };
   }
 
-  const validation = actionSchema.safeParse(values);
-  if (!validation.success) {
-    return { error: 'Invalid input' };
-  }
+  const today = new Date();
+  const endDate = endOfMonth(today);
+  const startDate = startOfMonth(subMonths(today, 5)); // 6 months including current
 
-  const { startDate, endDate } = validation.data;
-  
-  endDate.setHours(23, 59, 59, 999);
-
+  // Fetch all necessary data
   const jobsSnapshot = await db.collection(`users/${uid}/jobs`).get();
   const jobs = jobsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Job[];
 
@@ -75,37 +69,67 @@ export async function generateReportAction(values: { startDate: Date | string; e
       .where('start', '>=', startDate)
       .where('start', '<=', endDate)
       .get();
-      
-  const filteredShifts = shiftsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Shift[];
+  const shifts = shiftsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Shift[];
 
-  if (filteredShifts.length === 0) {
-    return { summary: "לא נמצאו משמרות בטווח התאריכים שנבחר." };
+  const expensesSnapshot = await db.collection(`users/${uid}/expenses`)
+      .where('date', '>=', startDate)
+      .where('date', '<=', endDate)
+      .get();
+  const expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Expense[];
+
+  if (shifts.length === 0 && expenses.length === 0) {
+    return { summary: "לא נמצאו נתונים כספיים ב-6 החודשים האחרונים.", chartData: [] };
   }
 
-  const shiftDataForAI = filteredShifts.map((shift) => {
-    const job = jobs.find((j) => j.id === shift.jobId);
-    // @ts-ignore
-    const startTime = shift.start.toDate().toISOString();
-    // @ts-ignore
-    const endTime = shift.end.toDate().toISOString();
+  const monthlyData: { [key: string]: { income: number; expenses: number } } = {};
 
-    return {
-      jobName: job?.name || 'Unknown',
-      hourlyRate: job?.hourlyRate || 0,
-      startTime: startTime,
-      endTime: endTime,
-      earnings: calculateEarnings(shift, jobs),
-    };
+  for (let i = 0; i < 6; i++) {
+    const date = subMonths(today, i);
+    const monthKey = format(date, 'yyyy-MM');
+    monthlyData[monthKey] = { income: 0, expenses: 0 };
+  }
+
+  shifts.forEach(shift => {
+    // @ts-ignore
+    const monthKey = format(shift.start.toDate(), 'yyyy-MM');
+    if (monthlyData[monthKey]) {
+      monthlyData[monthKey].income += calculateShiftEarnings(shift, jobs);
+    }
   });
 
+  expenses.forEach(expense => {
+    // @ts-ignore
+    const monthKey = format(expense.date.toDate(), 'yyyy-MM');
+    if (monthlyData[monthKey]) {
+      monthlyData[monthKey].expenses += expense.amount;
+    }
+  });
+
+  const chartData = Object.entries(monthlyData).map(([month, data]) => ({
+    name: format(new Date(month), 'MMM', { locale: he }),
+    income: data.income,
+    expenses: data.expenses,
+  })).reverse();
+
+
+  const dataForAI = {
+      period: `Last 6 months (${format(startDate, 'MMM yyyy')} - ${format(endDate, 'MMM yyyy')})`,
+      monthlyBreakdown: chartData,
+      rawExpenses: expenses.map(e => ({ 
+        // @ts-ignore
+        date: e.date.toDate().toISOString(), 
+        amount: e.amount, 
+        category: e.category,
+        description: e.description,
+      })),
+  };
+
   try {
-    const result = await summarizeShiftData({
-      startDate: startDate.toLocaleDateString('en-CA'),
-      endDate: endDate.toLocaleDateString('en-CA'),
-      shiftData: JSON.stringify(shiftDataForAI, null, 2),
+    const result = await generateFinancialReport({
+      data: JSON.stringify(dataForAI, null, 2),
     });
 
-    return { summary: result.summary };
+    return { summary: result.summary, chartData: chartData };
   } catch (error) {
     console.error('AI summary generation failed:', error);
     return { error: 'An error occurred while generating the AI summary.' };

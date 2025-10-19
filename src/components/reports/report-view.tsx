@@ -1,42 +1,34 @@
 'use client';
 
 import React, { useState, useTransition, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Calendar as CalendarIcon, Loader2, Wand2 } from 'lucide-react';
-import { DateRange } from 'react-day-picker';
-import { format, startOfMonth } from 'date-fns';
-import { he } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { Loader2, Wand2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { useFirebase } from '@/firebase';
+import { format } from 'date-fns';
+import { he } from 'date-fns/locale';
 
-const chartData = [
-  { name: 'שבוע 1', income: 1200, expenses: 800 },
-  { name: 'שבוע 2', income: 950, expenses: 1100 },
-  { name: 'שבוע 3', income: 1500, expenses: 700 },
-  { name: 'שבוע 4', income: 1100, expenses: 900 },
-];
+interface ChartData {
+  name: string;
+  income: number;
+  expenses: number;
+}
 
 export function ReportView() {
   const [isPending, startTransition] = useTransition();
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: startOfMonth(new Date()),
-    to: new Date(),
-  });
   const [summary, setSummary] = useState<string | null>(null);
+  const [chartData, setChartData] = useState<ChartData[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const { auth, user, isUserLoading } = useFirebase();
+  const { user } = useFirebase();
 
   const handleGenerateReport = useCallback(() => {
-    if (!date?.from || !date?.to || !user) return;
+    if (!user) return;
     
     startTransition(async () => {
       setError(null);
       setSummary(null);
+      setChartData([]);
 
       try {
         const token = await user.getIdToken();
@@ -47,7 +39,7 @@ export function ReportView() {
         const response = await fetch('/api/report', {
           method: 'POST',
           headers,
-          body: JSON.stringify({ startDate: date.from, endDate: date.to }),
+          // No body is needed as the server action calculates the date range
         });
 
         if (!response.ok) {
@@ -60,70 +52,25 @@ export function ReportView() {
           setError(result.error);
         } else {
           setSummary(result.summary);
+          setChartData(result.chartData || []);
         }
       } catch (e) {
         console.error("Failed to generate report:", e);
         setError("An unexpected error occurred while generating the report.");
       }
     });
-  }, [date, user]);
+  }, [user]);
 
   useEffect(() => {
+    // Automatically generate report when the component mounts and the user is available
     if (user) {
       handleGenerateReport();
     }
-  }, [user, date, handleGenerateReport]);
+  }, [user, handleGenerateReport]);
 
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>הפקת דוח</CardTitle>          
-          <CardDescription>בחר טווח תאריכים כדי לראות דוח כספי.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row gap-4 items-center">
-            <Popover>
-                <PopoverTrigger asChild>
-                <Button
-                    id="date"
-                    variant={"outline"}
-                    className={cn(
-                    "w-[300px] justify-start text-right font-normal",
-                    !date && "text-muted-foreground"
-                    )}
-                >
-                    <CalendarIcon className="ms-2 h-4 w-4" />
-                    {date?.from ? (
-                    date.to ? (
-                        <>
-                        {format(date.from, "LLL dd, y", { locale: he })} -{" "}
-                        {format(date.to, "LLL dd, y", { locale: he })}
-                        </>
-                    ) : (
-                        format(date.from, "LLL dd, y", { locale: he })
-                    )
-                    ) : (
-                    <span>בחר תאריך</span>
-                    )}
-                </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={date?.from}
-                    selected={date}
-                    onSelect={setDate}
-                    numberOfMonths={2}
-                    locale={he}
-                    disabled={isPending}
-                />
-                </PopoverContent>
-            </Popover>
-        </CardContent>
-      </Card>
-      
       {isPending && (
          <div className="flex items-center justify-center p-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -131,31 +78,32 @@ export function ReportView() {
          </div>
       )}
 
-      {error && (
+      {error && !isPending && (
         <Alert variant="destructive">
             <AlertTitle>שגיאה</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      {summary && (
-        <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="bg-primary/5 border-primary/20">
+      {!isPending && (summary || chartData.length > 0) && (
+        <div className="grid gap-6 lg:grid-cols-5">
+            <Card className="lg:col-span-2 bg-primary/5 border-primary/20">
                 <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Wand2 className="text-primary"/>
                     סיכום AI
                 </CardTitle>
-                <CardDescription>סיכום וניתוח של התקופה שנבחרה.</CardDescription>
+                <CardDescription>ניתוח חכם של הפעילות הפיננסית שלך ב-6 החודשים האחרונים.</CardDescription>
                 </CardHeader>
                 <CardContent>
                 <p className="whitespace-pre-wrap leading-relaxed">{summary}</p>
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="lg:col-span-3">
                 <CardHeader>
                     <CardTitle>הכנסות מול הוצאות</CardTitle>
+                    <CardDescription>סקירה חודשית за 6 החודשים האחרונים.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
