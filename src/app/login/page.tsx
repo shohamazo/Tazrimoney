@@ -57,7 +57,6 @@ export default function LoginPage() {
   const emailOrPhone = watch('emailOrPhone');
 
   useEffect(() => {
-    // Basic check to see if input is likely a phone number
     setIsPhoneAuth(/^\+?[0-9\s-]{8,}$/.test(emailOrPhone));
   }, [emailOrPhone]);
   
@@ -67,6 +66,12 @@ export default function LoginPage() {
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
+        'callback': (response: any) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
+        },
+        'expired-callback': () => {
+          // Response expired. Ask user to solve reCAPTCHA again.
+        }
       });
     }
   }, [auth]);
@@ -128,6 +133,10 @@ export default function LoginPage() {
               break;
             case 'auth/too-many-requests':
               description = 'Too many requests. Please try again later.';
+              verifier.render().then((widgetId) => {
+                // @ts-ignore
+                window.grecaptcha?.reset(widgetId);
+              });
               break;
             case 'auth/invalid-verification-code':
               description = 'The verification code is incorrect. Please try again.';
@@ -141,10 +150,6 @@ export default function LoginPage() {
           title: `Error`,
           description: description,
         });
-        if (verifier.render) {
-          // @ts-ignore
-          window.grecaptcha?.reset(window.recaptchaWidgetId);
-        }
       }
     });
   };
@@ -168,7 +173,7 @@ export default function LoginPage() {
 
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
-       <div id="recaptcha-container"></div>
+      <div id="recaptcha-container"></div>
       <div className="flex items-center justify-center p-6 lg:p-10">
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">

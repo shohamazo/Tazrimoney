@@ -67,7 +67,7 @@ export async function sendPhoneVerificationCode(phoneNumber: string, verifier: R
     } else if (cleanNumber.startsWith('0')) {
         // Replace leading 0 with country code
         cleanNumber = `+972${cleanNumber.substring(1)}`;
-    } else {
+    } else if (cleanNumber.length > 0) {
         // Assume it's a local number without a leading 0 and add country code
         cleanNumber = `+972${cleanNumber}`;
     }
