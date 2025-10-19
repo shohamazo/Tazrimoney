@@ -60,7 +60,7 @@ export default function LoginPage() {
     // Basic check to see if input is likely a phone number
     setIsPhoneAuth(/^\+?[0-9\s-]{8,}$/.test(emailOrPhone));
   }, [emailOrPhone]);
-
+  
   useEffect(() => {
     if (!auth) return;
 
@@ -141,14 +141,9 @@ export default function LoginPage() {
           title: `Error`,
           description: description,
         });
-         if (verifier.render) {
-            verifier.render().then((widgetId) => {
-                // @ts-ignore
-                if (window.grecaptcha) {
-                    // @ts-ignore
-                    window.grecaptcha.reset(widgetId);
-                }
-            });
+        if (verifier.render) {
+          // @ts-ignore
+          window.grecaptcha?.reset(window.recaptchaWidgetId);
         }
       }
     });
@@ -260,5 +255,6 @@ export default function LoginPage() {
 declare global {
   interface Window {
     recaptchaVerifier?: RecaptchaVerifier;
+    recaptchaWidgetId?: number;
   }
 }
