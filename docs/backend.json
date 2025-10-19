@@ -131,20 +131,20 @@
           "type": "string",
           "description": "Category for the budget (e.g., recurring expenses)."
         },
-        "plannedSpending": {
+        "planned": {
           "type": "number",
           "description": "Planned spending amount for the category."
         },
         "alertThreshold": {
           "type": "number",
-          "description": "Threshold at which an alert is triggered."
+          "description": "Percentage threshold (0-100) at which an alert is triggered."
         }
       },
       "required": [
         "id",
         "userId",
         "category",
-        "plannedSpending",
+        "planned",
         "alertThreshold"
       ]
     },

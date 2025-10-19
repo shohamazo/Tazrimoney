@@ -1,14 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Pencil, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { BudgetCard } from '@/components/budget/budget-card';
 import type { Budget, Expense } from '@/lib/types';
 import { EditBudgetDialog } from '@/components/budget/edit-budget-dialog';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, Timestamp } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { startOfMonth } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 export const budgetCategories = ['אוכל', 'תחבורה', 'בילויים', 'שכר דירה', 'חשבונות', 'אחר'];
 
@@ -17,6 +18,8 @@ export default function BudgetPage() {
   const [selectedBudget, setSelectedBudget] = React.useState<Budget | null>(null);
 
   const { firestore, user, isUserLoading } = useFirebase();
+  const { toast } = useToast();
+  const triggeredAlerts = useRef<Set<string>>(new Set());
 
   const budgetsQuery = useMemoFirebase(
     () => (firestore && user ? collection(firestore, 'users', user.uid, 'budgets') : null),
@@ -44,11 +47,32 @@ export default function BudgetPage() {
       return {
         id: budgetConfig?.id || category,
         category: category,
-        planned: budgetConfig?.planned || 0,
-        spent: spent
+        planned: budgetConfig?.planned ?? 1000,
+        spent: spent,
+        alertThreshold: budgetConfig?.alertThreshold ?? 80, // Default to 80%
       };
     });
   }, [budgetsData, expenses]);
+  
+  useEffect(() => {
+    budgets.forEach(budget => {
+      const { category, planned, spent, alertThreshold } = budget;
+      const alertId = `${user?.uid}-${category}`;
+      const thresholdAmount = planned * (alertThreshold / 100);
+
+      if (spent >= thresholdAmount && !triggeredAlerts.current.has(alertId)) {
+        toast({
+          variant: "destructive",
+          title: "התראת תקציב",
+          description: `חרגת מסף ההתראה (${alertThreshold}%) עבור קטגוריית "${category}".`,
+        });
+        triggeredAlerts.current.add(alertId);
+      } else if (spent < thresholdAmount && triggeredAlerts.current.has(alertId)) {
+        // Optional: Reset alert if spending drops below threshold (e.g., due to a returned item)
+        triggeredAlerts.current.delete(alertId);
+      }
+    });
+  }, [budgets, toast, user?.uid]);
 
 
   const handleEdit = (budget: Budget) => {

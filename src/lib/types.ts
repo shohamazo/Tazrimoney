@@ -28,4 +28,5 @@ export type Budget = {
   category: string;
   planned: number;
   spent: number;
+  alertThreshold: number; // Percentage (0-100)
 };
