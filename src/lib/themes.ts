@@ -51,8 +51,13 @@ export const themes: { [key: string]: Theme } = {
         accent: '55 99% 61.6%',
         'accent-foreground': '235 63% 15%',
         'sidebar-background': '235 63% 30%',
+        'sidebar-foreground': '0 0% 92%',
+        'sidebar-primary': '55 99% 61.6%',
+        'sidebar-primary-foreground': '235 63% 15%',
         'sidebar-accent': '235 63% 40%',
         'sidebar-accent-foreground': '0 0% 98%',
+        'sidebar-border': '235 63% 40%',
+        'sidebar-ring': '55 99% 70%',
       },
       dark: {
         background: '233 30% 11%',
@@ -62,8 +67,13 @@ export const themes: { [key: string]: Theme } = {
         accent: '55 99% 61.6%',
         'accent-foreground': '235 63% 15%',
         'sidebar-background': '233 30% 14%',
+        'sidebar-foreground': '0 0% 92%',
+        'sidebar-primary': '55 99% 61.6%',
+        'sidebar-primary-foreground': '235 63% 15%',
         'sidebar-accent': '233 30% 24%',
         'sidebar-accent-foreground': '0 0% 98%',
+        'sidebar-border': '233 30% 24%',
+        'sidebar-ring': '55 99% 70%',
       },
     },
   },
@@ -278,3 +288,5 @@ export const themes: { [key: string]: Theme } = {
     },
   },
 };
+
+    
