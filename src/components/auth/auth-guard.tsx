@@ -43,9 +43,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           // Profile doesn't exist, create it for the new user
           const newProfile: UserProfile = {
             id: user.uid,
-            email: user.email || undefined,
-            displayName: user.displayName || user.phoneNumber || undefined,
-            photoURL: user.photoURL || undefined,
+            email: user.email || null,
+            displayName: user.displayName || user.phoneNumber || null,
+            photoURL: user.photoURL || null,
             onboardingComplete: false,
           };
           await setDoc(userProfileRef!, newProfile);
