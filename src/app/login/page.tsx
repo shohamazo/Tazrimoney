@@ -262,5 +262,3 @@ declare global {
     recaptchaVerifier?: RecaptchaVerifier;
   }
 }
-
-    
