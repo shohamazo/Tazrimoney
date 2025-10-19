@@ -17,15 +17,19 @@ import * as z from 'zod';
 import { PiggyBank, Loader2 } from 'lucide-react';
 import {
   handleGoogleSignIn,
-  handleEmailSignUp,
-  handleEmailSignIn,
+  handlePhoneSignUp,
+  handlePhoneSignIn,
 } from '@/firebase/auth-actions';
 import { useTransition } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
+const phoneRegex = new RegExp(
+  /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
+);
+
 const signUpSchema = z
   .object({
-    email: z.string().email('כתובת אימייל לא תקינה.'),
+    phone: z.string().regex(phoneRegex, 'מספר טלפון לא תקין.'),
     password: z.string().min(6, 'הסיסמה חייבת להכיל לפחות 6 תווים.'),
     confirmPassword: z.string(),
   })
@@ -35,7 +39,7 @@ const signUpSchema = z
   });
 
 const signInSchema = z.object({
-  email: z.string().email('כתובת אימייל לא תקינה.'),
+  phone: z.string().regex(phoneRegex, 'מספר טלפון לא תקין.'),
   password: z.string().min(1, 'יש להזין סיסמה.'),
 });
 
@@ -69,7 +73,7 @@ export default function LoginPage() {
   };
   const onSignUp = (data: SignUpFormData) => {
     startTransition(() => {
-      handleEmailSignUp(data.email, data.password).catch((error) => {
+      handlePhoneSignUp(data.phone, data.password).catch((error) => {
         toast({
           variant: 'destructive',
           title: 'שגיאת הרשמה',
@@ -80,11 +84,11 @@ export default function LoginPage() {
   };
   const onSignIn = (data: SignInFormData) => {
     startTransition(() => {
-      handleEmailSignIn(data.email, data.password).catch((error) => {
+      handlePhoneSignIn(data.phone, data.password).catch((error) => {
         toast({
           variant: 'destructive',
           title: 'שגיאת התחברות',
-          description: 'אימייל או סיסמה שגויים. נסה שוב.',
+          description: 'מספר טלפון או סיסמה שגויים. נסה שוב.',
         });
       });
     });
@@ -116,16 +120,16 @@ export default function LoginPage() {
             <form onSubmit={handleSubmitSignIn(onSignIn)}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email-in">אימייל</Label>
+                  <Label htmlFor="phone-in">מספר טלפון</Label>
                   <Input
-                    id="email-in"
-                    type="email"
-                    placeholder="m@example.com"
-                    {...registerSignIn('email')}
+                    id="phone-in"
+                    type="tel"
+                    placeholder="050-123-4567"
+                    {...registerSignIn('phone')}
                   />
-                  {signInErrors.email && (
+                  {signInErrors.phone && (
                     <p className="text-xs text-destructive">
-                      {signInErrors.email.message}
+                      {signInErrors.phone.message}
                     </p>
                   )}
                 </div>
@@ -167,16 +171,16 @@ export default function LoginPage() {
             <form onSubmit={handleSubmitSignUp(onSignUp)}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email-up">אימייל</Label>
+                  <Label htmlFor="phone-up">מספר טלפון</Label>
                   <Input
-                    id="email-up"
-                    type="email"
-                    placeholder="m@example.com"
-                    {...registerSignUp('email')}
+                    id="phone-up"
+                    type="tel"
+                    placeholder="050-123-4567"
+                    {...registerSignUp('phone')}
                   />
-                   {signUpErrors.email && (
+                   {signUpErrors.phone && (
                     <p className="text-xs text-destructive">
-                      {signUpErrors.email.message}
+                      {signUpErrors.phone.message}
                     </p>
                   )}
                 </div>
@@ -255,3 +259,4 @@ export default function LoginPage() {
     </div>
   );
 }
+    
