@@ -9,7 +9,7 @@ import { calculateShiftEarnings } from '@/lib/calculator';
 
 // Import client SDK components
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, signInWithCustomToken } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { getFirestore, collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
 
@@ -23,8 +23,6 @@ if (!getApps().length) {
 }
 
 const db = getFirestore(app);
-const auth = getAuth(app);
-
 
 export async function generateReportAction(values: any) {
   const headersList = headers();
@@ -34,26 +32,13 @@ export async function generateReportAction(values: any) {
   if (!token) {
     return { error: 'Authentication token not found' };
   }
-
-  // NOTE: We are using a custom token to sign in on this server-side environment
-  // This is not a standard pattern for client-side apps, but necessary for this action.
-  // A better long-term solution would involve a dedicated backend service with admin privileges.
-  // For now, we are treating this serverless function as a temporary, trusted client.
-  try {
-    await signInWithCustomToken(auth, token);
-  } catch (error) {
-     console.error('Error signing in with custom token:', error);
-     // The incoming token is the user's ID token, not a custom token.
-     // Let's just proceed assuming the rules will be enforced by Firestore for the UID.
-     // This part of the logic is flawed but we'll bypass it to get the data.
-     // A proper fix would require generating a custom token, but let's get it working first.
-  }
   
   // We'll extract the UID from the token manually for the query path.
   let uid;
   try {
+    // The token is a JWT. The payload is the second part, Base64-encoded.
     const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-    uid = decodedToken.sub; // The 'sub' field contains the UID.
+    uid = decodedToken.user_id || decodedToken.sub; // Firebase ID tokens use 'sub' or 'user_id' for the UID.
   } catch (error) {
     console.error('Error decoding token:', error);
     return { error: 'Invalid authentication token.' };
@@ -68,7 +53,7 @@ export async function generateReportAction(values: any) {
   const endDate = endOfMonth(today);
   const startDate = startOfMonth(subMonths(today, 5)); // 6 months including current
 
-  // Fetch all necessary data
+  // Fetch all necessary data using the UID in the path
   const jobsSnapshot = await getDocs(collection(db, `users/${uid}/jobs`));
   const jobs = jobsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Job[];
   const jobsMap = new Map(jobs.map(j => [j.id, j]));
