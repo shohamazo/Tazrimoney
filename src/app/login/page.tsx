@@ -88,7 +88,8 @@ export default function LoginPage() {
       
       try {
         if (isPhoneAuth) {
-          // For phone auth, sign-in and sign-up are the same flow.
+          // For phone auth, sign-in and sign-up are the same flow on Firebase,
+          // but we can add a client-side check to guide the user.
           if (confirmationResult) {
             // Step 2: Verify code
             await verifyPhoneCode(confirmationResult, data.code || '');
@@ -128,13 +129,13 @@ export default function LoginPage() {
               description = 'This email is already in use. Please try signing in instead.';
               break;
             case 'auth/user-not-found':
-              description = 'No account found with this email/phone. Please sign up first.';
-              // For phone auth, this error might not be thrown as Firebase handles both cases.
-              // But if it is, we can guide the user.
-              if (isPhoneAuth) {
-                description = "Sending verification code to new number.";
-                // We can proceed to send the code as the flow is the same.
-                // The main logic already handles this, but we prevent showing a scary error.
+              if (authMode === 'signin') {
+                description = 'No account found with this email/phone. Please sign up first.';
+              } else {
+                // This is expected during signup, so we don't show an error.
+                // The phone verification code is sent anyway.
+                // We'll proceed with the flow set up by the `else` block outside the catch.
+                return; 
               }
               break;
             case 'auth/wrong-password':
@@ -229,7 +230,7 @@ export default function LoginPage() {
                 ) : confirmationResult ? (
                   'אימות והתחברות'
                 ) : isPhoneAuth ? (
-                  'שלח קוד ב-SMS'
+                  authMode === 'signin' ? 'התחברות עם SMS' : 'הרשמה עם SMS'
                 ) : (
                   authMode === 'signin' ? 'התחברות' : 'יצירת חשבון'
                 )}
@@ -276,5 +277,4 @@ declare global {
     grecaptcha?: any;
   }
 }
-
-  
+    
