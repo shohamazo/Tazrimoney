@@ -2,145 +2,198 @@
  * @fileoverview Firestore Security Rules for Tazrimony Application
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model. Each user can only
- * access their own data, and no data can be accessed without authentication.
+ * This ruleset enforces a strict user-ownership model. Only the authenticated user can access their own data,
+ * and no user can access another user's data.
  *
  * Data Structure:
- * All data is nested under /users/{userId}, with subcollections for shifts,
- * expenses, budgets, and jobs. This structure ensures clear ownership and
- * simplifies security rules.
+ * All data is nested under /users/{userId}, and further organized into subcollections for shifts, expenses, budgets, and jobs.
  *
  * Key Security Decisions:
- * - User listing is explicitly denied to protect user privacy.
- * - All write operations require authentication.
- * - Data consistency between the path and document's internal user ID is enforced.
+ * - Users can only create, read, update, and delete their own data.
+ * - Listing other user's data is forbidden.
+ * - The structure is designed to avoid the need for `get()` calls in security rules, enhancing performance and security.
+ * - All write operations require the user to be authenticated.
  *
  * Denormalization for Authorization:
- * The data model is designed such that authorization checks do not require
- * additional reads. Each document contains the userId, allowing rules to
- * validate ownership based on the document's content and the request's
- * authentication state.
+ * The data structure is designed such that `userId` is implicitly available in the path,
+ * eliminating the need to denormalize user IDs into the documents themselves.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Enforces user-level access control for user profiles.
+     * @description Secures the root user document. Allows a user to create their own document.
      * @path /users/{userId}
-     * @allow (create) Signed-in user creates their own profile.
-     * @allow (get) Signed-in user retrieves their own profile.
-     * @allow (update) Signed-in user updates their own profile.
-     * @allow (delete) Signed-in user deletes their own profile.
-     * @deny (create) User attempts to create a profile with a mismatched user ID.
-     * @deny (get) User attempts to retrieve another user's profile.
-     * @deny (update) User attempts to update another user's profile.
-     * @deny (delete) User attempts to delete another user's profile.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) - Authenticated user creates their own user document with matching userId.
+     * @deny (create) - Unauthenticated user attempts to create a user document.
+     * @deny (create) - Authenticated user attempts to create a user document with a mismatched userId.
+     * @allow (get) - Authenticated user fetches their own user document.
+     * @deny (get) - Authenticated user fetches a different user document.
+     * @allow (update) - Authenticated user updates their own user document.
+     * @deny (update) - Authenticated user attempts to update a different user document.
+     * @allow (delete) - Authenticated user deletes their own user document.
+     * @deny (delete) - Authenticated user attempts to delete a different user document.
+     * @allow (list) - Listing user documents is not allowed.
+     * @principle Enforces document ownership and prevents unauthorized access to user profiles.
      */
     match /users/{userId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+      allow create: if isOwner(userId);
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-level access control for shifts.
+     * @description Secures shifts subcollection under a user's document. Allows the owner to manage their shifts.
      * @path /users/{userId}/shifts/{shiftId}
-     * @allow (create) Signed-in user creates a shift for themselves.
-     * @allow (get) Signed-in user retrieves their own shift.
-     * @allow (update) Signed-in user updates their own shift.
-     * @allow (delete) Signed-in user deletes their own shift.
-     * @deny (create) User attempts to create a shift for another user.
-     * @deny (get) User attempts to retrieve another user's shift.
-     * @deny (update) User attempts to update another user's shift.
-     * @deny (delete) User attempts to delete another user's shift.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) - Authenticated user creates a shift under their own user document.
+     * @deny (create) - Unauthenticated user attempts to create a shift.
+     * @deny (create) - Authenticated user attempts to create a shift under a different user's document.
+     * @allow (get) - Authenticated user fetches a shift under their own user document.
+     * @deny (get) - Authenticated user fetches a shift under a different user's document.
+     * @allow (update) - Authenticated user updates a shift under their own user document.
+     * @deny (update) - Authenticated user attempts to update a shift under a different user's document.
+     * @allow (delete) - Authenticated user deletes a shift under their own user document.
+     * @deny (delete) - Authenticated user attempts to delete a shift under a different user's document.
+     * @allow (list) - Authenticated user lists shifts under their own user document.
+     * @deny (list) - Authenticated user lists shifts under a different user's document.
+     * @principle Enforces document ownership and restricts access to shifts to the owning user.
      */
     match /users/{userId}/shifts/{shiftId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+      allow create: if isOwner(userId);
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-level access control for expenses.
+     * @description Secures expenses subcollection under a user's document. Allows the owner to manage their expenses.
      * @path /users/{userId}/expenses/{expenseId}
-     * @allow (create) Signed-in user creates an expense for themselves.
-     * @allow (get) Signed-in user retrieves their own expense.
-     * @allow (update) Signed-in user updates their own expense.
-     * @allow (delete) Signed-in user deletes their own expense.
-     * @deny (create) User attempts to create an expense for another user.
-     * @deny (get) User attempts to retrieve another user's expense.
-     * @deny (update) User attempts to update another user's expense.
-     * @deny (delete) User attempts to delete another user's expense.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) - Authenticated user creates an expense under their own user document.
+     * @deny (create) - Unauthenticated user attempts to create an expense.
+     * @deny (create) - Authenticated user attempts to create an expense under a different user's document.
+     * @allow (get) - Authenticated user fetches an expense under their own user document.
+     * @deny (get) - Authenticated user fetches an expense under a different user's document.
+     * @allow (update) - Authenticated user updates an expense under their own user document.
+     * @deny (update) - Authenticated user attempts to update an expense under a different user's document.
+     * @allow (delete) - Authenticated user deletes an expense under their own user document.
+     * @deny (delete) - Authenticated user attempts to delete an expense under a different user's document.
+     * @allow (list) - Authenticated user lists expenses under their own user document.
+     * @deny (list) - Authenticated user lists expenses under a different user's document.
+     * @principle Enforces document ownership and restricts access to expenses to the owning user.
      */
     match /users/{userId}/expenses/{expenseId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+      allow create: if isOwner(userId);
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-level access control for budgets.
+     * @description Secures budgets subcollection under a user's document. Allows the owner to manage their budgets.
      * @path /users/{userId}/budgets/{budgetId}
-     * @allow (create) Signed-in user creates a budget for themselves.
-     * @allow (get) Signed-in user retrieves their own budget.
-     * @allow (update) Signed-in user updates their own budget.
-     * @allow (delete) Signed-in user deletes their own budget.
-     * @deny (create) User attempts to create a budget for another user.
-     * @deny (get) User attempts to retrieve another user's budget.
-     * @deny (update) User attempts to update another user's budget.
-     * @deny (delete) User attempts to delete another user's budget.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) - Authenticated user creates a budget under their own user document.
+     * @deny (create) - Unauthenticated user attempts to create a budget.
+     * @deny (create) - Authenticated user attempts to create a budget under a different user's document.
+     * @allow (get) - Authenticated user fetches a budget under their own user document.
+     * @deny (get) - Authenticated user fetches a budget under a different user's document.
+     * @allow (update) - Authenticated user updates a budget under their own user document.
+     * @deny (update) - Authenticated user attempts to update a budget under a different user's document.
+     * @allow (delete) - Authenticated user deletes a budget under their own user document.
+     * @deny (delete) - Authenticated user attempts to delete a budget under a different user's document.
+     * @allow (list) - Authenticated user lists budgets under their own user document.
+     * @deny (list) - Authenticated user lists budgets under a different user's document.
+     * @principle Enforces document ownership and restricts access to budgets to the owning user.
      */
     match /users/{userId}/budgets/{budgetId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+      allow create: if isOwner(userId);
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-level access control for jobs.
+     * @description Secures jobs subcollection under a user's document. Allows the owner to manage their jobs.
      * @path /users/{userId}/jobs/{jobId}
-     * @allow (create) Signed-in user creates a job for themselves.
-     * @allow (get) Signed-in user retrieves their own job.
-     * @allow (update) Signed-in user updates their own job.
-     * @allow (delete) Signed-in user deletes their own job.
-     * @deny (create) User attempts to create a job for another user.
-     * @deny (get) User attempts to retrieve another user's job.
-     * @deny (update) User attempts to update another user's job.
-     * @deny (delete) User attempts to delete another user's job.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) - Authenticated user creates a job under their own user document.
+     * @deny (create) - Unauthenticated user attempts to create a job.
+     * @deny (create) - Authenticated user attempts to create a job under a different user's document.
+     * @allow (get) - Authenticated user fetches a job under their own user document.
+     * @deny (get) - Authenticated user fetches a job under a different user's document.
+     * @allow (update) - Authenticated user updates a job under their own user document.
+     * @deny (update) - Authenticated user attempts to update a job under a different user's document.
+     * @allow (delete) - Authenticated user deletes a job under their own user document.
+     * @deny (delete) - Authenticated user attempts to delete a job under a different user's document.
+     * @allow (list) - Authenticated user lists jobs under their own user document.
+     * @deny (list) - Authenticated user lists jobs under a different user's document.
+     * @principle Enforces document ownership and restricts access to jobs to the owning user.
      */
     match /users/{userId}/jobs/{jobId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+      allow create: if isOwner(userId);
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
-    }
-
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
     }
   }
 }
