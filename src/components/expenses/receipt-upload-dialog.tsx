@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Upload, ScanLine, Camera, RefreshCw, CircleDot } from 'lucide-react';
+import { Loader2, Upload, Camera, RefreshCw, CircleDot } from 'lucide-react';
 import { analyzeReceipt } from '@/ai/flows/analyze-receipt-flow';
 import { useToast } from '@/hooks/use-toast';
 import type { Expense } from '@/lib/types';
@@ -107,6 +107,13 @@ export function ReceiptUploadDialog({ isOpen, onOpenChange, onReceiptAnalyzed }:
       setError(null);
       try {
         const result = await analyzeReceipt({ photoDataUri: preview });
+
+        // Validate the AI's output
+        if (!result.amount || result.amount === 0 || !result.vendor) {
+          setError("לא הצלחנו לחלץ את כל הפרטים מהקבלה. נסה לצלם תמונה ברורה יותר, בתאורה טובה, ונסה שוב.");
+          return;
+        }
+
         const expenseData: Partial<Expense> = {
           amount: result.amount,
           date: result.date as any, // Will be parsed in the next dialog
@@ -131,7 +138,8 @@ export function ReceiptUploadDialog({ isOpen, onOpenChange, onReceiptAnalyzed }:
     setFile(null);
     setPreview(null);
     setError(null);
-    setHasCameraPermission(null);
+    // Do not reset camera permission, as the user has already granted it.
+    // setHasCameraPermission(null); 
   };
   
   const handleOpenChange = (open: boolean) => {
@@ -210,8 +218,7 @@ export function ReceiptUploadDialog({ isOpen, onOpenChange, onReceiptAnalyzed }:
         <DialogFooter>
           <Button variant="ghost" onClick={() => handleOpenChange(false)} disabled={isPending}>ביטול</Button>
           <Button onClick={handleAnalyze} disabled={!preview || isPending}>
-            {isPending ? <Loader2 className="animate-spin ms-2" /> : <ScanLine className="ms-2 h-4 w-4" />}
-            נתח קבלה
+            {isPending ? <Loader2 className="animate-spin ms-2" /> : 'נתח קבלה'}
           </Button>
         </DialogFooter>
       </DialogContent>
