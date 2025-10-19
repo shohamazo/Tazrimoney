@@ -59,54 +59,56 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
     const formatTime = (date: Date) => date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
 
     return (
-        <div className="w-full overflow-x-auto rounded-lg border">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>עבודה</TableHead>
-                        <TableHead>תאריך</TableHead>
-                        <TableHead>התחלה</TableHead>
-                        <TableHead>סיום</TableHead>
-                        <TableHead>משך</TableHead>
-                        <TableHead>תעריף</TableHead>
-                        <TableHead>רווח (מוערך)</TableHead>
-                        <TableHead className="text-left"></TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {shiftsWithDetails.map((shift) => (
-                        <TableRow key={shift.id}>
-                            <TableCell className="font-medium whitespace-nowrap"><Badge variant="secondary">{shift.jobName}</Badge></TableCell>
-                            <TableCell className="whitespace-nowrap">{formatDate(shift.start)}</TableCell>
-                            <TableCell>{formatTime(shift.start)}</TableCell>
-                            <TableCell>{formatTime(shift.end)}</TableCell>
-                            <TableCell>{shift.duration}</TableCell>
-                            <TableCell>₪{shift.hourlyRate.toFixed(2)}</TableCell>
-                            <TableCell className="text-green-600 font-medium whitespace-nowrap">₪{shift.earnings.toFixed(2)}</TableCell>
-                            <TableCell className="text-left">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="h-8 w-8 p-0">
-                                            <span className="sr-only">פתח תפריט</span>
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => onEdit(shift)}>
-                                            <Pencil className="ms-2 h-4 w-4" />
-                                            <span>עריכה</span>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleDelete(shift.id)} className="text-destructive focus:text-destructive">
-                                            <Trash2 className="ms-2 h-4 w-4" />
-                                            <span>מחיקה</span>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
+        <div className="w-full rounded-lg border">
+            <div className="w-full overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>עבודה</TableHead>
+                            <TableHead>תאריך</TableHead>
+                            <TableHead>התחלה</TableHead>
+                            <TableHead>סיום</TableHead>
+                            <TableHead>משך</TableHead>
+                            <TableHead>תעריף</TableHead>
+                            <TableHead>רווח (מוערך)</TableHead>
+                            <TableHead className="text-left"></TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {shiftsWithDetails.map((shift) => (
+                            <TableRow key={shift.id}>
+                                <TableCell className="font-medium whitespace-nowrap"><Badge variant="secondary">{shift.jobName}</Badge></TableCell>
+                                <TableCell className="whitespace-nowrap">{formatDate(shift.start)}</TableCell>
+                                <TableCell>{formatTime(shift.start)}</TableCell>
+                                <TableCell>{formatTime(shift.end)}</TableCell>
+                                <TableCell>{shift.duration}</TableCell>
+                                <TableCell>₪{shift.hourlyRate.toFixed(2)}</TableCell>
+                                <TableCell className="text-green-600 font-medium whitespace-nowrap">₪{shift.earnings.toFixed(2)}</TableCell>
+                                <TableCell className="text-left">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                                <span className="sr-only">פתח תפריט</span>
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => onEdit(shift)}>
+                                                <Pencil className="ms-2 h-4 w-4" />
+                                                <span>עריכה</span>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleDelete(shift.id)} className="text-destructive focus:text-destructive">
+                                                <Trash2 className="ms-2 h-4 w-4" />
+                                                <span>מחיקה</span>
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
         </div>
     );
 }

@@ -120,10 +120,10 @@ export function ClockInOut({ jobs }: { jobs: Job[] }) {
         <CardTitle>שעון נוכחות</CardTitle>
         <CardDescription>התחל וסיים משמרת בלחיצת כפתור.</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+      <CardContent className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
         {activeShift ? (
           <>
-            <div className="flex w-full items-center gap-3 rounded-md bg-secondary p-3 sm:flex-1">
+            <div className="flex w-full items-center gap-3 rounded-md bg-secondary p-3 flex-1">
                 <Timer className="h-6 w-6 text-primary" />
                 <div className="flex-1">
                     <p className="text-sm text-muted-foreground">משמרת פעילה ב: <span className="font-bold text-foreground">{getJobName(activeShift.jobId)}</span></p>
@@ -137,7 +137,7 @@ export function ClockInOut({ jobs }: { jobs: Job[] }) {
           </>
         ) : (
           <>
-            <div className="w-full shrink-0 sm:w-64">
+            <div className="w-full sm:w-64">
               <Select onValueChange={setSelectedJobId} defaultValue={selectedJobId} dir="rtl">
                 <SelectTrigger>
                   <SelectValue placeholder="בחר עבודה" />
