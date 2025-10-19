@@ -14,12 +14,12 @@ import {z} from 'genkit';
 const SummarizeShiftDataInputSchema = z.object({
   startDate: z.string().describe('The start date for the shift data summary.'),
   endDate: z.string().describe('The end date for the shift data summary.'),
-  shiftData: z.string().describe('JSON string of shift data for the period, array of objects with start and end times, and job types.'),
+  shiftData: z.string().describe('JSON string of shift data for the period, array of objects with start and end times, job types and hourly rates.'),
 });
 export type SummarizeShiftDataInput = z.infer<typeof SummarizeShiftDataInputSchema>;
 
 const SummarizeShiftDataOutputSchema = z.object({
-  summary: z.string().describe('A summary of the shift data, including total hours worked, total earnings, and a breakdown by job type.'),
+  summary: z.string().describe('A summary of the shift data, including total hours worked, total earnings, and a breakdown by job type with hourly rates.'),
 });
 export type SummarizeShiftDataOutput = z.infer<typeof SummarizeShiftDataOutputSchema>;
 
@@ -33,13 +33,13 @@ const prompt = ai.definePrompt({
   output: {schema: SummarizeShiftDataOutputSchema},
   prompt: `You are a financial assistant that helps users summarize their shift data.
 
-You will receive shift data, a start date, and an end date. You will calculate the total hours worked, total earnings, and a breakdown by job type.
+You will receive shift data, a start date, and an end date. You will calculate the total hours worked, total earnings, and a breakdown by job type including the hourly rate for each job.
 
 Start Date: {{{startDate}}}
 End Date: {{{endDate}}}
 Shift Data: {{{shiftData}}}
 
-Summary:`, // Removed JSON mode, direct text output
+Summary:`,
 });
 
 const summarizeShiftDataFlow = ai.defineFlow(
