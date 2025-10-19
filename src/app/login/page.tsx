@@ -7,287 +7,281 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { PiggyBank, Loader2 } from 'lucide-react';
 import {
   handleGoogleSignIn,
   handlePasswordSignUp,
   handlePasswordSignIn,
+  sendPhoneVerificationCode,
+  verifyPhoneCode,
 } from '@/firebase/auth-actions';
-import { useTransition } from 'react';
+import { useTransition, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Auth, RecaptchaVerifier } from 'firebase/auth';
+import { useFirebase } from '@/firebase';
 
-const phoneRegex = new RegExp(
-  /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
-);
+const identifierSchema = z.string().min(1, 'Please enter an email or phone number.');
+const passwordSchema = z.string().min(6, 'Password must be at least 6 characters.');
+const codeSchema = z.string().min(6, 'Verification code must be 6 characters.');
 
-const loginIdentifierSchema = z.union([
-    z.string().email('אנא הזן כתובת אימייל או מספר טלפון תקין.'),
-    z.string().regex(phoneRegex, 'אנא הזן כתובת אימייל או מספר טלפון תקין.'),
-]);
+const isEmail = (identifier: string) => z.string().email().safeParse(identifier).success;
 
-
-const signUpSchema = z
-  .object({
-    identifier: loginIdentifierSchema,
-    password: z.string().min(6, 'הסיסמה חייבת להכיל לפחות 6 תווים.'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'הסיסמאות אינן תואמות.',
-    path: ['confirmPassword'],
-  });
-
-const signInSchema = z.object({
-  identifier: loginIdentifierSchema,
-  password: z.string().min(1, 'יש להזין סיסמה.'),
-});
-
-type SignUpFormData = z.infer<typeof signUpSchema>;
-type SignInFormData = z.infer<typeof signInSchema>;
+type LoginStep = 'identifier' | 'password' | 'code';
 
 export default function LoginPage() {
   const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
-  const {
-    register: registerSignUp,
-    handleSubmit: handleSubmitSignUp,
-    formState: { errors: signUpErrors },
-  } = useForm<SignUpFormData>({ resolver: zodResolver(signUpSchema) });
-  const {
-    register: registerSignIn,
-    handleSubmit: handleSubmitSignIn,
-    formState: { errors: signInErrors },
-  } = useForm<SignInFormData>({ resolver: zodResolver(signInSchema) });
+  const [loginStep, setLoginStep] = useState<LoginStep>('identifier');
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [identifier, setIdentifier] = useState('');
+  const [isIdentifierEmail, setIsIdentifierEmail] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<any>(null);
 
-  const onGoogleSignIn = () => {
+  const { toast } = useToast();
+  const router = useRouter();
+  const { auth } = useFirebase();
+
+  // Initialize reCAPTCHA verifier
+  useEffect(() => {
+    if (!auth) return;
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      'size': 'invisible',
+      'callback': () => {
+        // reCAPTCHA solved, allow sign-in
+      }
+    });
+
+    return () => {
+      window.recaptchaVerifier?.clear();
+    };
+  }, [auth]);
+
+  const {
+    register: registerIdentifier,
+    handleSubmit: handleSubmitIdentifier,
+    formState: { errors: identifierErrors },
+  } = useForm<{ identifier: string }>({
+    resolver: zodResolver(z.object({ identifier: identifierSchema })),
+  });
+
+  const {
+    register: registerPassword,
+    handleSubmit: handleSubmitPassword,
+    formState: { errors: passwordErrors },
+  } = useForm<{ password: string }>({
+    resolver: zodResolver(z.object({ password: passwordSchema })),
+  });
+
+  const {
+    register: registerCode,
+    handleSubmit: handleSubmitCode,
+    formState: { errors: codeErrors },
+  } = useForm<{ code: string }>({
+    resolver: zodResolver(z.object({ code: codeSchema })),
+  });
+
+  const handleIdentifierSubmit = (data: { identifier: string }) => {
+    const isMail = isEmail(data.identifier);
+    setIdentifier(data.identifier);
+    setIsIdentifierEmail(isMail);
+
+    if (isMail) {
+      setLoginStep('password');
+    } else {
+      // Phone number flow
+      startTransition(async () => {
+        try {
+          const verifier = window.recaptchaVerifier;
+          const result = await sendPhoneVerificationCode(data.identifier, verifier);
+          setConfirmationResult(result);
+          setLoginStep('code');
+          toast({ title: 'Code Sent', description: 'A verification code has been sent to your phone.' });
+        } catch (error: any) {
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not send verification code. Please check the number and try again.',
+          });
+        }
+      });
+    }
+  };
+
+  const onPasswordSubmit = (data: { password: string }) => {
+    startTransition(async () => {
+      try {
+        if (authMode === 'signup') {
+          await handlePasswordSignUp(identifier, data.password);
+          toast({ title: 'Account Created', description: 'Please check your email to verify your account.' });
+          router.push('/verify-email');
+        } else {
+          await handlePasswordSignIn(identifier, data.password);
+          // AuthGuard will redirect on success
+        }
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: `Error ${authMode === 'signup' ? 'signing up' : 'signing in'}`,
+          description: error.message || 'An unexpected error occurred.',
+        });
+      }
+    });
+  };
+
+  const onCodeSubmit = (data: { code: string }) => {
+    startTransition(async () => {
+      try {
+        await verifyPhoneCode(confirmationResult, data.code);
+        // AuthGuard will redirect on success
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Verification Failed',
+          description: 'The code you entered is incorrect. Please try again.',
+        });
+      }
+    });
+  };
+  
+  const handleGoogleSignInClick = () => {
     startTransition(() => {
       handleGoogleSignIn().catch((error) => {
         toast({
           variant: 'destructive',
-          title: 'שגיאת התחברות',
+          title: 'Sign-in Error',
           description: error.message,
         });
       });
     });
   };
-  const onSignUp = (data: SignUpFormData) => {
-    startTransition(() => {
-      handlePasswordSignUp(data.identifier, data.password).catch((error) => {
-        let message = 'שגיאת הרשמה. אנא נסה שוב.';
-        if (error.code === 'auth/email-already-in-use') {
-            message = 'משתמש עם כתובת אימייל או מספר טלפון זה כבר קיים.';
-        }
-        toast({
-          variant: 'destructive',
-          title: 'שגיאת הרשמה',
-          description: message,
-        });
-      });
-    });
+
+  const resetFlow = () => {
+    setLoginStep('identifier');
+    setIdentifier('');
+    setConfirmationResult(null);
   };
-  const onSignIn = (data: SignInFormData) => {
-    startTransition(() => {
-      handlePasswordSignIn(data.identifier, data.password).catch((error) => {
-        toast({
-          variant: 'destructive',
-          title: 'שגיאת התחברות',
-          description: 'פרטי ההתחברות שגויים. נסה שוב.',
-        });
-      });
-    });
+
+  const renderStep = () => {
+    switch (loginStep) {
+      case 'password':
+        return (
+          <form onSubmit={handleSubmitPassword(onPasswordSubmit)}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" type="password" {...registerPassword('password')} />
+                {passwordErrors.password && (
+                  <p className="text-xs text-destructive">{passwordErrors.password.message}</p>
+                )}
+              </div>
+            </CardContent>
+            <CardFooter className="flex-col gap-4">
+              <Button className="w-full" type="submit" disabled={isPending}>
+                {isPending ? <Loader2 className="animate-spin" /> : (authMode === 'signin' ? 'Sign In' : 'Create Account')}
+              </Button>
+              <Button variant="link" size="sm" onClick={resetFlow}>Back</Button>
+            </CardFooter>
+          </form>
+        );
+      case 'code':
+        return (
+          <form onSubmit={handleSubmitCode(onCodeSubmit)}>
+            <CardHeader>
+                <CardTitle>Enter Code</CardTitle>
+                <CardDescription>Enter the 6-digit code sent to {identifier}.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="code">Verification Code</Label>
+                <Input id="code" type="text" {...registerCode('code')} />
+                {codeErrors.code && (
+                  <p className="text-xs text-destructive">{codeErrors.code.message}</p>
+                )}
+              </div>
+            </CardContent>
+            <CardFooter className="flex-col gap-4">
+              <Button className="w-full" type="submit" disabled={isPending}>
+                {isPending ? <Loader2 className="animate-spin" /> : 'Verify and Sign In'}
+              </Button>
+               <Button variant="link" size="sm" onClick={resetFlow}>Use another number</Button>
+            </CardFooter>
+          </form>
+        );
+      case 'identifier':
+      default:
+        return (
+          <>
+            <CardHeader className="text-center">
+              <CardTitle>{authMode === 'signin' ? 'Sign In' : 'Create Account'}</CardTitle>
+              <CardDescription>Enter your email or phone number to continue.</CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSubmitIdentifier(handleIdentifierSubmit)}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="identifier">Email or Phone Number</Label>
+                  <Input id="identifier" type="text" placeholder="email@example.com or 0501234567" {...registerIdentifier('identifier')} />
+                  {identifierErrors.identifier && (
+                    <p className="text-xs text-destructive">{identifierErrors.identifier.message}</p>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button className="w-full" type="submit" disabled={isPending}>
+                  {isPending ? <Loader2 className="animate-spin" /> : 'Continue'}
+                </Button>
+              </CardFooter>
+            </form>
+             <div className="my-4 px-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                  </div>
+                </div>
+                <Button variant="outline" className="mt-4 w-full" onClick={handleGoogleSignInClick} disabled={isPending}>
+                  {isPending ? <Loader2 className="animate-spin" /> : <> <svg role="img" viewBox="0 0 24 24" className="ms-2 h-4 w-4"> <path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.05 1.05-2.36 1.67-4.06 1.67-3.4 0-6.17-2.83-6.17-6.23s2.77-6.23 6.17-6.23c1.87 0 3.13.78 3.87 1.48l2.6-2.6C16.3 3.83 14.37 3 12.48 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c4.9 0 8.7-3.34 8.7-8.82 0-.64-.07-1.25-.16-1.84z"></path> </svg> Google</>}
+                </Button>
+            </div>
+            <div className="mt-4 text-center text-sm">
+              {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}{' '}
+              <Button variant="link" className="p-0 h-auto" onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}>
+                 {authMode === 'signin' ? 'Sign up' : 'Sign in'}
+              </Button>
+            </div>
+          </>
+        );
+    }
   };
 
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
+      <div id="recaptcha-container" />
       <div className="flex items-center justify-center p-6 lg:p-10">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center text-center lg:hidden">
             <PiggyBank className="size-12 text-primary" />
-            <h1 className="mt-4 text-3xl font-bold tracking-tighter">
-              Tazrimony
-            </h1>
-            <p className="text-muted-foreground">
-              מנהל הכספים האישי שלך לעבודה במשמרות.
-            </p>
+            <h1 className="mt-4 text-3xl font-bold tracking-tighter">Tazrimony</h1>
+            <p className="text-muted-foreground">Your personal finance manager for shift work.</p>
           </div>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">התחברות</TabsTrigger>
-              <TabsTrigger value="signup">הרשמה</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="signin">
-              <Card className="border-0 shadow-none">
-                <CardHeader className="text-center">
-                  <CardTitle>התחברות</CardTitle>
-                  <CardDescription>התחבר לחשבון קיים.</CardDescription>
-                </CardHeader>
-                <form onSubmit={handleSubmitSignIn(onSignIn)}>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="identifier-in">אימייל או מספר טלפון</Label>
-                      <Input
-                        id="identifier-in"
-                        type="text"
-                        placeholder="email@example.com / 0501234567"
-                        {...registerSignIn('identifier')}
-                      />
-                      {signInErrors.identifier && (
-                        <p className="text-xs text-destructive">
-                          {signInErrors.identifier.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="password-in">סיסמה</Label>
-                      <Input
-                        id="password-in"
-                        type="password"
-                        {...registerSignIn('password')}
-                      />
-                      {signInErrors.password && (
-                        <p className="text-xs text-destructive">
-                          {signInErrors.password.message}
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex flex-col gap-4">
-                    <Button
-                      className="w-full"
-                      type="submit"
-                      disabled={isPending}
-                    >
-                      {isPending ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        'התחבר'
-                      )}
-                    </Button>
-                  </CardFooter>
-                </form>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <Card className="border-0 shadow-none">
-                <CardHeader className="text-center">
-                  <CardTitle>הרשמה</CardTitle>
-                  <CardDescription>
-                    צור חשבון חדש כדי להתחיל לנהל את הכספים שלך.
-                  </CardDescription>
-                </CardHeader>
-                <form onSubmit={handleSubmitSignUp(onSignUp)}>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="identifier-up">אימייל או מספר טלפון</Label>
-                      <Input
-                        id="identifier-up"
-                        type="text"
-                        placeholder="email@example.com / 0501234567"
-                        {...registerSignUp('identifier')}
-                      />
-                      {signUpErrors.identifier && (
-                        <p className="text-xs text-destructive">
-                          {signUpErrors.identifier.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="password-up">סיסמה</Label>
-                      <Input
-                        id="password-up"
-                        type="password"
-                        {...registerSignUp('password')}
-                      />
-                      {signUpErrors.password && (
-                        <p className="text-xs text-destructive">
-                          {signUpErrors.password.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">אימות סיסמה</Label>
-                      <Input
-                        id="confirm-password"
-                        type="password"
-                        {...registerSignUp('confirmPassword')}
-                      />
-                      {signUpErrors.confirmPassword && (
-                        <p className="text-xs text-destructive">
-                          {signUpErrors.confirmPassword.message}
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button
-                      className="w-full"
-                      type="submit"
-                      disabled={isPending}
-                    >
-                      {isPending ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        'צור חשבון'
-                      )}
-                    </Button>
-                  </CardFooter>
-                </form>
-              </Card>
-            </TabsContent>
-          </Tabs>
-          <div className="mt-4">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  או המשך עם
-                </span>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              className="mt-4 w-full"
-              onClick={onGoogleSignIn}
-              disabled={isPending}
-            >
-              {isPending ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <>
-                  <svg role="img" viewBox="0 0 24 24" className="ms-2 h-4 w-4">
-                    <path
-                      fill="currentColor"
-                      d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.05 1.05-2.36 1.67-4.06 1.67-3.4 0-6.17-2.83-6.17-6.23s2.77-6.23 6.17-6.23c1.87 0 3.13.78 3.87 1.48l2.6-2.6C16.3 3.83 14.37 3 12.48 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c4.9 0 8.7-3.34 8.7-8.82 0-.64-.07-1.25-.16-1.84z"
-                    ></path>
-                  </svg>
-                  Google
-                </>
-              )}
-            </Button>
-          </div>
+          <Card className="border-0 shadow-none">
+            {renderStep()}
+          </Card>
         </div>
       </div>
       <div className="hidden bg-muted lg:flex items-center justify-center p-10">
         <div className="text-center">
             <PiggyBank className="size-24 text-primary mx-auto" />
-            <h1 className="mt-6 text-4xl font-bold tracking-tighter">
-              Tazrimony
-            </h1>
+            <h1 className="mt-6 text-4xl font-bold tracking-tighter">Tazrimony</h1>
             <p className="mt-4 text-lg text-muted-foreground">
-              מנהל הכספים האישי שלך לעבודה במשמרות.
+              Manage your finances, the smart way.
               <br />
-              התחבר כדי להתחיל לעקוב אחר ההכנסות וההוצאות שלך.
+              Sign in to track your income and expenses.
             </p>
         </div>
       </div>

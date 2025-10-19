@@ -4,24 +4,46 @@ import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
+// Define public and authentication-related routes
+const publicRoutes = ['/login', '/verify-email'];
+
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (isUserLoading) return;
+    if (isUserLoading) return; // Wait until user state is determined
 
-    if (!user && pathname !== '/login') {
+    const isPublicRoute = publicRoutes.includes(pathname);
+
+    // If user is not logged in, redirect to login page, unless they are already on a public route
+    if (!user && !isPublicRoute) {
       router.replace('/login');
+      return;
     }
 
-    if (user && pathname === '/login') {
-      router.replace('/');
+    if (user) {
+      // If user is logged in, handle different scenarios
+      if (isPublicRoute) {
+        // If on a public route, redirect to dashboard
+        router.replace('/');
+      } else if (user.providerData.some(p => p.providerId === 'password') && !user.emailVerified) {
+        // If user signed up with email but hasn't verified it, redirect to verification page
+        if (pathname !== '/verify-email') {
+          router.replace('/verify-email');
+        }
+      }
     }
   }, [user, isUserLoading, router, pathname]);
 
-  if (isUserLoading || (!user && pathname !== '/login') || (user && pathname === '/login')) {
+  // Show a loading spinner during critical state transitions
+  if (
+    isUserLoading ||
+    (!user && !publicRoutes.includes(pathname)) ||
+    (user && publicRoutes.includes(pathname)) ||
+    (user && user.providerData.some(p => p.providerId === 'password') && !user.emailVerified && pathname !== '/verify-email')
+  ) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -29,7 +51,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If user is authenticated and not on login page, OR
-  // if user is not authenticated and on login page, render children.
+  // If all checks pass, render the requested page
   return <>{children}</>;
 }
