@@ -70,10 +70,13 @@ export async function sendPhoneVerificationCode(phoneNumber: string, verifier: R
     } else if (cleanNumber.length > 0) {
         // Assume it's a local number without a leading 0 and add country code
         cleanNumber = `+972${cleanNumber}`;
+    } else {
+        // If the number is empty after cleaning, throw an error
+        throw new Error("Invalid phone number provided.");
     }
     
     const e164PhoneNumber = cleanNumber;
-
+    
     try {
         const confirmationResult = await signInWithPhoneNumber(auth, e164PhoneNumber, verifier);
         return confirmationResult;

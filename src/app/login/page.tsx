@@ -67,10 +67,10 @@ export default function LoginPage() {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
         'callback': (response: any) => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber.
+          // reCAPTCHA solved.
         },
         'expired-callback': () => {
-          // Response expired. Ask user to solve reCAPTCHA again.
+          // Response expired.
         }
       });
     }
@@ -87,10 +87,13 @@ export default function LoginPage() {
       
       try {
         if (isPhoneAuth) {
+          // For phone auth, sign-in and sign-up are the same flow.
+          // Firebase handles user creation automatically.
           if (confirmationResult) {
-            // Step 2: Verify code
+            // Step 2: Verify code if we have a confirmation result
             await verifyPhoneCode(confirmationResult, data.code || '');
             toast({ title: 'Signed In', description: 'You have successfully signed in.' });
+             // AuthGuard will handle redirect
           } else {
             // Step 1: Send verification code
             const result = await sendPhoneVerificationCode(data.emailOrPhone, verifier);
@@ -129,12 +132,11 @@ export default function LoginPage() {
               description = 'Incorrect password. Please try again.';
               break;
             case 'auth/invalid-phone-number':
-              description = 'The phone number is not valid.';
+              description = 'The phone number is not valid. Please check the format (e.g., 0501234567).';
               break;
             case 'auth/too-many-requests':
               description = 'Too many requests. Please try again later.';
               verifier.render().then((widgetId) => {
-                // @ts-ignore
                 window.grecaptcha?.reset(widgetId);
               });
               break;
@@ -260,6 +262,6 @@ export default function LoginPage() {
 declare global {
   interface Window {
     recaptchaVerifier?: RecaptchaVerifier;
-    recaptchaWidgetId?: number;
+    grecaptcha?: any;
   }
 }
