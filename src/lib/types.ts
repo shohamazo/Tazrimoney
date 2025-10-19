@@ -1,6 +1,11 @@
 import type { Timestamp } from "firebase/firestore";
 import type { EarningDetails } from "./calculator";
 
+export type UserProfile = {
+  id: string;
+  onboardingComplete?: boolean;
+}
+
 export type Job = {
   id: string;
   name: string;

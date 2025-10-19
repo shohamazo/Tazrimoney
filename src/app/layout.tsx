@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { MainLayout } from '@/components/layout/main-layout';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { OnboardingProvider } from '@/components/onboarding/onboarding-provider';
 
 export const metadata: Metadata = {
   title: 'Tazrimony',
@@ -28,9 +29,11 @@ export default function RootLayout({
       </head>
       <body className={cn('font-body antialiased')}>
         <FirebaseClientProvider>
-          <SidebarProvider>
-            <MainLayout>{children}</MainLayout>
-          </SidebarProvider>
+          <OnboardingProvider>
+            <SidebarProvider>
+              <MainLayout>{children}</MainLayout>
+            </SidebarProvider>
+          </OnboardingProvider>
         </FirebaseClientProvider>
         <Toaster />
       </body>

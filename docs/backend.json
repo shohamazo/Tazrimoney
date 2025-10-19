@@ -26,6 +26,10 @@
         "hourlyRate": {
           "type": "number",
           "description": "User's base hourly rate."
+        },
+        "onboardingComplete": {
+          "type": "boolean",
+          "description": "Flag to indicate if the user has completed the onboarding process."
         }
       },
       "required": [
