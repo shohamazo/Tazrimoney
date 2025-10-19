@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useFirebase } from '@/firebase';
+import { doc, setDoc, getDoc, DocumentReference } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { OnboardingDialog } from './onboarding-dialog';
 
@@ -23,57 +23,51 @@ export const useOnboarding = () => {
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const { firestore, user, isUserLoading } = useFirebase();
-
-  const userProfileRef = useMemoFirebase(
-    () => (firestore && user ? doc(firestore, 'users', user.uid) : null),
-    [firestore, user]
-  );
-  
   const [isProfileLoading, setProfileLoading] = useState(true);
 
-  useEffect(() => {
-    // Wait for user to be loaded and not be anonymous
-    if (isUserLoading || !user || !userProfileRef || user.isAnonymous) {
-      if (!user || user.isAnonymous) {
-        setProfileLoading(false);
-        setDialogOpen(false);
-      }
+  const checkAndCreateProfile = useCallback(async () => {
+    if (!firestore || !user || user.isAnonymous) {
+      setProfileLoading(false);
+      setDialogOpen(false);
       return;
     }
 
-    const checkAndCreateProfile = async () => {
-      setProfileLoading(true);
-      try {
-        const docSnap = await getDoc(userProfileRef);
-        if (docSnap.exists()) {
-          const profileData = docSnap.data() as UserProfile;
-          if (profileData.onboardingComplete !== true) {
-            setDialogOpen(true);
-          } else {
-            setDialogOpen(false);
-          }
-        } else {
-          // Profile doesn't exist, create it and start onboarding
-          const newProfile: Partial<UserProfile> = {
-            id: user.uid,
-            email: user.email || undefined,
-            displayName: user.displayName || user.phoneNumber || undefined,
-            photoURL: user.photoURL || undefined,
-            onboardingComplete: false,
-          };
-          await setDoc(userProfileRef, newProfile, { merge: true });
-          setDialogOpen(true);
-        }
-      } catch (error) {
-        console.error("Error checking/creating user profile:", error);
-      } finally {
-        setProfileLoading(false);
-      }
-    };
+    const userProfileRef = doc(firestore, 'users', user.uid);
     
-    checkAndCreateProfile();
+    setProfileLoading(true);
+    try {
+      const docSnap = await getDoc(userProfileRef);
+      if (docSnap.exists()) {
+        const profileData = docSnap.data() as UserProfile;
+        if (profileData.onboardingComplete !== true) {
+          setDialogOpen(true);
+        } else {
+          setDialogOpen(false);
+        }
+      } else {
+        // Profile doesn't exist, create it and start onboarding
+        const newProfile: Partial<UserProfile> = {
+          id: user.uid,
+          email: user.email || undefined,
+          displayName: user.displayName || user.phoneNumber || undefined,
+          photoURL: user.photoURL || undefined,
+          onboardingComplete: false,
+        };
+        await setDoc(userProfileRef, newProfile, { merge: true });
+        setDialogOpen(true);
+      }
+    } catch (error) {
+      console.error("Error checking/creating user profile:", error);
+    } finally {
+      setProfileLoading(false);
+    }
+  }, [firestore, user]);
 
-  }, [user, userProfileRef, isUserLoading]);
+
+  useEffect(() => {
+    if (isUserLoading) return; // Wait for user to be loaded
+    checkAndCreateProfile();
+  }, [user, isUserLoading, checkAndCreateProfile]);
 
 
   const handleStartOnboarding = () => {
@@ -81,7 +75,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   };
 
   const handleFinishOnboarding = async () => {
-    if (!userProfileRef) return;
+    if (!user || !firestore) return;
+    const userProfileRef = doc(firestore, 'users', user.uid);
     try {
         // Use a blocking write here to ensure completion
         await setDoc(userProfileRef, { onboardingComplete: true }, { merge: true });
