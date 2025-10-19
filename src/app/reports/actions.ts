@@ -10,6 +10,8 @@ import { endOfMonth, startOfMonth, subMonths, format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { calculateShiftEarnings } from '@/lib/calculator';
 
+// This is a temporary solution for server-side Firebase initialization.
+// In a real-world scenario, you would use service account keys securely.
 const firebaseConfig = {
   "projectId": "studio-8929750933-770dd",
   "appId": "1:1090555591021:web:295c4f5f754ca66a980264",
