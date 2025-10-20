@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useTransition } from 'react';
+import React, { useState, useTransition, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,8 @@ import { useToast } from '@/hooks/use-toast';
 import { doc } from 'firebase/firestore';
 import { generateInitialBudget, type InitialBudgetInput, type BudgetItem } from '@/lib/budget-calculator';
 import { simpleBudgetCategories } from '@/lib/expense-categories';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface OnboardingDialogProps {
   isOpen: boolean;
@@ -53,6 +55,14 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   const [isStudent, setIsStudent] = useState('no');
   
   const [suggestions, setSuggestions] = useState<BudgetItem[]>([]);
+  
+  const totalBudgeted = useMemo(() => {
+    return suggestions.reduce((acc, curr) => acc + curr.planned, 0);
+  }, [suggestions]);
+
+  const remainingIncome = useMemo(() => {
+    return income - totalBudgeted;
+  }, [income, totalBudgeted]);
 
 
   const handleNext = () => {
@@ -271,13 +281,31 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                         <p>מעבד נתונים...</p>
                     </div>
                 ) : (
-                    <div className="space-y-4 py-4 max-h-96 overflow-y-auto">
-                        {suggestions.map((suggestion) => (
-                            <div key={suggestion.category} className="flex items-center gap-4">
-                                <Label htmlFor={suggestion.category} className="w-24">{suggestion.category}</Label>
-                                <Input id={suggestion.category} type="number" value={suggestion.planned} onChange={e => handleSuggestionChange(suggestion.category, e.target.value)} />
-                            </div>
-                        ))}
+                    <div className="space-y-4 py-4">
+                        <div className="max-h-72 overflow-y-auto pr-2 space-y-4">
+                            {suggestions.map((suggestion) => (
+                                <div key={suggestion.category} className="flex items-center gap-4">
+                                    <Label htmlFor={suggestion.category} className="w-28 text-right">{suggestion.category}</Label>
+                                    <Input id={suggestion.category} type="number" value={suggestion.planned} onChange={e => handleSuggestionChange(suggestion.category, e.target.value)} className="flex-1" />
+                                </div>
+                            ))}
+                        </div>
+                        <Card className="mt-4 bg-muted/50">
+                            <CardContent className="p-4 space-y-2">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-muted-foreground">הכנסה חודשית:</span>
+                                    <span className="font-medium">₪{income.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-muted-foreground">סה"כ תקציב:</span>
+                                    <span className="font-medium">₪{totalBudgeted.toLocaleString()}</span>
+                                </div>
+                                <div className={cn("flex justify-between items-center font-bold text-base pt-2 border-t", remainingIncome >= 0 ? "text-green-600" : "text-destructive")}>
+                                    <span>יתרה:</span>
+                                    <span>₪{remainingIncome.toLocaleString()}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                 )}
             </>
