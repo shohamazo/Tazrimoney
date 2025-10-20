@@ -1,4 +1,6 @@
 
+import { simpleBudgetCategories } from "./expense-categories";
+
 export type BudgetItem = {
     category: string;
     planned: number;
