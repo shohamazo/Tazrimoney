@@ -16,7 +16,7 @@ import { Loader2, Wand2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { doc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { generateInitialBudget, type InitialBudgetInput, type BudgetItem } from '@/lib/budget-calculator';
 
 interface OnboardingDialogProps {
