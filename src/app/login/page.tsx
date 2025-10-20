@@ -10,7 +10,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { PiggyBank, Loader2 } from 'lucide-react';
 import {
   handleGoogleSignIn,
@@ -33,7 +32,6 @@ const formSchema = z.object({
   emailOrPhone: z.string().min(1, 'Please enter an email or phone number.'),
   password: z.string().optional(),
   code: z.string().optional(),
-  rememberMe: z.boolean().default(false),
 });
 
 type FormInputs = z.infer<typeof formSchema>;
@@ -56,9 +54,6 @@ export default function LoginPage() {
     reset,
   } = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      rememberMe: true, // Default "Remember me" to checked
-    },
   });
   
   const emailOrPhone = watch('emailOrPhone');
@@ -93,8 +88,8 @@ export default function LoginPage() {
       }
       
       try {
-        // Set persistence before sign-in attempt
-        await setAuthPersistence(data.rememberMe);
+        // Always set persistence to remember the user
+        await setAuthPersistence(true);
 
         if (isPhoneAuth) {
           if (confirmationResult) {
@@ -226,14 +221,6 @@ export default function LoginPage() {
                       {errors.password && (
                         <p className="text-xs text-destructive">{errors.password.message}</p>
                       )}
-                    </div>
-                  )}
-                  {authMode === 'signin' && (
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <Checkbox id="rememberMe" {...register('rememberMe')} />
-                      <Label htmlFor="rememberMe" className="cursor-pointer">
-                        זכור אותי
-                      </Label>
                     </div>
                   )}
                 </>
