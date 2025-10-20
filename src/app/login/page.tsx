@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { PiggyBank, Loader2 } from 'lucide-react';
 import {
   handleGoogleSignIn,
@@ -17,6 +18,7 @@ import {
   handlePasswordSignIn,
   sendPhoneVerificationCode,
   verifyPhoneCode,
+  setAuthPersistence,
 } from '@/firebase/auth-actions';
 import React, { useTransition, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +33,7 @@ const formSchema = z.object({
   emailOrPhone: z.string().min(1, 'Please enter an email or phone number.'),
   password: z.string().optional(),
   code: z.string().optional(),
+  rememberMe: z.boolean().default(false),
 });
 
 type FormInputs = z.infer<typeof formSchema>;
@@ -53,6 +56,9 @@ export default function LoginPage() {
     reset,
   } = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      rememberMe: true, // Default "Remember me" to checked
+    },
   });
   
   const emailOrPhone = watch('emailOrPhone');
@@ -87,6 +93,9 @@ export default function LoginPage() {
       }
       
       try {
+        // Set persistence before sign-in attempt
+        await setAuthPersistence(data.rememberMe);
+
         if (isPhoneAuth) {
           if (confirmationResult) {
             // Step 2: Verify code
@@ -164,14 +173,17 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignInClick = () => {
-    startTransition(() => {
-      handleGoogleSignIn().catch((error) => {
+    startTransition(async () => {
+      try {
+        await setAuthPersistence(true); // Assume "remember me" for Google sign-in
+        await handleGoogleSignIn();
+      } catch (error: any) {
         toast({
           variant: 'destructive',
           title: 'Sign-in Error',
           description: error.message,
         });
-      });
+      }
     });
   };
   
@@ -216,6 +228,14 @@ export default function LoginPage() {
                       )}
                     </div>
                   )}
+                  {authMode === 'signin' && (
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox id="rememberMe" {...register('rememberMe')} />
+                      <Label htmlFor="rememberMe" className="cursor-pointer">
+                        זכור אותי
+                      </Label>
+                    </div>
+                  )}
                 </>
               )}
             </CardContent>
@@ -241,7 +261,7 @@ export default function LoginPage() {
               </div>
             </div>
             <Button variant="outline" className="mt-4 w-full" onClick={handleGoogleSignInClick} disabled={isPending}>
-              {isPending ? <Loader2 className="animate-spin" /> : <> <svg role="img" viewBox="0 0 24 24" className="ms-2 h-4 w-4"> <path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.05 1.05-2.36 1.67-4.06 1.67-3.4 0-6.17-2.83-6.17-6.23s2.77-6.23 6.17-6.23c1.87 0 3.13.78 3.87 1.48l2.6-2.6C16.3 3.83 14.37 3 12.48 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c4.9 0 8.7-3.34 8.7-8.82 0-.64-.07-1.25-.16-1.84z"></path> </svg> Google</>}
+              {isPending ? <Loader2 className="animate-spin" /> : <> <svg role="img" viewBox="0 0 24 24" className="ms-2 h-4 w-4"> <path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.05 1.05-2.36 1.67-4.06 1.67-3.4 0-6.17-2.83-6.17-6.23s2.77-6.23 6.17-6.23c1.87 0 3.13.78 3.87 1.48l2.6-2.6C16.3 3.83 14.37 3 12.48 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c4.9 0 8.7-3.34 8.7-8.82 0-.64-.07-1.25-.16-1.84z"></path> </svg> Tazrimoney</>}
             </Button>
           </div>
           <div className="mt-4 text-center text-sm">

@@ -14,12 +14,26 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
   ConfirmationResult,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
 } from 'firebase/auth';
 import { initializeFirebase } from './index';
 
 async function getFirebaseAuth() {
   const { auth } = initializeFirebase();
   return auth;
+}
+
+export async function setAuthPersistence(rememberMe: boolean) {
+  const auth = await getFirebaseAuth();
+  const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+  try {
+    await setPersistence(auth, persistence);
+  } catch (error) {
+    console.error('Set Persistence Error:', error);
+    throw error;
+  }
 }
 
 export async function handleGoogleSignIn() {
