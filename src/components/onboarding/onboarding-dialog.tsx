@@ -17,7 +17,7 @@ import { Progress } from '@/components/ui/progress';
 import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { generateBudgetSuggestions, type BudgetSuggestionInput, type BudgetSuggestionOutput } from '@/ai/flows/generate-budget-suggestions';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 
 interface OnboardingDialogProps {
   isOpen: boolean;
@@ -86,24 +86,23 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   const handleFinishAndSave = () => {
     if(!firestore || !user || !onFinish) return;
 
-    startTransition(async () => {
+    startTransition(() => {
         if(suggestions.length > 0) {
-            const batchPromises = suggestions.map(suggestion => {
+            suggestions.forEach(suggestion => {
                 const budgetRef = doc(firestore, 'users', user.uid, 'budgets', suggestion.category);
                 const budgetData = {
                     category: suggestion.category,
                     planned: suggestion.planned,
                     alertThreshold: 80, // Default threshold
                 };
-                // Using non-blocking for budgets is fine
-                return setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
+                setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
             });
         }
         
         toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
         
-        // Crucially, wait for the final flag to be set before closing.
-        await onFinish();
+        // Immediately trigger the state update in AuthGuard
+        onFinish();
     });
   }
   
@@ -304,3 +303,5 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
     </Dialog>
   );
 }
+
+    
