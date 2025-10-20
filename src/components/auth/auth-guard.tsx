@@ -13,7 +13,7 @@ const publicRoutes = ['/login', '/verify-email'];
 // --- Developer Flag ---
 // Set this to `true` to force the onboarding wizard to show for every user, every time.
 // Set to `false` for normal behavior (wizard shows only once).
-const FORCE_ONBOARDING_WIZARD = true;
+const FORCE_ONBOARDING_WIZARD = false;
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -82,23 +82,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [user, isUserLoading, firestore, toast]);
 
 
-  const handleFinishOnboarding = async () => {
-    if (!user || !firestore || !profile) return;
-    
-    // 1. Immediately update the local state to unmount the wizard
+  const handleFinishOnboarding = () => {
+    if (!profile) return;
+    // This is the critical change: update the local state immediately
+    // to hide the wizard.
     setProfile({ ...profile, onboardingComplete: true });
-
-    // 2. Persist the change to Firestore in the background
-    const userProfileRef = doc(firestore, 'users', user.uid);
-    try {
-      // Use setDoc with merge to only update the onboarding field
-      await setDoc(userProfileRef, { onboardingComplete: true }, { merge: true });
-    } catch (error) {
-      console.error("Failed to mark onboarding as complete:", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not save onboarding status.' });
-       // Optional: Revert local state if DB write fails, though less critical
-      setProfile({ ...profile, onboardingComplete: false });
-    }
   };
 
 

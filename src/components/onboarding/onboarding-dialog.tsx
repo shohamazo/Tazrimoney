@@ -21,7 +21,7 @@ import { generateInitialBudget, type InitialBudgetInput, type BudgetItem } from 
 
 interface OnboardingDialogProps {
   isOpen: boolean;
-  onFinish: () => Promise<void>;
+  onFinish: () => void;
 }
 
 const STEPS = [
@@ -89,24 +89,28 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
     if(!firestore || !user) return;
 
     startTransition(async () => {
-        // Save budget suggestions to Firestore non-blockingly
+        // Save budget suggestions to Firestore
         if(suggestions.length > 0) {
-            const promises = suggestions.map(suggestion => {
+            suggestions.forEach(suggestion => {
                 const budgetRef = doc(firestore, 'users', user.uid, 'budgets', suggestion.category);
                 const budgetData = {
                     category: suggestion.category,
                     planned: suggestion.planned,
                     alertThreshold: 80, // Default threshold
                 };
-                return setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
+                // Use non-blocking write
+                setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
             });
-            // No need to await promises for optimistic UI
         }
         
+        // Also mark onboarding as complete in Firestore
+        const userProfileRef = doc(firestore, 'users', user.uid);
+        await setDoc(userProfileRef, { onboardingComplete: true }, { merge: true });
+
         toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
         
         // This will now correctly trigger the state update in AuthGuard
-        await onFinish();
+        onFinish();
     });
   }
   
