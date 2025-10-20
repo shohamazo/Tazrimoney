@@ -43,6 +43,8 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   const [housingCost, setHousingCost] = useState<number>(0);
   const [transportation, setTransportation] = useState('public');
   const [diningOut, setDiningOut] = useState('weekly');
+  const [hasDebt, setHasDebt] = useState('no');
+  const [savingsGoal, setSavingsGoal] = useState('none');
   
   const [suggestions, setSuggestions] = useState<BudgetSuggestionOutput['suggestions']>([]);
 
@@ -66,6 +68,8 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                 monthlyHousingCost: housingCost,
                 transportation: transportation,
                 diningOutFrequency: diningOut,
+                hasDebt: hasDebt,
+                savingsGoal: savingsGoal,
             };
             const result = await generateBudgetSuggestions(input);
             setSuggestions(result.suggestions);
@@ -154,7 +158,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                         כמה שאלות קצרות על סגנון החיים שלך כדי שנוכל להתאים לך תקציב.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-6 py-4">
+                <div className="space-y-6 py-4 max-h-[60vh] overflow-y-auto px-1">
                      <div>
                         <Label>מה מצב הדיור שלך?</Label>
                         <RadioGroup value={housing} onValueChange={setHousing} className="mt-2">
@@ -189,6 +193,22 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="rarely" id="d1" /><Label htmlFor="d1">לעיתים רחוקות</Label></div>
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="weekly" id="d2" /><Label htmlFor="d2">פעם-פעמיים בשבוע</Label></div>
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="daily" id="d3" /><Label htmlFor="d3">רוב הימים</Label></div>
+                        </RadioGroup>
+                    </div>
+                    <div>
+                        <Label>האם יש לך חובות פעילים (הלוואות, כרטיסי אשראי)?</Label>
+                        <RadioGroup value={hasDebt} onValueChange={setHasDebt} className="mt-2">
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="yes" id="debt-yes" /><Label htmlFor="debt-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="debt-no" /><Label htmlFor="debt-no">לא</Label></div>
+                        </RadioGroup>
+                    </div>
+                     <div>
+                        <Label>מהי מטרת החיסכון העיקרית שלך כרגע?</Label>
+                        <RadioGroup value={savingsGoal} onValueChange={setSavingsGoal} className="mt-2">
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="none" id="sg-none" /><Label htmlFor="sg-none">אין מטרה מוגדרת</Label></div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="emergency" id="sg-emergency" /><Label htmlFor="sg-emergency">קרן חירום</Label></div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="large-purchase" id="sg-large-purchase" /><Label htmlFor="sg-large-purchase">רכישה גדולה (רכב, חופשה)</Label></div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="investing" id="sg-investing" /><Label htmlFor="sg-investing">השקעה</Label></div>
                         </RadioGroup>
                     </div>
                 </div>
