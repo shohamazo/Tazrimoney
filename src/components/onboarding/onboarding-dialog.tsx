@@ -86,33 +86,32 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   }
   
   const handleFinishAndSave = () => {
-    if(!firestore || !user) return;
-
+    if (!firestore || !user) return;
+  
     startTransition(async () => {
-        // Save budget suggestions to Firestore
-        if(suggestions.length > 0) {
-            suggestions.forEach(suggestion => {
-                const budgetRef = doc(firestore, 'users', user.uid, 'budgets', suggestion.category);
-                const budgetData = {
-                    category: suggestion.category,
-                    planned: suggestion.planned,
-                    alertThreshold: 80, // Default threshold
-                };
-                // Use non-blocking write
-                setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
-            });
-        }
-        
-        // Also mark onboarding as complete in Firestore
-        const userProfileRef = doc(firestore, 'users', user.uid);
-        await setDoc(userProfileRef, { onboardingComplete: true }, { merge: true });
-
-        toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
-        
-        // This will now correctly trigger the state update in AuthGuard
-        onFinish();
+      // Save budget suggestions to Firestore in the background
+      if (suggestions.length > 0) {
+        suggestions.forEach(suggestion => {
+          const budgetRef = doc(firestore, 'users', user.uid, 'budgets', suggestion.category);
+          const budgetData = {
+            category: suggestion.category,
+            planned: suggestion.planned,
+            alertThreshold: 80, // Default threshold
+          };
+          setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
+        });
+      }
+  
+      // Mark onboarding as complete in Firestore
+      const userProfileRef = doc(firestore, 'users', user.uid);
+      await setDoc(userProfileRef, { onboardingComplete: true }, { merge: true });
+  
+      toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
+      
+      // Immediately call onFinish to update the UI state in AuthGuard
+      onFinish();
     });
-  }
+  };
   
   const handleSuggestionChange = (category: string, value: string) => {
     const newSuggestions = suggestions.map(s => {

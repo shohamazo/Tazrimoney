@@ -13,7 +13,7 @@ const publicRoutes = ['/login', '/verify-email'];
 // --- Developer Flag ---
 // Set this to `true` to force the onboarding wizard to show for every user, every time.
 // Set to `false` for normal behavior (wizard shows only once).
-const FORCE_ONBOARDING_WIZARD = true;
+const FORCE_ONBOARDING_WIZARD = false;
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
