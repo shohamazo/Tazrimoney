@@ -29,11 +29,11 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
           // If the document doesn't exist, create it silently.
           // The AuthGuard will see `onboardingComplete: false` on its own fetch
           // and decide to show the dialog.
-          const newProfile: Partial<UserProfile> = {
+          const newProfile: UserProfile = {
             id: user.uid,
-            email: user.email || undefined,
-            displayName: user.displayName || user.phoneNumber || undefined,
-            photoURL: user.photoURL || undefined,
+            email: user.email || null,
+            displayName: user.displayName || user.phoneNumber || null,
+            photoURL: user.photoURL || null,
             onboardingComplete: false,
           };
           await setDoc(userProfileRef, newProfile, { merge: true });

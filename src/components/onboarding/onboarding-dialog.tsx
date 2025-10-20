@@ -108,6 +108,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
         
         toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
         
+        // This will now correctly trigger the state update in AuthGuard
         onFinish();
     });
   }

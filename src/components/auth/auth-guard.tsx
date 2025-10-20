@@ -1,5 +1,5 @@
 'use client';
-import { useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
