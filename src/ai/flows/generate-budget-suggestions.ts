@@ -16,6 +16,7 @@ const BudgetSuggestionInputSchema = z.object({
   monthlyHousingCost: z.number().describe('User\'s monthly rent or mortgage payment. 0 if none.'),
   transportation: z.string().describe('User\'s primary mode of transportation (e.g., "car", "public transport", "walk")'),
   diningOutFrequency: z.string().describe('How often the user eats out (e.g., "rarely", "1-2 times a week", "most days")'),
+  hasChildren: z.string().describe('If the user has children (e.g., "yes", "no")'),
   hasDebt: z.string().describe('If the user has active debt (e.g., "yes", "no")'),
   savingsGoal: z.string().describe('The user\'s primary savings goal (e.g., "none", "emergency fund", "large purchase", "investing")'),
 });
@@ -50,6 +51,7 @@ User's situation:
 - Transportation: {{{transportation}}}
 - Dines out: {{{diningOutFrequency}}}
 - Has Debt: {{{hasDebt}}}
+- Has Children: {{{hasChildren}}}
 - Savings Goal: {{{savingsGoal}}}
 
 Provide budget suggestions for the following categories:
@@ -61,6 +63,7 @@ Provide budget suggestions for the following categories:
 - בילוי ופנאי
 - חיסכון והשקעות
 - תשלומים וחיובים (for debt repayment)
+- משפחה וילדים (ONLY if 'hasChildren' is "yes")
 
 Analyze the user's input and generate a reasonable 'planned' monthly budget for each category.
 The 'category' field in your output MUST exactly match one of the categories from the list above.
@@ -72,6 +75,7 @@ The 'category' field in your output MUST exactly match one of the categories fro
 - 'אוכל ושתיה' should strongly correlate with 'diningOutFrequency'. If 'rarely', this should be low.
 - 'חשבונות ושירותים' should include standard estimates for phone, internet, etc. (e.g., 200-400 ILS total).
 - 'בילוי ופנאי' is highly discretionary. This should be one of the first categories to be reduced if income is tight.
+- **CRITICAL**: Only include the 'משפחה וילדים' category in the output if the user's 'hasChildren' input is "yes". If it is "no", DO NOT include this category in your suggestions array.
 
 Return the suggestions in the 'suggestions' array.
 `,

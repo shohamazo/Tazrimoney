@@ -45,6 +45,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   const [diningOut, setDiningOut] = useState('weekly');
   const [hasDebt, setHasDebt] = useState('no');
   const [savingsGoal, setSavingsGoal] = useState('none');
+  const [hasChildren, setHasChildren] = useState('no');
   
   const [suggestions, setSuggestions] = useState<BudgetSuggestionOutput['suggestions']>([]);
 
@@ -70,6 +71,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                 diningOutFrequency: diningOut,
                 hasDebt: hasDebt,
                 savingsGoal: savingsGoal,
+                hasChildren: hasChildren,
             };
             const result = await generateBudgetSuggestions(input);
             setSuggestions(result.suggestions);
@@ -193,6 +195,13 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="rarely" id="d1" /><Label htmlFor="d1">לעיתים רחוקות</Label></div>
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="weekly" id="d2" /><Label htmlFor="d2">פעם-פעמיים בשבוע</Label></div>
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="daily" id="d3" /><Label htmlFor="d3">רוב הימים</Label></div>
+                        </RadioGroup>
+                    </div>
+                    <div>
+                        <Label>האם יש לך ילדים?</Label>
+                        <RadioGroup value={hasChildren} onValueChange={setHasChildren} className="mt-2">
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="yes" id="children-yes" /><Label htmlFor="children-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="children-no" /><Label htmlFor="children-no">לא</Label></div>
                         </RadioGroup>
                     </div>
                     <div>
