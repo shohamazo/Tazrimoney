@@ -67,7 +67,7 @@ export function calculateShiftEarnings(shift: Shift, job: Job | undefined): Earn
   
   if (start >= end) return initialDetails;
 
-  let totalRegularHoursInShift = 0;
+  let totalNonShabbatHoursInShift = 0;
   
   // Iterate hour by hour through the shift
   let currentHour = new Date(start.getTime());
@@ -82,26 +82,27 @@ export function calculateShiftEarnings(shift: Shift, job: Job | undefined): Earn
       if (isShabbat(currentHour)) {
           // Shabbat hours are paid at 150%
           initialDetails.shabbatHours += durationInHours;
-          initialDetails.shabbatPay += durationInHours * hourlyRate * 1.5;
       } else {
-          totalRegularHoursInShift += durationInHours;
-          if (totalRegularHoursInShift > 10) {
-              // Overtime hours 11+ are at 150%
-              initialDetails.overtime150Hours += durationInHours;
-              initialDetails.overtime150Pay += durationInHours * hourlyRate * 1.5;
-          } else if (totalRegularHoursInShift > 8) {
-              // Overtime hours 9-10 are at 125%
-              initialDetails.overtime125Hours += durationInHours;
-              initialDetails.overtime125Pay += durationInHours * hourlyRate * 1.25;
-          } else {
-              // Regular hours
-              initialDetails.regularHours += durationInHours;
-              initialDetails.regularPay += durationInHours * hourlyRate;
-          }
+          // Accumulate non-Shabbat hours for overtime calculation
+          totalNonShabbatHoursInShift += durationInHours;
       }
       
       currentHour = nextHour;
   }
+  
+  // Now calculate pay based on accumulated hours
+  let tempRegularHours = Math.min(totalNonShabbatHoursInShift, 8);
+  let tempOvertime125 = Math.max(0, Math.min(totalNonShabbatHoursInShift - 8, 2));
+  let tempOvertime150 = Math.max(0, totalNonShabbatHoursInShift - 10);
+
+  initialDetails.regularHours = tempRegularHours;
+  initialDetails.overtime125Hours = tempOvertime125;
+  initialDetails.overtime150Hours = tempOvertime150;
+
+  initialDetails.regularPay = initialDetails.regularHours * hourlyRate;
+  initialDetails.overtime125Pay = initialDetails.overtime125Hours * hourlyRate * 1.25;
+  initialDetails.overtime150Pay = initialDetails.overtime150Hours * hourlyRate * 1.5;
+  initialDetails.shabbatPay = initialDetails.shabbatHours * hourlyRate * 1.5;
   
   initialDetails.totalEarnings = initialDetails.regularPay + initialDetails.overtime125Pay + initialDetails.overtime150Pay + initialDetails.shabbatPay;
 

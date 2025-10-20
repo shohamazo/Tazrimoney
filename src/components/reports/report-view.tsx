@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useTransition, useEffect, useCallback, useMemo } from 'react';
-import { Loader2, Wand2, ShoppingCart, TrendingUp, TrendingDown } from 'lucide-react';
+import { Loader2, Wand2, ShoppingCart } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, Sector } from 'recharts';
@@ -165,18 +165,13 @@ export function ReportView() {
     const sortedExpenses = [...expenses].sort((a,b) => b.amount - a.amount);
     setTopExpenses(sortedExpenses.slice(0,3));
 
-  }, [isDataLoading, shifts, expenses, jobs]);
-
-
-  useEffect(() => {
-    if (chartData.length === 0 || !expenses || summary) return;
-
+    // AI Summary Generation
     startAiTransition(async () => {
       setError(null);
       try {
         const dataForAI = {
             period: `Last 6 months (${format(reportStartDate, 'MMM yyyy')} - ${format(reportEndDate, 'MMM yyyy')})`,
-            monthlyBreakdown: chartData,
+            monthlyBreakdown: finalChartData,
             rawExpenses: expenses.map(e => ({ 
                 date: (e.date as Timestamp).toDate().toISOString(), 
                 amount: e.amount, 
@@ -194,7 +189,10 @@ export function ReportView() {
         setError(e instanceof Error ? e.message : "An unexpected error occurred while generating the summary.");
       }
     });
-  }, [chartData, expenses, reportStartDate, reportEndDate, summary]);
+
+
+  }, [isDataLoading, shifts, expenses, jobs, reportStartDate, reportEndDate]);
+
 
   const onPieEnter = useCallback((_: any, index: number) => {
     setActiveIndex(index);
