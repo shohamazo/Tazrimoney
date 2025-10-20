@@ -19,6 +19,9 @@ const BudgetSuggestionInputSchema = z.object({
   hasChildren: z.string().describe('If the user has children (e.g., "yes", "no")'),
   hasDebt: z.string().describe('If the user has active debt (e.g., "yes", "no")'),
   savingsGoal: z.string().describe('The user\'s primary savings goal (e.g., "none", "emergency fund", "large purchase", "investing")'),
+  hasPets: z.string().describe('If the user has pets (e.g., "yes", "no")'),
+  takesMeds: z.string().describe('If the user takes regular or special medications (e.g., "yes", "no")'),
+  isStudent: z.string().describe('If the user is currently a student or taking courses (e.g., "yes", "no")'),
 });
 export type BudgetSuggestionInput = z.infer<typeof BudgetSuggestionInputSchema>;
 
@@ -50,24 +53,35 @@ User's situation:
 - Monthly Housing Cost: ₪{{{monthlyHousingCost}}}
 - Transportation: {{{transportation}}}
 - Dines out: {{{diningOutFrequency}}}
-- Has Debt: {{{hasDebt}}}
 - Has Children: {{{hasChildren}}}
+- Has Pets: {{{hasPets}}}
+- Takes Meds: {{{takesMeds}}}
+- Is Student: {{{isStudent}}}
+- Has Debt: {{{hasDebt}}}
 - Savings Goal: {{{savingsGoal}}}
 
-Provide budget suggestions for the following categories:
+Provide budget suggestions for the following categories, based on the rules below:
 - דיור
 - קניות (for groceries, etc.)
 - תחבורה
 - אוכל ושתיה (for eating out, coffee, etc.)
 - חשבונות ושירותים (internet, phone, etc. Estimate standard costs if not provided)
+- בריאות
+- חינוך
+- ביגוד והנעלה
 - בילוי ופנאי
+- תשלומים וחיובים
 - חיסכון והשקעות
-- תשלומים וחיובים (for debt repayment)
-- משפחה וילדים (ONLY if 'hasChildren' is "yes")
+- חיות מחמד
+- משפחה וילדים
 
-Analyze the user's input and generate a reasonable 'planned' monthly budget for each category.
-The 'category' field in your output MUST exactly match one of the categories from the list above.
+Analyze the user's input and generate a reasonable 'planned' monthly budget for each category. The 'category' field in your output MUST exactly match one of the categories from the list above.
 
+**CATEGORY RULES:**
+- **CRITICAL: Only include 'משפחה וילדים'** if 'hasChildren' is "yes". Otherwise, DO NOT include it.
+- **CRITICAL: Only include 'חיות מחמד'** if 'hasPets' is "yes". Otherwise, DO NOT include it.
+- **CRITICAL: Only include 'חינוך'** if 'isStudent' is "yes". Otherwise, DO NOT include it.
+- If 'takesMeds' is "no", the 'בריאות' budget should be low, with a **MAXIMUM of 150**.
 - If 'housing' is "rent" or "own", the 'דיור' budget MUST equal 'monthlyHousingCost'. If it's "live with parents", the 'דיור' budget should be very low (maybe for minor household items).
 - If 'hasDebt' is "yes", allocate a reasonable amount to 'תשלומים וחיובים', even if it's small.
 - If 'savingsGoal' is not "none", allocate a meaningful amount to 'חיסכון והשקעות'. Prioritize an emergency fund.
@@ -75,7 +89,6 @@ The 'category' field in your output MUST exactly match one of the categories fro
 - 'אוכל ושתיה' should strongly correlate with 'diningOutFrequency'. If 'rarely', this should be low.
 - 'חשבונות ושירותים' should include standard estimates for phone, internet, etc. (e.g., 200-400 ILS total).
 - 'בילוי ופנאי' is highly discretionary. This should be one of the first categories to be reduced if income is tight.
-- **CRITICAL**: Only include the 'משפחה וילדים' category in the output if the user's 'hasChildren' input is "yes". If it is "no", DO NOT include this category in your suggestions array.
 
 Return the suggestions in the 'suggestions' array.
 `,

@@ -46,6 +46,9 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   const [hasDebt, setHasDebt] = useState('no');
   const [savingsGoal, setSavingsGoal] = useState('none');
   const [hasChildren, setHasChildren] = useState('no');
+  const [hasPets, setHasPets] = useState('no');
+  const [takesMeds, setTakesMeds] = useState('no');
+  const [isStudent, setIsStudent] = useState('no');
   
   const [suggestions, setSuggestions] = useState<BudgetSuggestionOutput['suggestions']>([]);
 
@@ -69,9 +72,12 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                 monthlyHousingCost: housingCost,
                 transportation: transportation,
                 diningOutFrequency: diningOut,
+                hasChildren: hasChildren,
                 hasDebt: hasDebt,
                 savingsGoal: savingsGoal,
-                hasChildren: hasChildren,
+                hasPets: hasPets,
+                takesMeds: takesMeds,
+                isStudent: isStudent,
             };
             const result = await generateBudgetSuggestions(input);
             setSuggestions(result.suggestions);
@@ -84,7 +90,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   }
   
   const handleFinishAndSave = () => {
-    if(!firestore || !user || !onFinish) return;
+    if(!firestore || !user) return;
 
     startTransition(() => {
         // Save budget suggestions to Firestore non-blockingly
@@ -102,8 +108,6 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
         
         toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
         
-        // Immediately call onFinish to update the AuthGuard's state and close the dialog.
-        // The onFinish function itself will handle the DB write for the user's onboarding status.
         onFinish();
     });
   }
@@ -203,6 +207,27 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                         <RadioGroup value={hasChildren} onValueChange={setHasChildren} className="mt-2">
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="yes" id="children-yes" /><Label htmlFor="children-yes">כן</Label></div>
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="children-no" /><Label htmlFor="children-no">לא</Label></div>
+                        </RadioGroup>
+                    </div>
+                    <div>
+                        <Label>האם יש לך חיות מחמד?</Label>
+                        <RadioGroup value={hasPets} onValueChange={setHasPets} className="mt-2">
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="yes" id="pets-yes" /><Label htmlFor="pets-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="pets-no" /><Label htmlFor="pets-no">לא</Label></div>
+                        </RadioGroup>
+                    </div>
+                    <div>
+                        <Label>האם אתה נוטל תרופות קבועות / מיוחדות?</Label>
+                        <RadioGroup value={takesMeds} onValueChange={setTakesMeds} className="mt-2">
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="yes" id="meds-yes" /><Label htmlFor="meds-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="meds-no" /><Label htmlFor="meds-no">לא</Label></div>
+                        </RadioGroup>
+                    </div>
+                    <div>
+                        <Label>האם אתה סטודנט או לוקח קורסים?</Label>
+                        <RadioGroup value={isStudent} onValueChange={setIsStudent} className="mt-2">
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="yes" id="student-yes" /><Label htmlFor="student-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="student-no" /><Label htmlFor="student-no">לא</Label></div>
                         </RadioGroup>
                     </div>
                     <div>
