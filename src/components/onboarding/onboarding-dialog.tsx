@@ -14,13 +14,14 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, Wand2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { useFirebase, setDocumentNonBlocking } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { doc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { generateInitialBudget, type InitialBudgetInput, type BudgetItem } from '@/lib/budget-calculator';
 import { simpleBudgetCategories } from '@/lib/expense-categories';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 interface OnboardingDialogProps {
   isOpen: boolean;
@@ -99,35 +100,33 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   const handleFinishAndSave = () => {
     if (!firestore || !user) return;
   
-    startTransition(() => {
-        const suggestionsMap = new Map(suggestions.map(s => [s.category, s.planned]));
+    startTransition(async () => {
+      const suggestionsMap = new Map(suggestions.map(s => [s.category, s.planned]));
   
-        // Process all budget categories.
-        // Set suggested values, and set 0 for categories that are not suggested.
-        simpleBudgetCategories.forEach(categoryName => {
-            const plannedAmount = suggestionsMap.get(categoryName) || 0;
-            
-            const budgetRef = doc(firestore, 'users', user.uid, 'budgets', categoryName);
-            const budgetData = {
-                category: categoryName,
-                planned: plannedAmount,
-                alertThreshold: 80, // Default threshold
-            };
-            // This is a non-blocking write.
-            setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
-        });
+      const promises = simpleBudgetCategories.map(categoryName => {
+        const plannedAmount = suggestionsMap.get(categoryName) || 0;
+        const budgetRef = doc(firestore, 'users', user.uid, 'budgets', categoryName);
+        const budgetData = {
+          category: categoryName,
+          planned: plannedAmount,
+          alertThreshold: 80, // Default threshold
+        };
+        // Use non-blocking writes for better performance
+        return setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
+      });
   
-        // Mark onboarding as complete in Firestore
-        const userProfileRef = doc(firestore, 'users', user.uid);
-        // Use non-blocking write here as well. The UI will update immediately via onFinish().
-        setDocumentNonBlocking(userProfileRef, { onboardingComplete: true }, { merge: true });
+      // Mark onboarding as complete in Firestore
+      const userProfileRef = doc(firestore, 'users', user.uid);
+      setDocumentNonBlocking(userProfileRef, { onboardingComplete: true }, { merge: true });
   
-        toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
+      // No need to await all promises here for UI purposes
       
-        // Immediately call onFinish to update the UI state in AuthGuard
-        onFinish();
+      toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
+      
+      onFinish();
     });
   };
+  
   
   const handleSuggestionChange = (category: string, value: string) => {
     const newSuggestions = suggestions.map(s => {
