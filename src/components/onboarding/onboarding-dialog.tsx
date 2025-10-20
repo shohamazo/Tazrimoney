@@ -89,7 +89,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   const handleFinishAndSave = () => {
     if (!firestore || !user) return;
   
-    startTransition(async () => {
+    startTransition(() => {
         const suggestionsMap = new Map(suggestions.map(s => [s.category, s.planned]));
   
         // Process all budget categories.
@@ -109,7 +109,8 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   
         // Mark onboarding as complete in Firestore
         const userProfileRef = doc(firestore, 'users', user.uid);
-        await setDocumentNonBlocking(userProfileRef, { onboardingComplete: true }, { merge: true });
+        // Use non-blocking write here as well. The UI will update immediately via onFinish().
+        setDocumentNonBlocking(userProfileRef, { onboardingComplete: true }, { merge: true });
   
         toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
       
