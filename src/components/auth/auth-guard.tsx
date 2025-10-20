@@ -10,6 +10,11 @@ import { useToast } from '@/hooks/use-toast';
 
 const publicRoutes = ['/login', '/verify-email'];
 
+// --- Developer Flag ---
+// Set this to `true` to force the onboarding wizard to show for every user, every time.
+// Set to `false` for normal behavior (wizard shows only once).
+const FORCE_ONBOARDING_WIZARD = false;
+
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -127,8 +132,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
 
-  // 4. CRITICAL: If onboarding is not complete, show the wizard.
-  if (user && profile && !profile.onboardingComplete) {
+  // 4. CRITICAL: If onboarding is not complete OR if the force flag is on, show the wizard.
+  if (user && profile && (FORCE_ONBOARDING_WIZARD || !profile.onboardingComplete)) {
     return <OnboardingDialog isOpen={true} onFinish={handleFinishOnboarding} />;
   }
 
