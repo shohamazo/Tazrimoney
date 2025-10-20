@@ -25,7 +25,7 @@ interface OnboardingDialogProps {
 }
 
 const STEPS = [
-  { id: 'welcome', title: 'ברוך הבא ל-Tazrimony' },
+  { id: 'welcome', title: 'ברוך הבא ל-Tazrimoney' },
   { id: 'income', title: 'הכנסה חודשית' },
   { id: 'lifestyle', title: 'שאלון סגנון חיים' },
   { id: 'ai-suggestions', title: 'הצעות תקציב מותאמות' },

@@ -12,16 +12,15 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import type { Job } from '@/lib/types';
-import { useFirebase } from '@/firebase';
+import { useFirebase, deleteDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 export function JobsList({ jobs, onEdit }: { jobs: Job[], onEdit: (job: Job) => void }) {
     const { firestore, user } = useFirebase();
     const { toast } = useToast();
 
-    const handleDelete = async (jobId: string) => {
+    const handleDelete = (jobId: string) => {
         if (!firestore || !user) return;
         const jobRef = doc(firestore, 'users', user.uid, 'jobs', jobId);
         deleteDocumentNonBlocking(jobRef);

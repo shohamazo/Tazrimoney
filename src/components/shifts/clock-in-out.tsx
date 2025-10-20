@@ -6,10 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Play, Square, Timer } from 'lucide-react';
 import type { Job } from '@/lib/types';
-import { useFirebase } from '@/firebase';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { useFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 interface ActiveShift {
   jobId: string;

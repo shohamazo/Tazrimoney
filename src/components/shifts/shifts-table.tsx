@@ -7,10 +7,9 @@ import { MoreHorizontal, Pencil, Trash2, Info } from 'lucide-react';
 import type { Shift, Job } from '@/lib/types';
 import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Timestamp, doc, deleteDoc } from 'firebase/firestore';
-import { useFirebase } from '@/firebase';
+import { Timestamp, doc } from 'firebase/firestore';
+import { useFirebase, deleteDocumentNonBlocking } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { calculateShiftEarnings, EarningDetails } from '@/lib/calculator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -73,7 +72,7 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
         });
     }, [shifts, jobs]);
 
-    const handleDelete = async (shiftId: string) => {
+    const handleDelete = (shiftId: string) => {
         if (!firestore || !user) return;
         const shiftRef = doc(firestore, 'users', user.uid, 'shifts', shiftId);
         deleteDocumentNonBlocking(shiftRef);

@@ -16,8 +16,8 @@ import type { Expense } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { useFirebase } from '@/firebase';
-import { doc, setDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
+import { useFirebase, setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
+import { doc, collection, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { expenseCategories, type ExpenseCategory, type ExpenseSubcategory } from '@/lib/expense-categories';
 
@@ -104,7 +104,7 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense, prefilledData }: 
     }
   }, [expense, prefilledData, isOpen, reset]);
 
-  const onSubmit = async (data: ExpenseFormData) => {
+  const onSubmit = (data: ExpenseFormData) => {
     if (!firestore || !user) return;
 
     const expenseData = {
@@ -112,21 +112,16 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense, prefilledData }: 
         date: Timestamp.fromDate(data.date),
     };
 
-    try {
-        if (expense) {
-            const expenseRef = doc(firestore, 'users', user.uid, 'expenses', expense.id);
-            await setDoc(expenseRef, expenseData, { merge: true });
-            toast({ title: "הוצאה עודכנה", description: "ההוצאה עודכנה בהצלחה." });
-        } else {
-            const expensesCol = collection(firestore, 'users', user.uid, 'expenses');
-            await addDoc(expensesCol, expenseData);
-            toast({ title: "הוצאה נוספה", description: "ההוצאה החדשה נוספה בהצלחה." });
-        }
-        onOpenChange(false);
-    } catch (error) {
-        console.error("Error saving expense: ", error);
-        toast({ variant: "destructive", title: "שגיאה", description: "הייתה בעיה בשמירת ההוצאה." });
+    if (expense) {
+        const expenseRef = doc(firestore, 'users', user.uid, 'expenses', expense.id);
+        setDocumentNonBlocking(expenseRef, expenseData, { merge: true });
+        toast({ title: "הוצאה עודכנה", description: "ההוצאה עודכנה בהצלחה." });
+    } else {
+        const expensesCol = collection(firestore, 'users', user.uid, 'expenses');
+        addDocumentNonBlocking(expensesCol, expenseData);
+        toast({ title: "הוצאה נוספה", description: "ההוצאה החדשה נוספה בהצלחה." });
     }
+    onOpenChange(false);
   };
 
   const title = expense ? 'עריכת הוצאה' : prefilledData ? 'אישור פרטי קבלה' : 'הוספת הוצאה חדשה';

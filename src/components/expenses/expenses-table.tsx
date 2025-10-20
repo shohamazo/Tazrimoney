@@ -7,8 +7,8 @@ import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import type { Expense } from '@/lib/types';
 import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Timestamp, doc, deleteDoc } from 'firebase/firestore';
-import { useFirebase } from '@/firebase';
+import { Timestamp, doc } from 'firebase/firestore';
+import { useFirebase, deleteDocumentNonBlocking } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 
 export function ExpensesTable({ expenses, onEdit }: { expenses: Expense[], onEdit: (expense: Expense) => void }) {
@@ -19,16 +19,11 @@ export function ExpensesTable({ expenses, onEdit }: { expenses: Expense[], onEdi
         return expenses.map(e => ({...e, date: (e.date as unknown as Timestamp).toDate()}));
     }, [expenses]);
 
-    const handleDelete = async (expenseId: string) => {
+    const handleDelete = (expenseId: string) => {
         if (!firestore || !user) return;
         const expenseRef = doc(firestore, 'users', user.uid, 'expenses', expenseId);
-        try {
-            await deleteDoc(expenseRef);
-            toast({ title: "הוצאה נמחקה", description: "ההוצאה נמחקה בהצלחה." });
-        } catch (error) {
-            console.error("Error deleting expense: ", error);
-            toast({ variant: "destructive", title: "שגיאה", description: "הייתה בעיה במחיקת ההוצאה." });
-        }
+        deleteDocumentNonBlocking(expenseRef);
+        toast({ title: "הוצאה נמחקה", description: "ההוצאה נמחקה בהצלחה." });
     };
 
     const formatDate = (date: Date) => date.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });

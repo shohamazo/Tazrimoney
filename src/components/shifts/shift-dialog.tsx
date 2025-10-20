@@ -16,10 +16,9 @@ import type { Shift, Job } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { useFirebase } from '@/firebase';
-import { doc, setDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
+import { useFirebase, setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
+import { doc, collection, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const shiftSchema = z.object({
   jobId: z.string().min(1, "יש לבחור עבודה"),

@@ -9,10 +9,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import type { Job } from '@/lib/types';
-import { useFirebase } from '@/firebase';
-import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
+import { useFirebase, setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
+import { doc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const jobSchema = z.object({
   name: z.string().min(2, "שם העבודה חייב להכיל לפחות 2 תווים"),

@@ -5,7 +5,7 @@ import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { themes, type Theme } from '@/lib/themes';
 import { UserProfile } from '@/lib/types';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking } from '@/firebase';
 
 interface ThemeContextType {
   theme: Theme;
