@@ -16,12 +16,13 @@ import { Loader2, Wand2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { generateInitialBudget, type InitialBudgetInput, type BudgetItem } from '@/lib/budget-calculator';
 import { simpleBudgetCategories } from '@/lib/expense-categories';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { Checkbox } from '../ui/checkbox';
 
 interface OnboardingDialogProps {
   isOpen: boolean;
@@ -44,7 +45,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
 
   // State for all user inputs
   const [income, setIncome] = useState<number>(5000);
-  const [housing, setHousing] = useState('rent');
+  const [housing, setHousing] = useState('parents');
   const [housingCost, setHousingCost] = useState<number>(0);
   const [transportation, setTransportation] = useState('public');
   const [diningOut, setDiningOut] = useState('weekly');
@@ -54,6 +55,12 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   const [hasPets, setHasPets] = useState('no');
   const [takesMeds, setTakesMeds] = useState('no');
   const [isStudent, setIsStudent] = useState('no');
+  const [groceryStyle, setGroceryStyle] = useState('standard');
+  const [subscriptions, setSubscriptions] = useState<string[]>([]);
+  const [clothingHabits, setClothingHabits] = useState('seasonally');
+  const [entertainmentHabits, setEntertainmentHabits] = useState('home');
+  const [groomingBudget, setGroomingBudget] = useState<number>(0);
+  const [travelPlans, setTravelPlans] = useState('no');
   
   const [suggestions, setSuggestions] = useState<BudgetItem[]>([]);
   
@@ -90,6 +97,12 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
             hasPets: hasPets === 'yes',
             takesMeds: takesMeds === 'yes',
             isStudent: isStudent === 'yes',
+            groceryStyle,
+            subscriptions,
+            clothingHabits,
+            entertainmentHabits,
+            groomingBudget,
+            travelPlans: travelPlans === 'yes',
         };
         const result = generateInitialBudget(input);
         setSuggestions(result);
@@ -103,15 +116,20 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
     startTransition(async () => {
       const suggestionsMap = new Map(suggestions.map(s => [s.category, s.planned]));
   
-      const promises = simpleBudgetCategories.map(categoryName => {
-        const plannedAmount = suggestionsMap.get(categoryName) || 0;
+      // Explicitly save a budget of 0 for categories not in the suggestions
+      simpleBudgetCategories.forEach(categoryName => {
+        if (!suggestionsMap.has(categoryName)) {
+          suggestionsMap.set(categoryName, 0);
+        }
+      });
+
+      const promises = Array.from(suggestionsMap.entries()).map(([categoryName, plannedAmount]) => {
         const budgetRef = doc(firestore, 'users', user.uid, 'budgets', categoryName);
         const budgetData = {
           category: categoryName,
           planned: plannedAmount,
           alertThreshold: 80, // Default threshold
         };
-        // Use non-blocking writes for better performance
         return setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
       });
   
@@ -119,8 +137,6 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
       const userProfileRef = doc(firestore, 'users', user.uid);
       setDocumentNonBlocking(userProfileRef, { onboardingComplete: true }, { merge: true });
   
-      // No need to await all promises here for UI purposes
-      
       toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
       
       onFinish();
@@ -136,6 +152,12 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
       return s;
     });
     setSuggestions(newSuggestions);
+  };
+  
+  const handleSubscriptionChange = (id: string) => {
+    setSubscriptions(prev => 
+      prev.includes(id) ? prev.filter(sub => sub !== id) : [...prev, id]
+    );
   };
 
   const progress = (currentStep / (STEPS.length - 1)) * 100;
@@ -185,15 +207,9 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                      <div>
                         <Label>מה מצב הדיור שלך?</Label>
                         <RadioGroup value={housing} onValueChange={setHousing} className="mt-2">
-                           <div className="flex items-center space-x-2 space-x-reverse">
-                             <RadioGroupItem value="rent" id="r1" /><Label htmlFor="r1">שכירות</Label>
-                           </div>
-                           <div className="flex items-center space-x-2 space-x-reverse">
-                             <RadioGroupItem value="parents" id="r2" /><Label htmlFor="r2">גר עם ההורים</Label>
-                           </div>
-                           <div className="flex items-center space-x-2 space-x-reverse">
-                             <RadioGroupItem value="own" id="r3" /><Label htmlFor="r3">דירה בבעלותי</Label>
-                           </div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="rent" id="r1" /><Label htmlFor="r1">שכירות</Label></div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="parents" id="r2" /><Label htmlFor="r2">גר עם ההורים</Label></div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="own" id="r3" /><Label htmlFor="r3">דירה בבעלותי (עם/בלי משכנתא)</Label></div>
                         </RadioGroup>
                         {(housing === 'rent' || housing === 'own') && (
                              <div className="mt-4">
@@ -202,7 +218,8 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                              </div>
                         )}
                     </div>
-                     <div>
+
+                    <div>
                         <Label>איך אתה מתנייד בדרך כלל?</Label>
                         <RadioGroup value={transportation} onValueChange={setTransportation} className="mt-2">
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="car" id="t1" /><Label htmlFor="t1">רכב פרטי</Label></div>
@@ -210,6 +227,16 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="walk" id="t3" /><Label htmlFor="t3">הולך ברגל / אופניים</Label></div>
                         </RadioGroup>
                     </div>
+
+                    <div>
+                      <Label>איך היית מתאר את סגנון קניות המזון שלך?</Label>
+                      <RadioGroup value={groceryStyle} onValueChange={setGroceryStyle} className="mt-2">
+                        <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="frugal" id="g1" /><Label htmlFor="g1">חסכני (מבשל בעיקר בבית)</Label></div>
+                        <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="standard" id="g2" /><Label htmlFor="g2">סטנדרטי (קונה מה שצריך)</Label></div>
+                        <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="premium" id="g3" /><Label htmlFor="g3">פרימיום (אוכל אורגני, מותגים)</Label></div>
+                      </RadioGroup>
+                    </div>
+
                     <div>
                         <Label>באיזו תדירות אתה אוכל בחוץ?</Label>
                         <RadioGroup value={diningOut} onValueChange={setDiningOut} className="mt-2">
@@ -218,27 +245,24 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="daily" id="d3" /><Label htmlFor="d3">רוב הימים</Label></div>
                         </RadioGroup>
                     </div>
-                    <div>
-                        <Label>האם יש לך ילדים?</Label>
-                        <RadioGroup value={hasChildren} onValueChange={setHasChildren} className="mt-2">
-                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="yes" id="children-yes" /><Label htmlFor="children-yes">כן</Label></div>
-                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="children-no" /><Label htmlFor="children-no">לא</Label></div>
-                        </RadioGroup>
+
+                     <div>
+                        <Label>אילו מנויים/שירותים חודשיים יש לך?</Label>
+                        <div className="mt-2 space-y-2">
+                            <div className="flex items-center space-x-2 space-x-reverse"><Checkbox id="sub-tv" checked={subscriptions.includes('tv')} onCheckedChange={() => handleSubscriptionChange('tv')} /><Label htmlFor="sub-tv">שירותי סטרימינג (נטפליקס, דיסני+)</Label></div>
+                            <div className="flex items-center space-x-2 space-x-reverse"><Checkbox id="sub-music" checked={subscriptions.includes('music')} onCheckedChange={() => handleSubscriptionChange('music')} /><Label htmlFor="sub-music">מנוי מוזיקה (ספוטיפיי, אפל מיוזיק)</Label></div>
+                            <div className="flex items-center space-x-2 space-x-reverse"><Checkbox id="sub-gym" checked={subscriptions.includes('gym')} onCheckedChange={() => handleSubscriptionChange('gym')} /><Label htmlFor="sub-gym">מנוי לחדר כושר</Label></div>
+                        </div>
                     </div>
-                    <div>
-                        <Label>האם יש לך חיות מחמד?</Label>
-                        <RadioGroup value={hasPets} onValueChange={setHasPets} className="mt-2">
-                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="yes" id="pets-yes" /><Label htmlFor="pets-yes">כן</Label></div>
-                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="pets-no" /><Label htmlFor="pets-no">לא</Label></div>
-                        </RadioGroup>
-                    </div>
-                    <div>
+
+                     <div>
                         <Label>האם אתה נוטל תרופות קבועות / מיוחדות?</Label>
                         <RadioGroup value={takesMeds} onValueChange={setTakesMeds} className="mt-2">
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="yes" id="meds-yes" /><Label htmlFor="meds-yes">כן</Label></div>
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="meds-no" /><Label htmlFor="meds-no">לא</Label></div>
                         </RadioGroup>
                     </div>
+
                     <div>
                         <Label>האם אתה סטודנט או לוקח קורסים?</Label>
                         <RadioGroup value={isStudent} onValueChange={setIsStudent} className="mt-2">
@@ -246,6 +270,25 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="student-no" /><Label htmlFor="student-no">לא</Label></div>
                         </RadioGroup>
                     </div>
+                    
+                    <div>
+                      <Label>באיזו תדירות אתה קונה בגדים או נעליים?</Label>
+                      <RadioGroup value={clothingHabits} onValueChange={setClothingHabits} className="mt-2">
+                        <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="rarely" id="c1" /><Label htmlFor="c1">לעיתים רחוקות</Label></div>
+                        <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="seasonally" id="c2" /><Label htmlFor="c2">בתחילת עונה / בחגים</Label></div>
+                        <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="monthly" id="c3" /><Label htmlFor="c3">פעם בחודש או יותר</Label></div>
+                      </RadioGroup>
+                    </div>
+
+                    <div>
+                      <Label>מהן פעילויות הפנאי העיקריות שלך?</Label>
+                      <RadioGroup value={entertainmentHabits} onValueChange={setEntertainmentHabits} className="mt-2">
+                        <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="home" id="e1" /><Label htmlFor="e1">בעיקר בבית (ספרים, משחקים)</Label></div>
+                        <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="out" id="e2" /><Label htmlFor="e2">יציאות (סרטים, פאבים)</Label></div>
+                        <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="sports" id="e3" /><Label htmlFor="e3">ספורט או תחביבים יקרים</Label></div>
+                      </RadioGroup>
+                    </div>
+                    
                     <div>
                         <Label>האם יש לך חובות פעילים (הלוואות, מינוס)?</Label>
                         <RadioGroup value={hasDebt} onValueChange={setHasDebt} className="mt-2">
@@ -253,6 +296,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="debt-no" /><Label htmlFor="debt-no">לא</Label></div>
                         </RadioGroup>
                     </div>
+
                      <div>
                         <Label>מהי מטרת החיסכון העיקרית שלך כרגע?</Label>
                         <RadioGroup value={savingsGoal} onValueChange={setSavingsGoal} className="mt-2">
@@ -260,6 +304,35 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="emergency" id="sg-emergency" /><Label htmlFor="sg-emergency">קרן חירום</Label></div>
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="large-purchase" id="sg-large-purchase" /><Label htmlFor="sg-large-purchase">רכישה גדולה (רכב, חופשה)</Label></div>
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="investing" id="sg-investing" /><Label htmlFor="sg-investing">השקעה</Label></div>
+                        </RadioGroup>
+                    </div>
+                    
+                    <div>
+                        <Label>האם יש לך חיות מחמד?</Label>
+                        <RadioGroup value={hasPets} onValueChange={setHasPets} className="mt-2">
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="yes" id="pets-yes" /><Label htmlFor="pets-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="pets-no" /><Label htmlFor="pets-no">לא</Label></div>
+                        </RadioGroup>
+                    </div>
+                    
+                    <div>
+                        <Label>האם יש לך ילדים?</Label>
+                        <RadioGroup value={hasChildren} onValueChange={setHasChildren} className="mt-2">
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="yes" id="children-yes" /><Label htmlFor="children-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="children-no" /><Label htmlFor="children-no">לא</Label></div>
+                        </RadioGroup>
+                    </div>
+                    
+                    <div>
+                        <Label htmlFor="grooming-budget">כמה אתה מוציא בחודש על טיפוח ויופי (תספורת, קוסמטיקה)? (₪)</Label>
+                        <Input id="grooming-budget" type="number" value={groomingBudget} onChange={(e) => setGroomingBudget(Number(e.target.value))} />
+                    </div>
+
+                    <div>
+                        <Label>האם אתה מתכנן לטוס לחו"ל או חופשה גדולה בשנה הקרובה?</Label>
+                        <RadioGroup value={travelPlans} onValueChange={setTravelPlans} className="mt-2">
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="yes" id="travel-yes" /><Label htmlFor="travel-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="travel-no" /><Label htmlFor="travel-no">לא</Label></div>
                         </RadioGroup>
                     </div>
                 </div>

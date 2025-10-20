@@ -16,23 +16,30 @@ export type InitialBudgetInput = {
     hasPets: boolean;
     takesMeds: boolean;
     isStudent: boolean;
+    groceryStyle: string;
+    subscriptions: string[];
+    clothingHabits: string;
+    entertainmentHabits: string;
+    groomingBudget: number;
+    travelPlans: boolean;
 };
 
-// Base percentages for a "standard" budget.
+// Base percentages for a "standard" budget, used as a fallback or starting point.
 const basePercentages: { [key: string]: number } = {
-    'דיור': 0.30,
-    'קניות': 0.15, // Groceries, etc.
+    'קניות': 0.15,
     'תחבורה': 0.10,
     'חשבונות ושירותים': 0.05,
-    'אוכל ושתיה': 0.07, // Discretionary eating out
+    'אוכל ושתיה': 0.07,
     'בילוי ופנאי': 0.05,
     'חיסכון והשקעות': 0.10,
     'בריאות': 0.03,
     'ביגוד והנעלה': 0.03,
     'תשלומים וחיובים': 0.05,
-    'חינוך': 0.0, // Conditional
-    'חיות מחמד': 0.0, // Conditional
-    'משפחה וילדים': 0.0, // Conditional
+    'חינוך': 0.0,
+    'חיות מחמד': 0.0,
+    'משפחה וילדים': 0.0,
+    'יופי וטיפוח': 0.02,
+    'נסיעות': 0.03,
     'הוצאות שונות': 0.02,
 };
 
@@ -40,7 +47,6 @@ const basePercentages: { [key: string]: number } = {
 export function generateInitialBudget(input: InitialBudgetInput): BudgetItem[] {
     const { monthlyIncome } = input;
     const suggestions: { [key: string]: number } = {};
-
     let remainingIncome = monthlyIncome;
 
     // 1. Handle Fixed & High Priority Costs First
@@ -57,91 +63,107 @@ export function generateInitialBudget(input: InitialBudgetInput): BudgetItem[] {
     // Debt
     if (input.hasDebt) {
         const debtPayment = Math.min(remainingIncome, monthlyIncome * 0.1); // Up to 10% for debt
-        suggestions['תשלומים וחיובים'] = debtPayment;
+        suggestions['תשלומים וחיובים'] = (suggestions['תשלומים וחיובים'] || 0) + debtPayment;
         remainingIncome -= debtPayment;
     }
 
     // Savings
     if (input.savingsGoal !== 'none') {
-        let savingsAmount = 0;
-        switch (input.savingsGoal) {
-            case 'emergency': savingsAmount = monthlyIncome * 0.10; break;
-            case 'large-purchase': savingsAmount = monthlyIncome * 0.15; break;
-            case 'investing': savingsAmount = monthlyIncome * 0.12; break;
+        let savingsPercentage = 0.10; // Default
+        if (input.savingsGoal === 'large-purchase') savingsPercentage = 0.15;
+        if (input.savingsGoal === 'investing') savingsPercentage = 0.12;
+        
+        let savingsAmount = monthlyIncome * savingsPercentage;
+        if (input.travelPlans) {
+            savingsAmount += monthlyIncome * 0.05; // Add extra for travel goal
         }
         savingsAmount = Math.min(remainingIncome, savingsAmount);
         suggestions['חיסכון והשקעות'] = savingsAmount;
         remainingIncome -= savingsAmount;
     }
-    
-    // 2. Adjust percentages based on lifestyle
-    const adjustedPercentages = { ...basePercentages };
+
+    // 2. Calculate budgets from direct user input and clear rules
+    // Groceries
+    let groceryMultiplier = 1.0;
+    if (input.groceryStyle === 'frugal') groceryMultiplier = 0.7;
+    if (input.groceryStyle === 'premium') groceryMultiplier = 1.3;
+    suggestions['קניות'] = monthlyIncome * basePercentages['קניות'] * groceryMultiplier;
 
     // Transportation
-    if (input.transportation === 'car') adjustedPercentages['תחבורה'] = 0.15;
-    if (input.transportation === 'walk') adjustedPercentages['תחבורה'] = 0.02;
+    let transportMultiplier = 1.0;
+    if (input.transportation === 'car') transportMultiplier = 1.5;
+    if (input.transportation === 'walk') transportMultiplier = 0.2;
+    suggestions['תחבורה'] = monthlyIncome * basePercentages['תחבורה'] * transportMultiplier;
 
-    // Dining out
-    if (input.diningOutFrequency === 'rarely') adjustedPercentages['אוכל ושתיה'] = 0.03;
-    if (input.diningOutFrequency === 'daily') adjustedPercentages['אוכל ושתיה'] = 0.12;
+    // Food & Drink (Dining Out)
+    let diningMultiplier = 1.0;
+    if (input.diningOutFrequency === 'rarely') diningMultiplier = 0.4;
+    if (input.diningOutFrequency === 'daily') diningMultiplier = 1.8;
+    suggestions['אוכל ושתיה'] = monthlyIncome * basePercentages['אוכל ושתיה'] * diningMultiplier;
+    
+    // Bills & Services from subscriptions
+    let billsTotal = 50; // Base for unknown utilities
+    if (input.subscriptions.includes('tv')) billsTotal += 70;
+    if (input.subscriptions.includes('music')) billsTotal += 25;
+    if (input.subscriptions.includes('gym')) billsTotal += 200;
+    suggestions['חשבונות ושירותים'] = billsTotal;
 
     // Health
-    if (!input.takesMeds) adjustedPercentages['בריאות'] = 0.01; // Lower base for non-meds
+    suggestions['בריאות'] = input.takesMeds === 'yes' ? 300 : 100;
 
-    // Conditional Categories
-    if (input.hasPets) adjustedPercentages['חיות מחמד'] = 0.04;
-    if (input.hasChildren) adjustedPercentages['משפחה וילדים'] = 0.10;
-    if (input.isStudent) adjustedPercentages['חינוך'] = 0.05;
-
-
-    // 3. Allocate remaining income based on adjusted percentages
-    const discretionaryCategories = [
-        'קניות', 'תחבורה', 'חשבונות ושירותים', 'אוכל ושתיה',
-        'בילוי ופנאי', 'בריאות', 'ביגוד והנעלה', 'חינוך', 'חיות מחמד',
-        'משפחה וילדים', 'הוצאות שונות'
-    ];
-
-    let totalPercentage = discretionaryCategories.reduce((sum, cat) => sum + (adjustedPercentages[cat] || 0), 0);
-
-    for (const category of discretionaryCategories) {
-        if (adjustedPercentages[category] > 0) {
-            const allocation = (adjustedPercentages[category] / totalPercentage) * remainingIncome;
-            suggestions[category] = (suggestions[category] || 0) + allocation;
-        }
-    }
+    // Clothing
+    let clothingMultiplier = 1.0;
+    if (input.clothingHabits === 'rarely') clothingMultiplier = 0.5;
+    if (input.clothingHabits === 'monthly') clothingMultiplier = 1.5;
+    suggestions['ביגוד והנעלה'] = monthlyIncome * basePercentages['ביגוד והנעלה'] * clothingMultiplier;
     
+    // Entertainment
+    let entertainmentMultiplier = 1.0;
+    if (input.entertainmentHabits === 'out') entertainmentMultiplier = 1.5;
+    if (input.entertainmentHabits === 'sports') entertainmentMultiplier = 2.0;
+    suggestions['בילוי ופנאי'] = monthlyIncome * basePercentages['בילוי ופנאי'] * entertainmentMultiplier;
+
+    // Grooming
+    suggestions['יופי וטיפוח'] = input.groomingBudget > 0 ? input.groomingBudget : 50;
+
+    // Conditional categories
+    if (input.isStudent) suggestions['חינוך'] = 250;
+    if (input.hasPets) suggestions['חיות מחמד'] = 250;
+    if (input.hasChildren) suggestions['משפחה וילדים'] = 500;
+    if (input.travelPlans) suggestions['נסיעות'] = (suggestions['נסיעות'] || 0) + 150;
+
+
+    // 3. Sum up calculated discretionary spending and scale if over budget
+    const discretionaryCategories = [
+        'קניות', 'תחבורה', 'אוכל ושתיה', 'חשבונות ושירותים', 'בריאות', 'ביגוד והנעלה', 
+        'בילוי ופנאי', 'יופי וטיפוח', 'חינוך', 'חיות מחמד', 'משפחה וילדים', 'נסיעות'
+    ];
+    let totalDiscretionaryPlanned = discretionaryCategories.reduce((sum, cat) => sum + (suggestions[cat] || 0), 0);
+
+    if (totalDiscretionaryPlanned > remainingIncome) {
+        const scalingFactor = remainingIncome / totalDiscretionaryPlanned;
+        discretionaryCategories.forEach(cat => {
+            if (suggestions[cat]) {
+                suggestions[cat] *= scalingFactor;
+            }
+        });
+    }
+
     // 4. Final Formatting and Cleanup
     const finalBudget: BudgetItem[] = [];
-    let totalPlanned = 0;
-
-    for (const [category, planned] of Object.entries(suggestions)) {
-        // Ensure we don't add categories that should be excluded
+    for (const category of simpleBudgetCategories) {
+        // Skip categories that should be removed
         if (category === 'חיות מחמד' && !input.hasPets) continue;
         if (category === 'משפחה וילדים' && !input.hasChildren) continue;
         if (category === 'חינוך' && !input.isStudent) continue;
-
+        
+        const planned = suggestions[category] || 0;
         const roundedPlanned = Math.round(planned / 10) * 10; // Round to nearest 10
+        
         if (roundedPlanned > 0) {
             finalBudget.push({ category, planned: roundedPlanned });
-            totalPlanned += roundedPlanned;
         }
     }
     
-    // If we over-budgeted due to rounding, trim from discretionary categories
-    let overBudget = totalPlanned - monthlyIncome;
-    if (overBudget > 0) {
-        const entertainmentItem = finalBudget.find(b => b.category === 'בילוי ופנאי');
-        if (entertainmentItem) {
-            entertainmentItem.planned = Math.max(0, entertainmentItem.planned - overBudget);
-        }
-    }
-    
-     // Add max health budget rule
-    const healthItem = finalBudget.find(b => b.category === 'בריאות');
-    if (healthItem && !input.takesMeds) {
-        healthItem.planned = Math.min(healthItem.planned, 150);
-    }
-
-
-    return finalBudget.filter(item => item.planned > 0);
+    return finalBudget;
 }
