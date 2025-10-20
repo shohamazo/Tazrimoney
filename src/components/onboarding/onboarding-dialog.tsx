@@ -16,8 +16,8 @@ import { Loader2, Wand2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { generateBudgetSuggestions, type BudgetSuggestionInput, type BudgetSuggestionOutput } from '@/ai/flows/generate-budget-suggestions';
 import { doc } from 'firebase/firestore';
+import { generateInitialBudget, type InitialBudgetInput, type BudgetItem } from '@/lib/budget-calculator';
 
 interface OnboardingDialogProps {
   isOpen: boolean;
@@ -38,6 +38,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
 
+  // State for all user inputs
   const [income, setIncome] = useState<number>(5000);
   const [housing, setHousing] = useState('rent');
   const [housingCost, setHousingCost] = useState<number>(0);
@@ -50,11 +51,11 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   const [takesMeds, setTakesMeds] = useState('no');
   const [isStudent, setIsStudent] = useState('no');
   
-  const [suggestions, setSuggestions] = useState<BudgetSuggestionOutput['suggestions']>([]);
+  const [suggestions, setSuggestions] = useState<BudgetItem[]>([]);
 
 
   const handleNext = () => {
-    if (currentStep === 2) { // After lifestyle questions
+    if (currentStep === 2) { // After lifestyle questions, generate budget locally
       handleGetSuggestions();
     } else {
       setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
@@ -64,52 +65,48 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   const handleBack = () => setCurrentStep(prev => Math.max(prev - 1, 0));
 
   const handleGetSuggestions = () => {
-    startTransition(async () => {
-        try {
-            const input: BudgetSuggestionInput = {
-                monthlyIncome: income,
-                housing: housing,
-                monthlyHousingCost: housingCost,
-                transportation: transportation,
-                diningOutFrequency: diningOut,
-                hasChildren: hasChildren,
-                hasDebt: hasDebt,
-                savingsGoal: savingsGoal,
-                hasPets: hasPets,
-                takesMeds: takesMeds,
-                isStudent: isStudent,
-            };
-            const result = await generateBudgetSuggestions(input);
-            setSuggestions(result.suggestions);
-            setCurrentStep(prev => prev + 1);
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'שגיאה', description: 'לא ניתן היה להפיק הצעות תקציב כרגע.' });
-        }
+    startTransition(() => {
+        const input: InitialBudgetInput = {
+            monthlyIncome: income,
+            housing,
+            monthlyHousingCost: housingCost,
+            transportation,
+            diningOutFrequency: diningOut,
+            hasChildren: hasChildren === 'yes',
+            hasDebt: hasDebt === 'yes',
+            savingsGoal,
+            hasPets: hasPets === 'yes',
+            takesMeds: takesMeds === 'yes',
+            isStudent: isStudent === 'yes',
+        };
+        const result = generateInitialBudget(input);
+        setSuggestions(result);
+        setCurrentStep(prev => prev + 1);
     });
   }
   
   const handleFinishAndSave = () => {
     if(!firestore || !user) return;
 
-    startTransition(() => {
+    startTransition(async () => {
         // Save budget suggestions to Firestore non-blockingly
         if(suggestions.length > 0) {
-            suggestions.forEach(suggestion => {
+            const promises = suggestions.map(suggestion => {
                 const budgetRef = doc(firestore, 'users', user.uid, 'budgets', suggestion.category);
                 const budgetData = {
                     category: suggestion.category,
                     planned: suggestion.planned,
                     alertThreshold: 80, // Default threshold
                 };
-                setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
+                return setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
             });
+            // No need to await promises for optimistic UI
         }
         
         toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
         
         // This will now correctly trigger the state update in AuthGuard
-        onFinish();
+        await onFinish();
     });
   }
   
@@ -180,9 +177,9 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                              <RadioGroupItem value="own" id="r3" /><Label htmlFor="r3">דירה בבעלותי</Label>
                            </div>
                         </RadioGroup>
-                        {housing === 'rent' && (
+                        {(housing === 'rent' || housing === 'own') && (
                              <div className="mt-4">
-                                <Label htmlFor="housing-cost">שכר דירה חודשי (₪)</Label>
+                                <Label htmlFor="housing-cost">{housing === 'rent' ? 'שכר דירה חודשי (₪)' : 'תשלום משכנתא חודשי (₪)'}</Label>
                                 <Input id="housing-cost" type="number" value={housingCost} onChange={(e) => setHousingCost(Number(e.target.value))} />
                              </div>
                         )}
@@ -232,7 +229,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                         </RadioGroup>
                     </div>
                     <div>
-                        <Label>האם יש לך חובות פעילים (הלוואות, כרטיסי אשראי)?</Label>
+                        <Label>האם יש לך חובות פעילים (הלוואות, מינוס)?</Label>
                         <RadioGroup value={hasDebt} onValueChange={setHasDebt} className="mt-2">
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="yes" id="debt-yes" /><Label htmlFor="debt-yes">כן</Label></div>
                            <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="no" id="debt-no" /><Label htmlFor="debt-no">לא</Label></div>
@@ -262,7 +259,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                 {isPending ? (
                     <div className="flex flex-col items-center justify-center h-48 gap-2">
                         <Loader2 className="h-8 w-8 animate-spin" />
-                        <p>חושב...</p>
+                        <p>מעבד נתונים...</p>
                     </div>
                 ) : (
                     <div className="space-y-4 py-4 max-h-96 overflow-y-auto">
@@ -296,7 +293,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   };
 
   return (
-    <Dialog open={isOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !isPending) onFinish(); }}>
       <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()} hideCloseButton={true}>
         <div className="p-2 space-y-4">
           <Progress value={progress} className="w-full" />
