@@ -25,20 +25,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isUserLoading) return;
 
-    // Handle redirects for unauthenticated users
-    if (!user && !isPublicRoute) {
-      router.replace('/login');
-    }
-    
     if (user) {
-        // Handle redirects for authenticated users
-        if (isPublicRoute) {
-            router.replace('/');
-        }
-        // Handle email verification redirect
-        if (user.providerData.some(p => p.providerId === 'password') && !user.emailVerified && pathname !== '/verify-email') {
-            router.replace('/verify-email');
-        }
+      if (user.providerData.some(p => p.providerId === 'password') && !user.emailVerified && pathname !== '/verify-email') {
+        router.replace('/verify-email');
+      } else if (isPublicRoute) {
+        router.replace('/');
+      }
+    } else if (!isPublicRoute) {
+      router.replace('/login');
     }
   }, [user, isUserLoading, pathname, isPublicRoute, router]);
 
@@ -84,15 +78,21 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
 
   const handleFinishOnboarding = async () => {
-    if (!user || !firestore) return;
+    if (!user || !firestore || !profile) return;
+    
+    // 1. Immediately update the local state to unmount the wizard
+    setProfile({ ...profile, onboardingComplete: true });
+
+    // 2. Persist the change to Firestore in the background
     const userProfileRef = doc(firestore, 'users', user.uid);
     try {
+      // Use setDoc with merge to only update the onboarding field
       await setDoc(userProfileRef, { onboardingComplete: true }, { merge: true });
-      // Manually update profile state to trigger re-render
-      setProfile(prev => prev ? { ...prev, onboardingComplete: true } : { id: user!.uid, onboardingComplete: true });
     } catch (error) {
       console.error("Failed to mark onboarding as complete:", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not save onboarding status.' });
+       // Optional: Revert local state if DB write fails, though less critical
+      setProfile({ ...profile, onboardingComplete: false });
     }
   };
 
@@ -127,9 +127,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
 
-  // 4. CRITICAL: If onboarding is not complete (or we are forcing it), show the wizard.
-  // TEMPORARY CHANGE: The 'true' forces the wizard for all users.
-  if (user && profile && (!profile.onboardingComplete || true) ) {
+  // 4. CRITICAL: If onboarding is not complete, show the wizard.
+  if (user && profile && !profile.onboardingComplete) {
     return <OnboardingDialog isOpen={true} onFinish={handleFinishOnboarding} />;
   }
 

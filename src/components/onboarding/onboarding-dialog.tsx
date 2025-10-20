@@ -87,6 +87,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
     if(!firestore || !user || !onFinish) return;
 
     startTransition(() => {
+        // Save budget suggestions to Firestore non-blockingly
         if(suggestions.length > 0) {
             suggestions.forEach(suggestion => {
                 const budgetRef = doc(firestore, 'users', user.uid, 'budgets', suggestion.category);
@@ -101,7 +102,8 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
         
         toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
         
-        // Immediately trigger the state update in AuthGuard
+        // Immediately call onFinish to update the AuthGuard's state and close the dialog.
+        // The onFinish function itself will handle the DB write for the user's onboarding status.
         onFinish();
     });
   }
@@ -303,5 +305,3 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
     </Dialog>
   );
 }
-
-    
