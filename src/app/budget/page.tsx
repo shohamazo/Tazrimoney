@@ -37,20 +37,22 @@ export default function BudgetPage() {
   const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesQuery);
 
   const budgets = React.useMemo(() => {
-    return simpleBudgetCategories.map(category => {
-      const budgetConfig = budgetsData?.find(b => b.category === category);
-      const spent = expenses
-        ?.filter(e => e.category === category)
-        .reduce((acc, e) => acc + e.amount, 0) || 0;
-      
-      return {
-        id: budgetConfig?.id || category,
-        category: category,
-        planned: budgetConfig?.planned ?? 1000,
-        spent: spent,
-        alertThreshold: budgetConfig?.alertThreshold ?? 80, // Default to 80%
-      };
-    });
+    return simpleBudgetCategories
+      .map(category => {
+        const budgetConfig = budgetsData?.find(b => b.category === category);
+        const spent = expenses
+          ?.filter(e => e.category === category)
+          .reduce((acc, e) => acc + e.amount, 0) || 0;
+        
+        return {
+          id: budgetConfig?.id || category,
+          category: category,
+          planned: budgetConfig?.planned ?? 1000,
+          spent: spent,
+          alertThreshold: budgetConfig?.alertThreshold ?? 80,
+        };
+      })
+      .filter(budget => budget.planned > 0); // Only show budgets with a planned amount > 0
   }, [budgetsData, expenses]);
   
   useEffect(() => {

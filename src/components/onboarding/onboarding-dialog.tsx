@@ -16,8 +16,9 @@ import { Loader2, Wand2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { generateInitialBudget, type InitialBudgetInput, type BudgetItem } from '@/lib/budget-calculator';
+import { simpleBudgetCategories } from '@/lib/expense-categories';
 
 interface OnboardingDialogProps {
   isOpen: boolean;
@@ -89,27 +90,31 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
     if (!firestore || !user) return;
   
     startTransition(async () => {
-      // Save budget suggestions to Firestore in the background
-      if (suggestions.length > 0) {
-        suggestions.forEach(suggestion => {
-          const budgetRef = doc(firestore, 'users', user.uid, 'budgets', suggestion.category);
-          const budgetData = {
-            category: suggestion.category,
-            planned: suggestion.planned,
-            alertThreshold: 80, // Default threshold
-          };
-          setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
+        const suggestionsMap = new Map(suggestions.map(s => [s.category, s.planned]));
+  
+        // Process all budget categories.
+        // Set suggested values, and set 0 for categories that are not suggested.
+        simpleBudgetCategories.forEach(categoryName => {
+            const plannedAmount = suggestionsMap.get(categoryName) || 0;
+            
+            const budgetRef = doc(firestore, 'users', user.uid, 'budgets', categoryName);
+            const budgetData = {
+                category: categoryName,
+                planned: plannedAmount,
+                alertThreshold: 80, // Default threshold
+            };
+            // This is a non-blocking write.
+            setDocumentNonBlocking(budgetRef, budgetData, { merge: true });
         });
-      }
   
-      // Mark onboarding as complete in Firestore
-      const userProfileRef = doc(firestore, 'users', user.uid);
-      await setDoc(userProfileRef, { onboardingComplete: true }, { merge: true });
+        // Mark onboarding as complete in Firestore
+        const userProfileRef = doc(firestore, 'users', user.uid);
+        await setDocumentNonBlocking(userProfileRef, { onboardingComplete: true }, { merge: true });
   
-      toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
+        toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
       
-      // Immediately call onFinish to update the UI state in AuthGuard
-      onFinish();
+        // Immediately call onFinish to update the UI state in AuthGuard
+        onFinish();
     });
   };
   
