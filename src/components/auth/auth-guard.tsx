@@ -1,5 +1,5 @@
 'use client';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -24,16 +24,24 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isUserLoading) return;
+
+    // Handle redirects for unauthenticated users
     if (!user && !isPublicRoute) {
       router.replace('/login');
     }
-    if (user && isPublicRoute) {
-      router.replace('/');
-    }
-    if (user && user.providerData.some(p => p.providerId === 'password') && !user.emailVerified && pathname !== '/verify-email') {
-      router.replace('/verify-email');
+    
+    if (user) {
+        // Handle redirects for authenticated users
+        if (isPublicRoute) {
+            router.replace('/');
+        }
+        // Handle email verification redirect
+        if (user.providerData.some(p => p.providerId === 'password') && !user.emailVerified && pathname !== '/verify-email') {
+            router.replace('/verify-email');
+        }
     }
   }, [user, isUserLoading, pathname, isPublicRoute, router]);
+
 
   useEffect(() => {
     if (isUserLoading || !user || !firestore) {
@@ -102,21 +110,26 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
   
+  // 2. Handle redirects for unauthenticated users
   if (!user && !isPublicRoute) {
      return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
   }
   
-  if (user && isPublicRoute) {
-     return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
-  }
-  
-   if (user && user.providerData.some(p => p.providerId === 'password') && !user.emailVerified && pathname !== '/verify-email') {
-      return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
+  // 3. Handle redirects for logged-in users on public/special routes
+  if (user) {
+    if (isPublicRoute) {
+       return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
     }
+    
+     if (user.providerData.some(p => p.providerId === 'password') && !user.emailVerified && pathname !== '/verify-email') {
+        return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
+      }
+  }
 
 
-  // 4. CRITICAL: If onboarding is not complete, show the wizard and nothing else.
-  if (user && profile && !profile.onboardingComplete) {
+  // 4. CRITICAL: If onboarding is not complete (or we are forcing it), show the wizard.
+  // TEMPORARY CHANGE: The 'true' forces the wizard for all users.
+  if (user && profile && (!profile.onboardingComplete || true) ) {
     return <OnboardingDialog isOpen={true} onFinish={handleFinishOnboarding} />;
   }
 
