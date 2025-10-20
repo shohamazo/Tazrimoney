@@ -167,7 +167,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
       case 'welcome':
         return (
           <>
-            <DialogHeader className='text-left'>
+            <DialogHeader className='text-right'>
               <DialogTitle>{STEPS[currentStep].title}</DialogTitle>
               <DialogDescription>
                 בוא ניקח כמה רגעים להגדיר את האפליקציה כדי שתתאים לך בדיוק.
@@ -182,7 +182,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
       case 'income':
         return (
             <>
-                <DialogHeader className='text-left'>
+                <DialogHeader className='text-right'>
                     <DialogTitle>{STEPS[currentStep].title}</DialogTitle>
                     <DialogDescription>
                         כדי לתת לך המלצות תקציב טובות, נצטרך לדעת מהי הכנסתך החודשית המוערכת (נטו).
@@ -197,7 +197,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
       case 'lifestyle':
         return (
             <>
-                <DialogHeader className='text-left'>
+                <DialogHeader className='text-right'>
                     <DialogTitle>{STEPS[currentStep].title}</DialogTitle>
                     <DialogDescription>
                         כמה שאלות קצרות על סגנון החיים שלך כדי שנוכל להתאים לך תקציב.
@@ -341,7 +341,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
       case 'ai-suggestions':
         return (
             <>
-                <DialogHeader className='text-left'>
+                <DialogHeader className='text-right'>
                     <DialogTitle className="flex items-center gap-2 justify-end"><Wand2 className="text-primary"/>{STEPS[currentStep].title}</DialogTitle>
                     <DialogDescription>
                         בהתבסס על התשובות שלך, הנה נקודת פתיחה לתקציב שלך. תוכל לשנות אותה בכל עת.
@@ -385,7 +385,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
        case 'summary':
         return (
             <>
-                <DialogHeader className='text-left'>
+                <DialogHeader className='text-right'>
                     <DialogTitle>{STEPS[currentStep].title}</DialogTitle>
                     <DialogDescription>
                         מעולה! התקציב הראשוני שלך מוכן. זכור, זוהי רק המלצה ותוכל להתאים אותה מתוך האפליקציה בכל רגע.
