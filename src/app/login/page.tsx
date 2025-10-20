@@ -248,7 +248,7 @@ export default function LoginPage() {
               </div>
             </div>
             <Button variant="outline" className="mt-4 w-full" onClick={handleGoogleSignInClick} disabled={isPending}>
-              {isPending ? <Loader2 className="animate-spin" /> : <> <svg role="img" viewBox="0 0 24 24" className="ms-2 h-4 w-4"> <path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.05 1.05-2.36 1.67-4.06 1.67-3.4 0-6.17-2.83-6.17-6.23s2.77-6.23 6.17-6.23c1.87 0 3.13.78 3.87 1.48l2.6-2.6C16.3 3.83 14.37 3 12.48 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c4.9 0 8.7-3.34 8.7-8.82 0-.64-.07-1.25-.16-1.84z"></path> </svg> Tazrimoney</>}
+              {isPending ? <Loader2 className="animate-spin" /> : <> <svg role="img" viewBox="0 0 24 24" className="ms-2 h-4 w-4"> <path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.05 1.05-2.36 1.67-4.06 1.67-3.4 0-6.17-2.83-6.17-6.23s2.77-6.23 6.17-6.23c1.87 0 3.13.78 3.87 1.48l2.6-2.6C16.3 3.83 14.37 3 12.48 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c4.9 0 8.7-3.34 8.7-8.82 0-.64-.07-1.25-.16-1.84z"></path> </svg> Google</>}
             </Button>
           </div>
           <div className="mt-4 text-center text-sm">
@@ -261,7 +261,7 @@ export default function LoginPage() {
       </div>
       <div className="hidden bg-muted lg:flex items-center justify-center p-10">
         <div className="text-center">
-            <PiggyBank className="size-24 text-primary mx-auto" />
+            <PiggyBank className="size-24 text-accent mx-auto" />
             <h1 className="mt-6 text-4xl font-bold tracking-tighter">Tazrimoney</h1>
             <p className="mt-4 text-lg text-muted-foreground">
               נהל את הכספים שלך, בדרך החכמה.

@@ -59,7 +59,7 @@ export function AppSidebar() {
     <div className="flex h-full flex-col">
       <SidebarHeader className="border-b border-sidebar-border">
         <Link href="/" className="flex items-center gap-3 p-2">
-          <PiggyBank className="size-8 text-sidebar-primary" />
+          <PiggyBank className="size-8 text-accent" />
           <div className="group-data-[collapsible=icon]:hidden">
             <h1 className="font-bold text-lg text-sidebar-foreground">Tazrimoney</h1>
           </div>
