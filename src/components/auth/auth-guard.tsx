@@ -4,17 +4,12 @@ import { useUser, useFirestore } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { OnboardingDialog } from '@/components/onboarding/onboarding-dialog';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useOnboarding } from '@/components/onboarding/onboarding-provider';
 
 const publicRoutes = ['/login', '/verify-email'];
-
-// --- Developer Flag ---
-// Set this to `true` to force the onboarding wizard to show for every user, every time.
-// Set to `false` for normal behavior (wizard shows only once).
-const FORCE_ONBOARDING_WIZARD = false;
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -22,12 +17,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
+  const { startWizard } = useOnboarding();
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isProfileLoading, setProfileLoading] = useState(true);
   
   const isPublicRoute = publicRoutes.includes(pathname);
 
+  // Handle route protection based on auth state
   useEffect(() => {
     if (isUserLoading) return;
 
@@ -42,7 +38,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, isUserLoading, pathname, isPublicRoute, router]);
 
-
+  // Handle user profile fetching and initial onboarding trigger
   useEffect(() => {
     if (isUserLoading || !user || !firestore) {
       if (!isUserLoading) {
@@ -58,7 +54,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       try {
         const docSnap = await getDoc(userProfileRef);
         if (docSnap.exists()) {
-          setProfile(docSnap.data() as UserProfile);
+          const profile = docSnap.data() as UserProfile;
+          if (!profile.onboardingComplete) {
+            startWizard();
+          }
         } else {
           // Profile doesn't exist, create it for the new user
           const newProfile: UserProfile = {
@@ -69,7 +68,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             onboardingComplete: false,
           };
           await setDoc(userProfileRef, newProfile);
-          setProfile(newProfile);
+          startWizard(); // Trigger wizard for new user
         }
       } catch (error) {
         console.error("Error fetching or creating user profile:", error);
@@ -80,22 +79,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     };
 
     fetchOrCreateProfile();
-  }, [user, isUserLoading, firestore, toast]);
+  }, [user, isUserLoading, firestore, toast, startWizard]);
 
-
-  const handleFinishOnboarding = () => {
-    if (!profile) return;
-    // This is the critical change: update the local state immediately
-    // to hide the wizard.
-    setProfile({ ...profile, onboardingComplete: true });
-  };
-
-
-  // --- Decision Logic ---
 
   const isLoading = isUserLoading || isProfileLoading;
 
-  // 1. Show main loader while auth or profile state is being determined
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -104,12 +92,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
   
-  // 2. Handle redirects for unauthenticated users
+  // Handle redirects for unauthenticated users
   if (!user && !isPublicRoute) {
      return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
   }
   
-  // 3. Handle redirects for logged-in users on public/special routes
+  // Handle redirects for logged-in users on public/special routes
   if (user) {
     if (isPublicRoute) {
        return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
@@ -120,13 +108,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       }
   }
 
-
-  // 4. CRITICAL: If onboarding is not complete OR if the force flag is on, show the wizard.
-  if (user && profile && (FORCE_ONBOARDING_WIZARD || !profile.onboardingComplete)) {
-    return <OnboardingDialog isOpen={true} onFinish={handleFinishOnboarding} />;
-  }
-
-
-  // 5. If all checks pass, render the requested page
+  // If all checks pass, render the requested page
+  // The OnboardingProvider will handle showing the wizard if needed
   return <>{children}</>;
 }

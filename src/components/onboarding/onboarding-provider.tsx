@@ -1,52 +1,51 @@
 'use client';
 
-import React, { createContext, useContext, useEffect } from 'react';
-import { useFirebase } from '@/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import type { UserProfile } from '@/lib/types';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { OnboardingDialog } from './onboarding-dialog';
+import { useFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
-// This provider is now much simpler. Its main job is to ensure a user profile
-// document exists in Firestore. The decision to show the dialog is now handled
-// by the AuthGuard.
+interface OnboardingContextType {
+  startWizard: () => void;
+}
+
+const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
+
+export function useOnboarding() {
+  const context = useContext(OnboardingContext);
+  if (!context) {
+    throw new Error('useOnboarding must be used within an OnboardingProvider');
+  }
+  return context;
+}
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
-  const { firestore, user, isUserLoading } = useFirebase();
+  const [isWizardOpen, setWizardOpen] = useState(false);
+  const { user, firestore } = useFirebase();
 
-  useEffect(() => {
-    // This effect ensures that a user document exists in Firestore as soon as
-    // a user is authenticated.
-    const ensureUserProfileExists = async () => {
-      if (isUserLoading || !user || !firestore) {
-        return;
-      }
+  const startWizard = useCallback(() => {
+    setWizardOpen(true);
+  }, []);
 
+  const handleFinish = useCallback(async () => {
+    setWizardOpen(false);
+    // When the wizard is manually finished, we ensure the flag is set in Firestore.
+    if (user && firestore) {
       const userProfileRef = doc(firestore, 'users', user.uid);
-      
       try {
-        const docSnap = await getDoc(userProfileRef);
-        if (!docSnap.exists()) {
-          // If the document doesn't exist, create it silently.
-          // The AuthGuard will see `onboardingComplete: false` on its own fetch
-          // and decide to show the dialog.
-          const newProfile: UserProfile = {
-            id: user.uid,
-            email: user.email || null,
-            displayName: user.displayName || user.phoneNumber || null,
-            photoURL: user.photoURL || null,
-            onboardingComplete: false,
-          };
-          await setDoc(userProfileRef, newProfile, { merge: true });
-        }
+        await setDoc(userProfileRef, { onboardingComplete: true }, { merge: true });
       } catch (error) {
-        console.error("Error ensuring user profile exists:", error);
+        console.error("Failed to set onboarding complete flag:", error);
       }
-    };
+    }
+  }, [user, firestore]);
+  
+  const value = { startWizard };
 
-    ensureUserProfileExists();
-  }, [user, isUserLoading, firestore]);
-
-  // The provider no longer needs to manage the dialog's state (isOpen).
-  // It just renders its children. The AuthGuard now controls what is displayed.
-  return <>{children}</>;
+  return (
+    <OnboardingContext.Provider value={value}>
+      {children}
+      {isWizardOpen && <OnboardingDialog isOpen={isWizardOpen} onFinish={handleFinish} />}
+    </OnboardingContext.Provider>
+  );
 }

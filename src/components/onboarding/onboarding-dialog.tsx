@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useTransition, useMemo } from 'react';
+import React, { useState, useTransition, useMemo, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -135,15 +135,11 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
           return setDoc(budgetRef, budgetData, { merge: true });
         });
     
-        // Also mark onboarding as complete in Firestore
-        const userProfileRef = doc(firestore, 'users', user.uid);
-        const profilePromise = setDoc(userProfileRef, { onboardingComplete: true }, { merge: true });
-
-        await Promise.all([...budgetPromises, profilePromise]);
+        await Promise.all(budgetPromises);
     
         toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
         
-        onFinish(); // This will trigger the state change in AuthGuard
+        onFinish();
       } catch (error) {
         console.error("Failed to save onboarding data:", error);
         toast({ variant: 'destructive', title: "שגיאה", description: "לא ניתן היה לשמור את נתוני התקציב." });
@@ -174,7 +170,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
       case 'welcome':
         return (
           <>
-            <DialogHeader className="sm:text-right">
+            <DialogHeader>
               <DialogTitle>{STEPS[currentStep].title}</DialogTitle>
               <DialogDescription>
                 בוא ניקח כמה רגעים להגדיר את האפליקציה כדי שתתאים לך בדיוק.
@@ -189,7 +185,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
       case 'income':
         return (
             <>
-                <DialogHeader className="sm:text-right">
+                <DialogHeader>
                     <DialogTitle>{STEPS[currentStep].title}</DialogTitle>
                     <DialogDescription>
                         כדי לתת לך המלצות תקציב טובות, נצטרך לדעת מהי הכנסתך החודשית המוערכת (נטו).
@@ -204,13 +200,13 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
       case 'lifestyle':
         return (
             <>
-                <DialogHeader className="sm:text-right">
+                <DialogHeader>
                     <DialogTitle>{STEPS[currentStep].title}</DialogTitle>
                     <DialogDescription>
                         כמה שאלות קצרות על סגנון החיים שלך כדי שנוכל להתאים לך תקציב.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-6 py-4 max-h-[60vh] overflow-y-auto px-1 text-right">
+                <div className="space-y-6 py-4 max-h-[60vh] overflow-y-auto px-1">
                      <div className="text-right">
                         <Label>מה מצב הדיור שלך?</Label>
                         <RadioGroup value={housing} onValueChange={setHousing} className="mt-2">
@@ -348,7 +344,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
       case 'ai-suggestions':
         return (
             <>
-                <DialogHeader className="sm:text-right">
+                <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 "><Wand2 className="text-primary"/>{STEPS[currentStep].title}</DialogTitle>
                     <DialogDescription>
                         בהתבסס על התשובות שלך, הנה נקודת פתיחה לתקציב שלך. תוכל לשנות אותה בכל עת.
@@ -392,7 +388,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
        case 'summary':
         return (
             <>
-                <DialogHeader className="sm:text-right">
+                <DialogHeader>
                     <DialogTitle>{STEPS[currentStep].title}</DialogTitle>
                     <DialogDescription>
                         מעולה! התקציב הראשוני שלך מוכן. זכור, זוהי רק המלצה ותוכל להתאים אותה מתוך האפליקציה בכל רגע.

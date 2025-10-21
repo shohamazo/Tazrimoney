@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Loader2, User, KeyRound, AlertTriangle, Palette } from 'lucide-react';
+import { Loader2, User, KeyRound, AlertTriangle, Palette, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   handleLinkGoogle,
@@ -38,7 +38,7 @@ import { useTheme } from '@/components/theme/theme-provider';
 import { themes } from '@/lib/themes';
 import { cn } from '@/lib/utils';
 import { getIdentifierForUser } from '@/lib/utils';
-
+import { useOnboarding } from '@/components/onboarding/onboarding-provider';
 
 const profileSchema = z.object({
   displayName: z.string().min(2, 'השם חייב להכיל לפחות 2 תווים.'),
@@ -49,9 +49,10 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 export default function SettingsPage() {
   const { user, isUserLoading } = useFirebase();
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
-  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [isPending, startTransition] = React.useTransition();
+  const [deleteConfirmation, setDeleteConfirmation] = React.useState('');
   const { theme, setTheme } = useTheme();
+  const { startWizard } = useOnboarding();
 
   const {
     register,
@@ -200,6 +201,18 @@ export default function SettingsPage() {
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Wand2 /> אשף הגדרה</CardTitle>
+          <CardDescription>
+            הפעל מחדש את אשף ההגדרה הראשוני כדי להתאים את התקציב שלך מחדש.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+           <Button onClick={startWizard}>הפעל את אשף ההגדרה</Button>
         </CardContent>
       </Card>
 

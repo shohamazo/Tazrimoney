@@ -36,13 +36,13 @@ export default function RootLayout({
       <body className={cn('font-body antialiased')}>
         <FirebaseClientProvider>
           <ThemeProvider>
-            <OnboardingProvider>
-              <AuthGuard>
+            <AuthGuard>
+              <OnboardingProvider>
                 <SidebarProvider>
                   <MainLayout>{children}</MainLayout>
                 </SidebarProvider>
-              </AuthGuard>
-            </OnboardingProvider>
+              </OnboardingProvider>
+            </AuthGuard>
           </ThemeProvider>
         </FirebaseClientProvider>
         <Toaster />
