@@ -18,11 +18,11 @@ import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc } from 'firebase/firestore';
 import { generateInitialBudget, type InitialBudgetInput, type BudgetItem } from '@/lib/budget-calculator';
-import { simpleBudgetCategories } from '@/lib/expense-categories';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Checkbox } from '../ui/checkbox';
+import { simpleBudgetCategories } from '@/lib/expense-categories';
 
 interface OnboardingDialogProps {
   isOpen: boolean;
@@ -207,9 +207,9 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                      <div className="text-right">
                         <Label>מה מצב הדיור שלך?</Label>
                         <RadioGroup value={housing} onValueChange={setHousing} className="mt-2">
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="r1">שכירות</Label><RadioGroupItem value="rent" id="r1" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="r2">גר עם ההורים</Label><RadioGroupItem value="parents" id="r2" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="r3">דירה בבעלותי (עם/בלי משכנתא)</Label><RadioGroupItem value="own" id="r3" /></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="rent" id="r1" /><Label htmlFor="r1">שכירות</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="parents" id="r2" /><Label htmlFor="r2">גר עם ההורים</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="own" id="r3" /><Label htmlFor="r3">דירה בבעלותי (עם/בלי משכנתא)</Label></div>
                         </RadioGroup>
                         {(housing === 'rent' || housing === 'own') && (
                              <div className="mt-4">
@@ -222,104 +222,104 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                     <div className="text-right">
                         <Label>איך אתה מתנייד בדרך כלל?</Label>
                         <RadioGroup value={transportation} onValueChange={setTransportation} className="mt-2">
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="t1">רכב פרטי</Label><RadioGroupItem value="car" id="t1" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="t2">תחבורה ציבורית</Label><RadioGroupItem value="public" id="t2" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="t3">הולך ברגל / אופניים</Label><RadioGroupItem value="walk" id="t3" /></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="car" id="t1" /><Label htmlFor="t1">רכב פרטי</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="public" id="t2" /><Label htmlFor="t2">תחבורה ציבורית</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="walk" id="t3" /><Label htmlFor="t3">הולך ברגל / אופניים</Label></div>
                         </RadioGroup>
                     </div>
 
                     <div className="text-right">
                       <Label>איך היית מתאר את סגנון קניות המזון שלך?</Label>
                       <RadioGroup value={groceryStyle} onValueChange={setGroceryStyle} className="mt-2">
-                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="g1">חסכני (מבשל בעיקר בבית)</Label><RadioGroupItem value="frugal" id="g1" /></div>
-                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="g2">סטנדרטי (קונה מה שצריך)</Label><RadioGroupItem value="standard" id="g2" /></div>
-                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="g3">פרימיום (אוכל אורגני, מותגים)</Label><RadioGroupItem value="premium" id="g3" /></div>
+                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="frugal" id="g1" /><Label htmlFor="g1">חסכני (מבשל בעיקר בבית)</Label></div>
+                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="standard" id="g2" /><Label htmlFor="g2">סטנדרטי (קונה מה שצריך)</Label></div>
+                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="premium" id="g3" /><Label htmlFor="g3">פרימיום (אוכל אורגני, מותגים)</Label></div>
                       </RadioGroup>
                     </div>
 
                     <div className="text-right">
                         <Label>באיזו תדירות אתה אוכל בחוץ?</Label>
                         <RadioGroup value={diningOut} onValueChange={setDiningOut} className="mt-2">
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="d1">לעיתים רחוקות</Label><RadioGroupItem value="rarely" id="d1" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="d2">פעם-פעמיים בשבוע</Label><RadioGroupItem value="weekly" id="d2" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="d3">רוב הימים</Label><RadioGroupItem value="daily" id="d3" /></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="rarely" id="d1" /><Label htmlFor="d1">לעיתים רחוקות</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="weekly" id="d2" /><Label htmlFor="d2">פעם-פעמיים בשבוע</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="daily" id="d3" /><Label htmlFor="d3">רוב הימים</Label></div>
                         </RadioGroup>
                     </div>
 
                      <div className="text-right">
                         <Label>אילו מנויים/שירותים חודשיים יש לך?</Label>
                         <div className="mt-2 space-y-2">
-                            <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="sub-tv">שירותי סטרימינג (נטפליקס, דיסני+)</Label><Checkbox id="sub-tv" checked={subscriptions.includes('tv')} onCheckedChange={() => handleSubscriptionChange('tv')} /></div>
-                            <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="sub-music">מנוי מוזיקה (ספוטיפיי, אפל מיוזיק)</Label><Checkbox id="sub-music" checked={subscriptions.includes('music')} onCheckedChange={() => handleSubscriptionChange('music')} /></div>
-                            <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="sub-gym">מנוי לחדר כושר</Label><Checkbox id="sub-gym" checked={subscriptions.includes('gym')} onCheckedChange={() => handleSubscriptionChange('gym')} /></div>
+                            <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Checkbox id="sub-tv" checked={subscriptions.includes('tv')} onCheckedChange={() => handleSubscriptionChange('tv')} /><Label htmlFor="sub-tv">שירותי סטרימינג (נטפליקס, דיסני+)</Label></div>
+                            <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Checkbox id="sub-music" checked={subscriptions.includes('music')} onCheckedChange={() => handleSubscriptionChange('music')} /><Label htmlFor="sub-music">מנוי מוזיקה (ספוטיפיי, אפל מיוזיק)</Label></div>
+                            <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Checkbox id="sub-gym" checked={subscriptions.includes('gym')} onCheckedChange={() => handleSubscriptionChange('gym')} /><Label htmlFor="sub-gym">מנוי לחדר כושר</Label></div>
                         </div>
                     </div>
 
                      <div className="text-right">
                         <Label>האם אתה נוטל תרופות קבועות / מיוחדות?</Label>
                         <RadioGroup value={takesMeds} onValueChange={setTakesMeds} className="mt-2">
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="meds-yes">כן</Label><RadioGroupItem value="yes" id="meds-yes" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="meds-no">לא</Label><RadioGroupItem value="no" id="meds-no" /></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="yes" id="meds-yes" /><Label htmlFor="meds-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="no" id="meds-no" /><Label htmlFor="meds-no">לא</Label></div>
                         </RadioGroup>
                     </div>
 
                     <div className="text-right">
                         <Label>האם אתה סטודנט או לוקח קורסים?</Label>
                         <RadioGroup value={isStudent} onValueChange={setIsStudent} className="mt-2">
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="student-yes">כן</Label><RadioGroupItem value="yes" id="student-yes" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="student-no">לא</Label><RadioGroupItem value="no" id="student-no" /></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="yes" id="student-yes" /><Label htmlFor="student-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="no" id="student-no" /><Label htmlFor="student-no">לא</Label></div>
                         </RadioGroup>
                     </div>
                     
                     <div className="text-right">
                       <Label>באיזו תדירות אתה קונה בגדים או נעליים?</Label>
                       <RadioGroup value={clothingHabits} onValueChange={setClothingHabits} className="mt-2">
-                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="c1">לעיתים רחוקות</Label><RadioGroupItem value="rarely" id="c1" /></div>
-                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="c2">בתחילת עונה / בחגים</Label><RadioGroupItem value="seasonally" id="c2" /></div>
-                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="c3">פעם בחודש או יותר</Label><RadioGroupItem value="monthly" id="c3" /></div>
+                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="rarely" id="c1" /><Label htmlFor="c1">לעיתים רחוקות</Label></div>
+                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="seasonally" id="c2" /><Label htmlFor="c2">בתחילת עונה / בחגים</Label></div>
+                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="monthly" id="c3" /><Label htmlFor="c3">פעם בחודש או יותר</Label></div>
                       </RadioGroup>
                     </div>
 
                     <div className="text-right">
                       <Label>מהן פעילויות הפנאי העיקריות שלך?</Label>
                       <RadioGroup value={entertainmentHabits} onValueChange={setEntertainmentHabits} className="mt-2">
-                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="e1">בעיקר בבית (ספרים, משחקים)</Label><RadioGroupItem value="home" id="e1" /></div>
-                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="e2">יציאות (סרטים, פאבים)</Label><RadioGroupItem value="out" id="e2" /></div>
-                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="e3">ספורט או תחביבים יקרים</Label><RadioGroupItem value="sports" id="e3" /></div>
+                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="home" id="e1" /><Label htmlFor="e1">בעיקר בבית (ספרים, משחקים)</Label></div>
+                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="out" id="e2" /><Label htmlFor="e2">יציאות (סרטים, פאבים)</Label></div>
+                        <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="sports" id="e3" /><Label htmlFor="e3">ספורט או תחביבים יקרים</Label></div>
                       </RadioGroup>
                     </div>
                     
                     <div className="text-right">
                         <Label>האם יש לך חובות פעילים (הלוואות, מינוס)?</Label>
                         <RadioGroup value={hasDebt} onValueChange={setHasDebt} className="mt-2">
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="debt-yes">כן</Label><RadioGroupItem value="yes" id="debt-yes" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="debt-no">לא</Label><RadioGroupItem value="no" id="debt-no" /></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="yes" id="debt-yes" /><Label htmlFor="debt-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="no" id="debt-no" /><Label htmlFor="debt-no">לא</Label></div>
                         </RadioGroup>
                     </div>
 
                      <div className="text-right">
                         <Label>מהי מטרת החיסכון העיקרית שלך כרגע?</Label>
                         <RadioGroup value={savingsGoal} onValueChange={setSavingsGoal} className="mt-2">
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="sg-none">אין מטרה מוגדרת</Label><RadioGroupItem value="none" id="sg-none" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="sg-emergency">קרן חירום</Label><RadioGroupItem value="emergency" id="sg-emergency" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="sg-large-purchase">רכישה גדולה (רכב, חופשה)</Label><RadioGroupItem value="large-purchase" id="sg-large-purchase" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="sg-investing">השקעה</Label><RadioGroupItem value="investing" id="sg-investing" /></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="none" id="sg-none" /><Label htmlFor="sg-none">אין מטרה מוגדרת</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="emergency" id="sg-emergency" /><Label htmlFor="sg-emergency">קרן חירום</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="large-purchase" id="sg-large-purchase" /><Label htmlFor="sg-large-purchase">רכישה גדולה (רכב, חופשה)</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="investing" id="sg-investing" /><Label htmlFor="sg-investing">השקעה</Label></div>
                         </RadioGroup>
                     </div>
                     
                     <div className="text-right">
                         <Label>האם יש לך חיות מחמד?</Label>
                         <RadioGroup value={hasPets} onValueChange={setHasPets} className="mt-2">
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="pets-yes">כן</Label><RadioGroupItem value="yes" id="pets-yes" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="pets-no">לא</Label><RadioGroupItem value="no" id="pets-no" /></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="yes" id="pets-yes" /><Label htmlFor="pets-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="no" id="pets-no" /><Label htmlFor="pets-no">לא</Label></div>
                         </RadioGroup>
                     </div>
                     
                     <div className="text-right">
                         <Label>האם יש לך ילדים?</Label>
                         <RadioGroup value={hasChildren} onValueChange={setHasChildren} className="mt-2">
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="children-yes">כן</Label><RadioGroupItem value="yes" id="children-yes" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="children-no">לא</Label><RadioGroupItem value="no" id="children-no" /></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="yes" id="children-yes" /><Label htmlFor="children-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="no" id="children-no" /><Label htmlFor="children-no">לא</Label></div>
                         </RadioGroup>
                     </div>
                     
@@ -331,8 +331,8 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                     <div className="text-right">
                         <Label>האם אתה מתכנן לטוס לחו"ל או חופשה גדולה בשנה הקרובה?</Label>
                         <RadioGroup value={travelPlans} onValueChange={setTravelPlans} className="mt-2">
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="travel-yes">כן</Label><RadioGroupItem value="yes" id="travel-yes" /></div>
-                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><Label htmlFor="travel-no">לא</Label><RadioGroupItem value="no" id="travel-no" /></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="yes" id="travel-yes" /><Label htmlFor="travel-yes">כן</Label></div>
+                           <div className="flex items-center space-x-2 flex-row-reverse justify-end"><RadioGroupItem value="no" id="travel-no" /><Label htmlFor="travel-no">לא</Label></div>
                         </RadioGroup>
                     </div>
                 </div>
