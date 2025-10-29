@@ -10,12 +10,16 @@ import {
 import { AppSidebar } from './sidebar';
 import { Header } from './header';
 import { cn } from '@/lib/utils';
+import { useFirebase } from '@/firebase';
+import { AdBanner } from '../ads/ad-banner';
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const { userProfile } = useFirebase();
+    const isFreeTier = userProfile?.tier === 'free';
     
-    // Don't render the main layout on the login page
-    if (pathname === '/login') {
+    // Don't render the main layout on the login or verification pages
+    if (pathname === '/login' || pathname === '/verify-email') {
         return <>{children}</>;
     }
 
@@ -28,9 +32,10 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         </Sidebar>
         <SidebarInset>
             <Header />
-            <main className={cn('p-4 sm:p-6 lg:p-8')}>
+            <main className={cn('p-4 sm:p-6 lg:p-8', isFreeTier && 'pb-24')}>
               {children}
             </main>
+            {isFreeTier && <AdBanner />}
         </SidebarInset>
         </>
     );
