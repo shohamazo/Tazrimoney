@@ -162,76 +162,82 @@ export function ReceiptUploadDialog({ isOpen, onOpenChange, onReceiptAnalyzed }:
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>סריקת קבלה</DialogTitle>
-          <DialogDescription>העלה תמונה או צלם קבלה והמערכת תנסה לחלץ את הפרטים.</DialogDescription>
-        </DialogHeader>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="upload"><Upload className="ms-2 h-4 w-4" />העלאת קובץ</TabsTrigger>
-                <TabsTrigger value="camera"><Camera className="ms-2 h-4 w-4" />צילום</TabsTrigger>
-            </TabsList>
-            <div className="py-4">
-                {error && (
-                    <Alert variant="destructive" className="mb-4">
-                        <AlertTitle>שגיאה</AlertTitle>
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                )}
-                <TabsContent value="upload">
-                    <div className="grid gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="receipt-file">בחר קובץ תמונה</Label>
-                            <Input id="receipt-file" type="file" accept="image/*" onChange={handleFileChange} className="flex-1"/>
-                        </div>
-                        {preview && file && (
-                            <div className="relative w-full aspect-video rounded-md overflow-hidden border">
-                                <Image src={preview} alt="תצוגה מקדימה של קבלה" layout="fill" objectFit="contain" />
-                            </div>
-                        )}
-                    </div>
-                </TabsContent>
+      <DialogContent className="sm:max-w-2xl p-0">
+        <div className="flex flex-col h-[80vh]">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle>סריקת קבלה</DialogTitle>
+            <DialogDescription>העלה תמונה או צלם קבלה והמערכת תנסה לחלץ את הפרטים.</DialogDescription>
+          </DialogHeader>
 
-                <TabsContent value="camera">
-                     <div className="space-y-4">
-                        {!preview && (
-                            <div className={cn("relative w-full aspect-video rounded-md overflow-hidden border bg-black", !hasCameraPermission && "flex items-center justify-center")}>
-                                <video ref={videoRef} className={cn("w-full h-full object-contain", !hasCameraPermission && "hidden")} autoPlay muted playsInline />
-                                {hasCameraPermission === false && <p className="text-destructive-foreground p-4 text-center">נדרשת גישה למצלמה. אנא אפשר גישה בהגדרות הדפדפן שלך.</p>}
-                                {hasCameraPermission === null && <Loader2 className="h-8 w-8 animate-spin text-white" />}
-                            </div>
-                        )}
-                         {preview && !file && (
-                             <div className="relative w-full aspect-video rounded-md overflow-hidden border">
-                                <Image src={preview} alt="תצוגה מקדימה של קבלה" layout="fill" objectFit="contain" />
-                            </div>
-                        )}
-                        <canvas ref={canvasRef} className="hidden"></canvas>
-                        
-                        {!preview ? (
-                            <Button onClick={handleCapture} disabled={!hasCameraPermission} className="w-full">
-                                <CircleDot className="ms-2 h-4 w-4" />
-                                צלם
-                            </Button>
-                        ) : (
-                            <Button onClick={handleRetake} variant="outline" className="w-full">
-                                <RefreshCw className="ms-2 h-4 w-4" />
-                                צלם שוב
-                            </Button>
-                        )}
+          <div className="px-6 mt-4">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="upload"><Upload className="ms-2 h-4 w-4" />העלאת קובץ</TabsTrigger>
+                      <TabsTrigger value="camera"><Camera className="ms-2 h-4 w-4" />צילום</TabsTrigger>
+                  </TabsList>
+              </Tabs>
+          </div>
+          
+          <div className="flex-1 min-h-0 p-6 pt-4">
+              {error && (
+                  <Alert variant="destructive" className="mb-4">
+                      <AlertTitle>שגיאה</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+              )}
+
+              {activeTab === 'upload' && (
+                <div className="h-full flex flex-col gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="receipt-file">בחר קובץ תמונה</Label>
+                        <Input id="receipt-file" type="file" accept="image/*" onChange={handleFileChange} className="flex-1"/>
                     </div>
-                </TabsContent>
-            </div>
-        </Tabs>
-        
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => handleOpenChange(false)} disabled={isPending}>ביטול</Button>
-          <Button onClick={handleAnalyze} disabled={!preview || isPending}>
-            {isPending ? <Loader2 className="animate-spin ms-2" /> : 'נתח קבלה'}
-          </Button>
-        </DialogFooter>
+                    {preview && file && (
+                        <div className="relative flex-1 w-full rounded-md overflow-hidden border">
+                            <Image src={preview} alt="תצוגה מקדימה של קבלה" layout="fill" objectFit="contain" />
+                        </div>
+                    )}
+                </div>
+              )}
+              
+              {activeTab === 'camera' && (
+                <div className="h-full w-full relative flex flex-col items-center justify-center">
+                    <div className={cn("relative w-full h-full rounded-md overflow-hidden border bg-black flex items-center justify-center", preview && !file ? 'hidden' : 'flex' )}>
+                        <video ref={videoRef} className={cn("w-full h-full object-contain", !hasCameraPermission && "hidden")} autoPlay muted playsInline />
+                        {hasCameraPermission === false && <p className="text-destructive-foreground p-4 text-center">נדרשת גישה למצלמה. אנא אפשר גישה בהגדרות הדפדפן שלך.</p>}
+                        {hasCameraPermission === null && <Loader2 className="h-8 w-8 animate-spin text-white" />}
+                    </div>
+
+                    {preview && !file && (
+                        <div className="relative w-full h-full rounded-md overflow-hidden border">
+                          <Image src={preview} alt="תצוגה מקדימה של קבלה" layout="fill" objectFit="contain" />
+                        </div>
+                    )}
+
+                    <canvas ref={canvasRef} className="hidden"></canvas>
+                    
+                    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10">
+                      {!preview ? (
+                          <Button onClick={handleCapture} disabled={!hasCameraPermission} size="icon" className="w-16 h-16 rounded-full">
+                              <CircleDot className="h-8 w-8" />
+                          </Button>
+                      ) : (
+                          <Button onClick={handleRetake} variant="secondary" className="w-16 h-16 rounded-full" size="icon">
+                              <RefreshCw className="h-7 w-7" />
+                          </Button>
+                      )}
+                    </div>
+                </div>
+              )}
+          </div>
+          
+          <DialogFooter className="p-6 pt-0 mt-auto border-t">
+            <Button variant="ghost" onClick={() => handleOpenChange(false)} disabled={isPending}>ביטול</Button>
+            <Button onClick={handleAnalyze} disabled={!preview || isPending}>
+              {isPending ? <Loader2 className="animate-spin ms-2" /> : 'נתח קבלה'}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
