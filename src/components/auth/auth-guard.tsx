@@ -66,6 +66,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             displayName: user.displayName || user.phoneNumber || null,
             photoURL: user.photoURL || null,
             onboardingComplete: false,
+            tier: 'free', // Default to free tier
           };
           await setDoc(userProfileRef, newProfile);
           startWizard(); // Trigger wizard for new user

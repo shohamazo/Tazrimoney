@@ -13,6 +13,7 @@ import {
   LogOut,
   Loader2,
   Settings,
+  Sparkles,
 } from 'lucide-react';
 import {
   SidebarHeader,
@@ -33,6 +34,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { PremiumBadge } from '../premium/premium-badge';
+
 
 const navItems = [
   { href: '/', label: 'לוח בקרה', icon: LayoutDashboard },
@@ -45,9 +48,10 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { user, isUserLoading } = useFirebase();
+  const { user, userProfile, isUserLoading } = useFirebase();
   const { isMobile, setOpenMobile } = useSidebar();
 
+  const isPremium = userProfile?.tier === 'premium';
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -88,7 +92,15 @@ export function AppSidebar() {
         </SidebarMenu>
       </div>
 
-      <SidebarFooter className="mt-auto border-t border-sidebar-border p-2">
+      <SidebarFooter className="mt-auto border-t border-sidebar-border p-2 space-y-2">
+        {!isPremium && user && (
+            <div className="group-data-[collapsible=icon]:hidden">
+                <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                    <Sparkles className="ms-2" />
+                    שדרג לפרימיום
+                </Button>
+            </div>
+        )}
         {isUserLoading ? (
             <div className="flex items-center justify-center p-2">
                 <Loader2 className="h-6 w-6 animate-spin text-sidebar-foreground" />
@@ -100,8 +112,11 @@ export function AppSidebar() {
                     {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>}
                     <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
-                <div className="truncate">
-                    <p className="text-sm font-medium text-sidebar-foreground truncate">{user.displayName || 'משתמש'}</p>
+                <div className="truncate flex-1">
+                    <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-sidebar-foreground truncate">{user.displayName || 'משתמש'}</p>
+                        {isPremium && <PremiumBadge />}
+                    </div>
                     <p className="text-xs text-sidebar-foreground truncate">{user.email}</p>
                 </div>
             </Link>

@@ -12,6 +12,8 @@ import { collection, query, where, Timestamp } from 'firebase/firestore';
 import { endOfMonth, startOfMonth, subMonths, format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { calculateShiftEarnings } from '@/lib/calculator';
+import { UpgradeTierCard } from '../premium/upgrade-tier-card';
+
 
 interface ChartData {
   name: string;
@@ -82,8 +84,10 @@ export function ReportView() {
   const [activeIndex, setActiveIndex] = useState(0);
 
   const [error, setError] = useState<string | null>(null);
-  const { firestore, user, isUserLoading } = useFirebase();
+  const { firestore, user, userProfile, isUserLoading } = useFirebase();
 
+  const isPremium = userProfile?.tier === 'premium';
+  
   const reportStartDate = useMemo(() => startOfMonth(subMonths(new Date(), 5)), []);
   const reportEndDate = useMemo(() => endOfMonth(new Date()), []);
 
@@ -166,32 +170,34 @@ export function ReportView() {
     setTopExpenses(sortedExpenses.slice(0,3));
 
     // AI Summary Generation
-    startAiTransition(async () => {
-      setError(null);
-      try {
-        const dataForAI = {
-            period: `Last 6 months (${format(reportStartDate, 'MMM yyyy')} - ${format(reportEndDate, 'MMM yyyy')})`,
-            monthlyBreakdown: finalChartData,
-            rawExpenses: expenses.map(e => ({ 
-                date: (e.date as Timestamp).toDate().toISOString(), 
-                amount: e.amount, 
-                category: e.category,
-                description: e.description,
-            })),
-        };
+    if (isPremium) {
+      startAiTransition(async () => {
+        setError(null);
+        try {
+          const dataForAI = {
+              period: `Last 6 months (${format(reportStartDate, 'MMM yyyy')} - ${format(reportEndDate, 'MMM yyyy')})`,
+              monthlyBreakdown: finalChartData,
+              rawExpenses: expenses.map(e => ({ 
+                  date: (e.date as Timestamp).toDate().toISOString(), 
+                  amount: e.amount, 
+                  category: e.category,
+                  description: e.description,
+              })),
+          };
 
-        const result = await generateFinancialReport({
-          data: JSON.stringify(dataForAI, null, 2),
-        });
-        setSummary(result.summary);
-      } catch (e) {
-        console.error("Failed to generate AI summary:", e);
-        setError(e instanceof Error ? e.message : "An unexpected error occurred while generating the summary.");
-      }
-    });
+          const result = await generateFinancialReport({
+            data: JSON.stringify(dataForAI, null, 2),
+          });
+          setSummary(result.summary);
+        } catch (e) {
+          console.error("Failed to generate AI summary:", e);
+          setError(e instanceof Error ? e.message : "An unexpected error occurred while generating the summary.");
+        }
+      });
+    }
 
 
-  }, [isDataLoading, shifts, expenses, jobs, reportStartDate, reportEndDate]);
+  }, [isDataLoading, shifts, expenses, jobs, reportStartDate, reportEndDate, isPremium]);
 
 
   const onPieEnter = useCallback((_: any, index: number) => {
@@ -221,6 +227,7 @@ export function ReportView() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
+      {isPremium ? (
         <Card className="lg:col-span-2 bg-primary/5 border-primary/20">
             <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -247,6 +254,12 @@ export function ReportView() {
             )}
             </CardContent>
         </Card>
+      ) : (
+        <div className="lg:col-span-2">
+          <UpgradeTierCard featureName="סיכום וניתוח חכם של הדוחות" />
+        </div>
+      )}
+
 
         <Card>
             <CardHeader>

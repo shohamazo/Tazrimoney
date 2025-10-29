@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, ScanLine } from 'lucide-react';
+import { PlusCircle, Loader2, ScanLine, Sparkles } from 'lucide-react';
 import { ExpensesTable } from '@/components/expenses/expenses-table';
 import { ExpenseDialog } from '@/components/expenses/expense-dialog';
 import type { Expense } from '@/lib/types';
@@ -16,7 +16,8 @@ export default function ExpensesPage() {
   const [selectedExpense, setSelectedExpense] = React.useState<Expense | null>(null);
   const [prefilledData, setPrefilledData] = React.useState<Partial<Expense> | null>(null);
 
-  const { firestore, user, isUserLoading } = useFirebase();
+  const { firestore, user, userProfile, isUserLoading } = useFirebase();
+  const isPremium = userProfile?.tier === 'premium';
 
   const expensesQuery = useMemoFirebase(
     () =>
@@ -40,6 +41,11 @@ export default function ExpensesPage() {
   };
 
   const handleScanNew = () => {
+    if (!isPremium) {
+      // Here you might open an upgrade dialog
+      alert('סריקת קבלות זמינה רק למשתמשי פרימיום.');
+      return;
+    }
     setReceiptDialogOpen(true);
   };
   
@@ -66,8 +72,8 @@ export default function ExpensesPage() {
           <p className="text-muted-foreground">הצג, הוסף וערוך את ההוצאות שלך.</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleScanNew} variant="outline">
-            <ScanLine className="ms-2 h-4 w-4" />
+          <Button onClick={handleScanNew} variant="outline" disabled={!isPremium}>
+            {isPremium ? <ScanLine className="ms-2 h-4 w-4" /> : <Sparkles className="ms-2 h-4 w-4 text-accent" />}
             סרוק קבלה
           </Button>
           <Button onClick={handleAddNew}>
@@ -96,11 +102,11 @@ export default function ExpensesPage() {
         expense={selectedExpense}
         prefilledData={prefilledData}
       />
-      <ReceiptUploadDialog
+      {isPremium && <ReceiptUploadDialog
         isOpen={receiptDialogOpen}
         onOpenChange={setReceiptDialogOpen}
         onReceiptAnalyzed={handleReceiptAnalyzed}
-      />
+      />}
     </div>
   );
 }

@@ -8,6 +8,7 @@ export type UserProfile = {
   photoURL?: string | null;
   onboardingComplete?: boolean;
   theme?: string;
+  tier?: 'free' | 'premium';
 }
 
 export type DaySchedule = {
