@@ -96,9 +96,11 @@ export function AppSidebar() {
       <SidebarFooter className="mt-auto border-t border-sidebar-border p-2 space-y-2">
         {isFreeTier && user && (
             <div className="group-data-[collapsible=icon]:hidden">
-                <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Link href="/upgrade">
                     <Sparkles className="ms-2" />
                     שדרג לפרימיום
+                  </Link>
                 </Button>
             </div>
         )}

@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Wand2, Sparkles } from 'lucide-react';
+import Link from 'next/link';
 
 interface UpgradeTierCardProps {
     featureName: string;
@@ -26,9 +27,11 @@ export function UpgradeTierCard({ featureName }: UpgradeTierCardProps) {
                 <p className="mb-4">
                     שדרג את החשבון שלך כדי ליהנות מכל יכולות ה-AI, כולל ניתוח קבלות אוטומטי, דוחות כספיים חכמים, הצעות תקציב מותאמות אישית ועוד.
                 </p>
-                <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
-                    <Sparkles className="ms-2 h-4 w-4" />
-                    שדרג לפרימיום
+                <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
+                    <Link href="/upgrade">
+                        <Sparkles className="ms-2 h-4 w-4" />
+                        שדרג לפרימיום
+                    </Link>
                 </Button>
             </CardContent>
         </Card>
