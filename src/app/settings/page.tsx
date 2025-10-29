@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Loader2, User, KeyRound, AlertTriangle, Palette, Wand2, Sparkles } from 'lucide-react';
+import { Loader2, User, KeyRound, AlertTriangle, Palette, Wand2, Sparkles, TestTube } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   handleLinkGoogle,
@@ -43,6 +43,7 @@ import { useOnboarding } from '@/components/onboarding/onboarding-provider';
 import type { UserProfile } from '@/lib/types';
 import { PremiumBadge } from '@/components/premium/premium-badge';
 import Link from 'next/link';
+import { doc } from 'firebase/firestore';
 
 
 const profileSchema = z.object({
@@ -55,6 +56,7 @@ export default function SettingsPage() {
   const { user, firestore, isUserLoading, userProfile } = useFirebase();
   const { toast } = useToast();
   const [isPending, startTransition] = React.useTransition();
+  const [isTogglingPlan, setIsTogglingPlan] = React.useTransition();
   const [deleteConfirmation, setDeleteConfirmation] = React.useState('');
   const { theme, setTheme } = useTheme();
   const { startWizard } = useOnboarding();
@@ -126,10 +128,33 @@ export default function SettingsPage() {
       // AuthGuard will handle redirect on successful deletion
     });
   };
+
+  const onTogglePlan = () => {
+    if (!user || !firestore || !userProfile) return;
+
+    setIsTogglingPlan(() => {
+        const newTier = userProfile.tier === 'premium' ? 'free' : 'premium';
+        const userProfileRef = doc(firestore, 'users', user.uid);
+        setDocumentNonBlocking(userProfileRef, { tier: newTier }, { merge: true })
+            .then(() => {
+                toast({
+                    title: 'התוכנית עודכנה',
+                    description: `הועברת בהצלחה לתוכנית ${newTier === 'premium' ? 'פרימיום' : 'חינמית'}.`,
+                });
+            })
+            .catch((error) => {
+                toast({ variant: 'destructive', title: 'שגיאה', description: 'לא ניתן היה לעדכן את התוכנית.' });
+            });
+    });
+  };
   
   const isGoogleLinked = user?.providerData.some(p => p.providerId === 'google.com');
   const identifier = user ? getIdentifierForUser(user) : 'לא זמין';
   const confirmationText = user?.email || identifier;
+
+  // IMPORTANT: Replace this with your actual UID during development to see the dev tools
+  const developerUid = 'gHZ9n7s2b9X8fJ2kP3s5t8YxVOE2'; 
+  const isDeveloper = user?.uid === developerUid;
 
   if (isUserLoading || !user) {
     return (
@@ -279,6 +304,26 @@ export default function SettingsPage() {
              </div>
         </CardContent>
       </Card>
+
+      {isDeveloper && (
+        <Card className="border-accent">
+            <CardHeader>
+                <CardTitle className="text-accent flex items-center gap-2"><TestTube /> כלי מפתחים</CardTitle>
+                <CardDescription>
+                    כלים לבדיקה וניפוי שגיאות. זמין רק למנהלים.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center justify-between rounded-lg border border-accent/30 bg-accent/5 p-4">
+                <div>
+                    <p className="font-medium">שנה תוכנית</p>
+                    <p className="text-sm text-muted-foreground">שנה את התוכנית של המשתמש שלך לבדיקה.</p>
+                </div>
+                <Button onClick={onTogglePlan} variant="outline" disabled={isTogglingPlan}>
+                    {isTogglingPlan ? <Loader2 className="animate-spin ms-2" /> : `שנה ל-${isPremium ? 'חינם' : 'פרימיום'}`}
+                </Button>
+            </CardContent>
+        </Card>
+      )}
 
 
       <Card className="border-destructive">
