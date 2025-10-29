@@ -14,7 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import type { Shift, Job } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, addDays, addHours } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useFirebase, setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import { doc, collection, Timestamp } from 'firebase/firestore';
@@ -71,6 +71,7 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
   useEffect(() => {
     if (isOpen) {
       if (shift) {
+        // Editing an existing shift
         const start = toDate(shift.start);
         const end = toDate(shift.end);
         reset({
@@ -81,16 +82,21 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
           endTime: format(end, 'HH:mm'),
         });
       } else {
+        // Adding a new shift - default to a future time
+        const tomorrow = addDays(new Date(), 1);
+        tomorrow.setHours(9, 0, 0, 0); // Set to 9:00 AM
+        const futureEnd = addHours(tomorrow, 8); // 8-hour shift
+
         reset({
-          jobId: '',
-          startDate: new Date(),
-          startTime: format(new Date(), 'HH:mm'),
-          endDate: new Date(),
-          endTime: format(new Date(new Date().getTime() + 8 * 60 * 60 * 1000), 'HH:mm'),
+          jobId: jobs[0]?.id || '',
+          startDate: tomorrow,
+          startTime: format(tomorrow, 'HH:mm'),
+          endDate: futureEnd,
+          endTime: format(futureEnd, 'HH:mm'),
         });
       }
     }
-  }, [shift, isOpen, reset]);
+  }, [shift, isOpen, reset, jobs]);
 
   const onSubmit = (data: ShiftFormData) => {
     if (!firestore || !user) return;

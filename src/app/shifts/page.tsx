@@ -57,6 +57,15 @@ export default function ShiftsPage() {
     setSelectedShift(shift);
     setDialogOpen(true);
   };
+  
+  const handleAddNew = () => {
+    if (!jobs || jobs.length === 0) {
+      setShowNoJobsAlert(true);
+      return;
+    }
+    setSelectedShift(null);
+    setDialogOpen(true);
+  };
 
   const handleDialogClose = () => {
     setDialogOpen(false);
@@ -71,6 +80,10 @@ export default function ShiftsPage() {
             <h2 className="text-2xl font-bold tracking-tight">ניהול משמרות</h2>
             <p className="text-muted-foreground">התחל משמרת חדשה או הצג, וערוך את המשמרות הקודמות שלך.</p>
         </div>
+        <Button onClick={handleAddNew}>
+            <PlusCircle className="ms-2 h-4 w-4" />
+            הוסף משמרת
+        </Button>
       </div>
 
       {isLoading ? (
