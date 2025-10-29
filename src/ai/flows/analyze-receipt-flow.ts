@@ -47,14 +47,16 @@ Your task is to identify:
 1.  **Total Amount**: Find the final, total amount paid. It is usually labeled "Total", "סה"כ", or is the largest number at the bottom.
 2.  **Date**: Find the transaction date. Return it in YYYY-MM-DD format. If no date is visible, use today's date.
 3.  **Vendor**: Identify the name of the store or vendor.
-4.  **Category Suggestion**: Based on the vendor name and items on the receipt, suggest the most relevant expense category and subcategory from the list provided below. The output for "suggestedCategory" and "suggestedSubcategory" MUST be one of the "label" values from the list.
+4.  **Category Suggestion**: Your primary strategy is to suggest a category based on the vendor's name. However, if the vendor's name is generic, not well-known, or unclear, you MUST then analyze the individual items listed on the receipt to determine the most logical category and subcategory from the list provided below. The output for "suggestedCategory" and "suggestedSubcategory" MUST be one of the "label" values from the list.
 
 Here are the available categories and subcategories:
 ---
 ${categoryPromptData}
 ---
 
-Example: If the receipt is from "Shufersal", a good suggestion would be category "קניות" and subcategory "קניות בסופר". If it's from "McDonald's", suggest "אוכל ושתיה" and "אוכל מהיר".
+Example 1 (Vendor recognized): If the receipt is from "Shufersal", suggest category "קניות" and subcategory "קניות בסופר".
+Example 2 (Vendor unrecognized): If the vendor is "Super Market Ltd." but the items include "חלב", "לחם", "גבינה", you should suggest category "קניות" and subcategory "קניות בסופר" based on the items.
+Example 3 (Items are key): If items are "T-Shirt", "Jeans", suggest "ביגוד והנעלה" and "בגדים".
 
 Analyze this receipt:
 {{media url=photoDataUri}}`,
