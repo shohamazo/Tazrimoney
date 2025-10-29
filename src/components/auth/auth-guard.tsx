@@ -60,15 +60,22 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           }
         } else {
           // Profile doesn't exist, create it for the new user
+          // Assign premium tier to the specified test user
+          const tier = user.uid === 'TBJEI2HyPhWarj2VEPPcZn3CDC32' ? 'premium' : 'free';
+
           const newProfile: UserProfile = {
             id: user.uid,
             email: user.email || null,
             displayName: user.displayName || user.phoneNumber || null,
             photoURL: user.photoURL || null,
             onboardingComplete: false,
-            tier: 'free', // Default to free tier
+            tier: tier, // Set tier based on UID check
           };
           await setDoc(userProfileRef, newProfile);
+          toast({
+            title: `חשבון נוצר (${tier})`,
+            description: tier === 'premium' ? "הוקצה לך מסלול פרימיום לצורך בדיקות." : "התחלת במסלול החינמי.",
+          });
           startWizard(); // Trigger wizard for new user
         }
       } catch (error) {
@@ -113,3 +120,5 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   // The OnboardingProvider will handle showing the wizard if needed
   return <>{children}</>;
 }
+
+    

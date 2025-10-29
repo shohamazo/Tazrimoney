@@ -169,10 +169,6 @@ export default function SettingsPage() {
               <Label>אימייל / טלפון</Label>
               <Input value={identifier} disabled />
             </div>
-             <div className="space-y-2">
-              <Label>User ID</Label>
-              <Input value={user.uid} disabled />
-            </div>
           </CardContent>
           <CardFooter className="border-t px-6 py-4">
             <Button type="submit" disabled={isPending || !isDirty}>
@@ -330,3 +326,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
