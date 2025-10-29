@@ -10,11 +10,12 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Bus, Gift, Hotel } from 'lucide-react';
 import type { Job } from '@/lib/types';
 import { useFirebase, deleteDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '../ui/badge';
 
 export function JobsList({ jobs, onEdit }: { jobs: Job[], onEdit: (job: Job) => void }) {
     const { firestore, user } = useFirebase();
@@ -34,6 +35,7 @@ export function JobsList({ jobs, onEdit }: { jobs: Job[], onEdit: (job: Job) => 
                     <TableRow>
                         <TableHead>שם העבודה</TableHead>
                         <TableHead>תעריף שעתי</TableHead>
+                        <TableHead>הטבות</TableHead>
                         <TableHead className="text-left w-[50px]"></TableHead>
                     </TableRow>
                 </TableHeader>
@@ -42,6 +44,28 @@ export function JobsList({ jobs, onEdit }: { jobs: Job[], onEdit: (job: Job) => 
                         <TableRow key={job.id}>
                             <TableCell className="font-medium">{job.name}</TableCell>
                             <TableCell>₪{job.hourlyRate.toFixed(2)}</TableCell>
+                            <TableCell>
+                                <div className="flex gap-2 flex-wrap">
+                                    {job.travelRatePerShift && job.travelRatePerShift > 0 && (
+                                        <Badge variant="outline" className="flex items-center gap-1">
+                                            <Bus className="h-3 w-3" />
+                                            נסיעות
+                                        </Badge>
+                                    )}
+                                    {job.sickDayPayPercentage && job.sickDayPayPercentage > 0 && (
+                                        <Badge variant="outline" className="flex items-center gap-1">
+                                            <Hotel className="h-3 w-3" />
+                                            ימי מחלה
+                                        </Badge>
+                                    )}
+                                     {job.isEligibleForGrant && (
+                                        <Badge variant="outline" className="flex items-center gap-1">
+                                            <Gift className="h-3 w-3" />
+                                            מענק עבודה
+                                        </Badge>
+                                    )}
+                                </div>
+                            </TableCell>
                             <TableCell className="text-left">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>

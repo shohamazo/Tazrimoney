@@ -14,6 +14,12 @@ export type Job = {
   id: string;
   name: string;
   hourlyRate: number;
+  travelRatePerShift?: number;
+  overtimeThresholdHours?: number;
+  areBreaksPaid?: boolean;
+  sickDayPayPercentage?: number;
+  sickDayStartDay?: number;
+  isEligibleForGrant?: boolean;
 };
 
 export type Shift = {

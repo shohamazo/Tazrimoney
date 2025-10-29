@@ -43,7 +43,7 @@ export type EarningDetails = {
 /**
  * Calculates shift earnings based on Israeli labor laws for overtime and Shabbat.
  * @param shift The shift object.
- * @param job The job object with the hourly rate.
+ * @param job The job object with the hourly rate and overtime rules.
  * @returns A detailed breakdown of the earnings for the shift.
  */
 export function calculateShiftEarnings(shift: Shift, job: Job | undefined): EarningDetails {
@@ -63,7 +63,7 @@ export function calculateShiftEarnings(shift: Shift, job: Job | undefined): Earn
 
   const start = toDate(shift.start);
   const end = toDate(shift.end);
-  const { hourlyRate } = job;
+  const { hourlyRate, overtimeThresholdHours = 8 } = job;
   
   if (start >= end) return initialDetails;
 
@@ -91,10 +91,18 @@ export function calculateShiftEarnings(shift: Shift, job: Job | undefined): Earn
   }
   
   // Now calculate pay based on accumulated hours
-  let tempRegularHours = Math.min(totalNonShabbatHoursInShift, 8);
-  let tempOvertime125 = Math.max(0, Math.min(totalNonShabbatHoursInShift - 8, 2));
-  let tempOvertime150 = Math.max(0, totalNonShabbatHoursInShift - 10);
-
+  // Use job-specific overtime threshold, or default to 8
+  const regularHoursThreshold = overtimeThresholdHours > 0 ? overtimeThresholdHours : totalNonShabbatHoursInShift;
+  
+  let tempRegularHours = Math.min(totalNonShabbatHoursInShift, regularHoursThreshold);
+  let tempOvertime125 = 0;
+  let tempOvertime150 = 0;
+  
+  if (totalNonShabbatHoursInShift > regularHoursThreshold) {
+    tempOvertime125 = Math.max(0, Math.min(totalNonShabbatHoursInShift - regularHoursThreshold, 2));
+    tempOvertime150 = Math.max(0, totalNonShabbatHoursInShift - regularHoursThreshold - 2);
+  }
+  
   initialDetails.regularHours = tempRegularHours;
   initialDetails.overtime125Hours = tempOvertime125;
   initialDetails.overtime150Hours = tempOvertime150;
@@ -104,7 +112,14 @@ export function calculateShiftEarnings(shift: Shift, job: Job | undefined): Earn
   initialDetails.overtime150Pay = initialDetails.overtime150Hours * hourlyRate * 1.5;
   initialDetails.shabbatPay = initialDetails.shabbatHours * hourlyRate * 1.5;
   
-  initialDetails.totalEarnings = initialDetails.regularPay + initialDetails.overtime125Pay + initialDetails.overtime150Pay + initialDetails.shabbatPay;
+  let totalPay = initialDetails.regularPay + initialDetails.overtime125Pay + initialDetails.overtime150Pay + initialDetails.shabbatPay;
+
+  // Add travel rate if applicable
+  if (job.travelRatePerShift && job.travelRatePerShift > 0) {
+      totalPay += job.travelRatePerShift;
+  }
+  
+  initialDetails.totalEarnings = totalPay;
 
   return initialDetails;
 }
