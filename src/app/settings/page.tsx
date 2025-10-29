@@ -56,7 +56,6 @@ export default function SettingsPage() {
   const { user, firestore, isUserLoading, userProfile } = useFirebase();
   const { toast } = useToast();
   const [isPending, startTransition] = React.useTransition();
-  const [isTogglingPlan, setIsTogglingPlan] = React.useTransition();
   const [deleteConfirmation, setDeleteConfirmation] = React.useState('');
   const { theme, setTheme } = useTheme();
   const { startWizard } = useOnboarding();
@@ -128,33 +127,10 @@ export default function SettingsPage() {
       // AuthGuard will handle redirect on successful deletion
     });
   };
-
-  const onTogglePlan = () => {
-    if (!user || !firestore || !userProfile) return;
-
-    setIsTogglingPlan(() => {
-        const newTier = userProfile.tier === 'premium' ? 'free' : 'premium';
-        const userProfileRef = doc(firestore, 'users', user.uid);
-        setDocumentNonBlocking(userProfileRef, { tier: newTier }, { merge: true })
-            .then(() => {
-                toast({
-                    title: 'התוכנית עודכנה',
-                    description: `הועברת בהצלחה לתוכנית ${newTier === 'premium' ? 'פרימיום' : 'חינמית'}.`,
-                });
-            })
-            .catch((error) => {
-                toast({ variant: 'destructive', title: 'שגיאה', description: 'לא ניתן היה לעדכן את התוכנית.' });
-            });
-    });
-  };
   
   const isGoogleLinked = user?.providerData.some(p => p.providerId === 'google.com');
   const identifier = user ? getIdentifierForUser(user) : 'לא זמין';
   const confirmationText = user?.email || identifier;
-
-  // The user with this ID will see the developer tools.
-  const developerUid = 'gHZ9n7s2b9X8fJ2kP3s5t8YxVOE2'; 
-  const isDeveloper = user?.uid === developerUid;
 
   if (isUserLoading || !user) {
     return (
@@ -192,6 +168,10 @@ export default function SettingsPage() {
             <div className="space-y-2">
               <Label>אימייל / טלפון</Label>
               <Input value={identifier} disabled />
+            </div>
+             <div className="space-y-2">
+              <Label>User ID</Label>
+              <Input value={user.uid} disabled />
             </div>
           </CardContent>
           <CardFooter className="border-t px-6 py-4">
@@ -304,27 +284,6 @@ export default function SettingsPage() {
              </div>
         </CardContent>
       </Card>
-
-      {isDeveloper && (
-        <Card className="border-accent">
-            <CardHeader>
-                <CardTitle className="text-accent flex items-center gap-2"><TestTube /> כלי מפתחים</CardTitle>
-                <CardDescription>
-                    כלים לבדיקה וניפוי שגיאות. זמין רק למנהלים.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between rounded-lg border border-accent/30 bg-accent/5 p-4">
-                <div>
-                    <p className="font-medium">שנה תוכנית</p>
-                    <p className="text-sm text-muted-foreground">שנה את התוכנית של המשתמש שלך לבדיקה.</p>
-                </div>
-                <Button onClick={onTogglePlan} variant="outline" disabled={isTogglingPlan}>
-                    {isTogglingPlan ? <Loader2 className="animate-spin ms-2" /> : `שנה ל-${isPremium ? 'חינם' : 'פרימיום'}`}
-                </Button>
-            </CardContent>
-        </Card>
-      )}
-
 
       <Card className="border-destructive">
         <CardHeader>
