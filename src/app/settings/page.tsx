@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -27,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Loader2, User, KeyRound, AlertTriangle, Palette, Wand2, Bell } from 'lucide-react';
+import { Loader2, User, KeyRound, AlertTriangle, Palette, Wand2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   handleLinkGoogle,
@@ -40,6 +41,8 @@ import { cn } from '@/lib/utils';
 import { getIdentifierForUser } from '@/lib/utils';
 import { useOnboarding } from '@/components/onboarding/onboarding-provider';
 import type { UserProfile } from '@/lib/types';
+import { PremiumBadge } from '@/components/premium/premium-badge';
+import Link from 'next/link';
 
 
 const profileSchema = z.object({
@@ -55,6 +58,8 @@ export default function SettingsPage() {
   const [deleteConfirmation, setDeleteConfirmation] = React.useState('');
   const { theme, setTheme } = useTheme();
   const { startWizard } = useOnboarding();
+  const isPremium = userProfile?.tier === 'premium';
+
 
   const {
     register,
@@ -215,6 +220,37 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
            <Button onClick={startWizard}>הפעל את אשף ההגדרה</Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Sparkles /> נהל מנוי</CardTitle>
+            <CardDescription>
+                הצג את המנוי הנוכחי שלך ושדרג לפי צורך.
+            </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border p-4">
+                <div>
+                    <p className="font-medium">המנוי הנוכחי</p>
+                    <div className="flex items-center gap-2">
+                        {isPremium ? <PremiumBadge /> : <span className="text-muted-foreground">Free</span>}
+                    </div>
+                </div>
+                {isPremium ? (
+                     <Button variant="outline" asChild>
+                        <Link href="/upgrade">נהל מנוי</Link>
+                    </Button>
+                ) : (
+                    <Button asChild>
+                        <Link href="/upgrade">
+                          <Sparkles className="ms-2 h-4 w-4" />
+                          שדרג לפרימיום
+                        </Link>
+                    </Button>
+                )}
+            </div>
         </CardContent>
       </Card>
 
