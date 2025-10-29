@@ -54,14 +54,12 @@ export default function JobsPage() {
   };
   
   const isLoading = isUserLoading || jobsLoading;
-  const pageTitle = selectedJob ? `עריכת עבודה: ${selectedJob.name}` : "ניהול עבודות";
+  const pageTitle = selectedJob ? selectedJob.name : "ניהול עבודות";
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-            <h2 className="text-2xl font-bold tracking-tight">{pageTitle}</h2>
-        </div>
+        <h2 className="text-3xl font-bold tracking-tight">{pageTitle}</h2>
         <JobSelector 
           jobs={jobs || []} 
           selectedJobId={selectedJobId} 
