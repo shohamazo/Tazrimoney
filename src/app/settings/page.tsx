@@ -4,7 +4,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useFirebase } from '@/firebase';
+import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 import {
   Card,
   CardContent,
@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Loader2, User, KeyRound, AlertTriangle, Palette, Wand2 } from 'lucide-react';
+import { Loader2, User, KeyRound, AlertTriangle, Palette, Wand2, Bell } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   handleLinkGoogle,
@@ -39,6 +39,16 @@ import { themes } from '@/lib/themes';
 import { cn } from '@/lib/utils';
 import { getIdentifierForUser } from '@/lib/utils';
 import { useOnboarding } from '@/components/onboarding/onboarding-provider';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { doc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
+
 
 const profileSchema = z.object({
   displayName: z.string().min(2, 'השם חייב להכיל לפחות 2 תווים.'),
@@ -47,7 +57,7 @@ const profileSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 export default function SettingsPage() {
-  const { user, isUserLoading } = useFirebase();
+  const { user, firestore, isUserLoading, userProfile } = useFirebase();
   const { toast } = useToast();
   const [isPending, startTransition] = React.useTransition();
   const [deleteConfirmation, setDeleteConfirmation] = React.useState('');
@@ -89,6 +99,15 @@ export default function SettingsPage() {
         });
     });
   };
+
+  const handleReminderChange = (value: string) => {
+    if (!firestore || !user) return;
+    const reminderTime = parseInt(value, 10);
+    const userProfileRef = doc(firestore, 'users', user.uid);
+    setDocumentNonBlocking(userProfileRef, { shiftReminderTime: reminderTime }, { merge: true });
+    toast({ title: "הגדרות התראה עודכנו" });
+  };
+
 
   const onLinkGoogle = () => {
     startTransition(() => {
@@ -169,6 +188,37 @@ export default function SettingsPage() {
             </Button>
           </CardFooter>
         </form>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Bell /> התראות</CardTitle>
+          <CardDescription>נהל את התראות האפליקציה.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="shiftReminder">תזכורת לפני משמרת</Label>
+            <Select
+              defaultValue={String(userProfile?.shiftReminderTime ?? 0)}
+              onValueChange={handleReminderChange}
+              dir="rtl"
+            >
+              <SelectTrigger id="shiftReminder">
+                <SelectValue placeholder="בחר זמן תזכורת" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">כבוי</SelectItem>
+                <SelectItem value="15">15 דקות לפני</SelectItem>
+                <SelectItem value="30">30 דקות לפני</SelectItem>
+                <SelectItem value="60">שעה לפני</SelectItem>
+                <SelectItem value="120">שעתיים לפני</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground pt-1">
+              קבל התראה בטלפון לפני תחילת משמרת. (דורש הגדרת התראות לדפדפן בנייד)
+            </p>
+          </div>
+        </CardContent>
       </Card>
       
        <Card>
