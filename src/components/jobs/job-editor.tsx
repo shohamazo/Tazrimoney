@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useTransition, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import type { Job } from '@/lib/types';
+import type { Job, WeeklySchedule } from '@/lib/types';
 import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -13,11 +13,28 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { JobSettingCard } from './job-setting-card';
-import { Bus, Coffee, Gift, Percent, CalendarDays, Loader2, Save, Bell } from 'lucide-react';
+import { Bus, Coffee, Gift, Percent, CalendarDays, Loader2, Save, Bell, CalendarClock } from 'lucide-react';
 import { OvertimeIcon, SickPayIcon } from './job-icons';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { WeeklyScheduleEditor } from './weekly-schedule-editor';
 
+
+const dayScheduleSchema = z.object({
+    enabled: z.boolean(),
+    startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+    endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+});
+
+const weeklyScheduleSchema = z.object({
+    sunday: dayScheduleSchema,
+    monday: dayScheduleSchema,
+    tuesday: dayScheduleSchema,
+    wednesday: dayScheduleSchema,
+    thursday: dayScheduleSchema,
+    friday: dayScheduleSchema,
+    saturday: dayScheduleSchema,
+}).optional();
 
 const jobSchema = z.object({
   name: z.string().min(2, 'שם העבודה חייב להכיל לפחות 2 תווים'),
@@ -29,6 +46,7 @@ const jobSchema = z.object({
   sickDayStartDay: z.coerce.number().min(1).optional().default(2),
   isEligibleForGrant: z.boolean().optional().default(false),
   shiftReminderTime: z.coerce.number().optional().default(0),
+  weeklySchedule: weeklyScheduleSchema,
 });
 
 type JobFormData = z.infer<typeof jobSchema>;
@@ -36,6 +54,17 @@ type JobFormData = z.infer<typeof jobSchema>;
 interface JobEditorProps {
   job: Job;
 }
+
+const defaultWeeklySchedule: WeeklySchedule = {
+  sunday: { enabled: false, startTime: '09:00', endTime: '17:00' },
+  monday: { enabled: false, startTime: '09:00', endTime: '17:00' },
+  tuesday: { enabled: false, startTime: '09:00', endTime: '17:00' },
+  wednesday: { enabled: false, startTime: '09:00', endTime: '17:00' },
+  thursday: { enabled: false, startTime: '09:00', endTime: '17:00' },
+  friday: { enabled: false, startTime: '09:00', endTime: '17:00' },
+  saturday: { enabled: false, startTime: '09:00', endTime: '17:00' },
+};
+
 
 export function JobEditor({ job }: JobEditorProps) {
   const { firestore, user } = useFirebase();
@@ -48,18 +77,21 @@ export function JobEditor({ job }: JobEditorProps) {
     handleSubmit,
     reset,
     control,
-    watch,
     formState: { errors, isDirty },
   } = useForm<JobFormData>({
     resolver: zodResolver(jobSchema),
-    defaultValues: job,
+    defaultValues: {
+      ...job,
+      weeklySchedule: job.weeklySchedule ? { ...defaultWeeklySchedule, ...job.weeklySchedule } : defaultWeeklySchedule,
+    },
   });
   
-  const formValues = watch();
+  const formValues = useWatch({ control });
   
   // When the selected job changes, reset the form with the new job's data
   useEffect(() => {
-    reset(job);
+    const fullSchedule = job.weeklySchedule ? { ...defaultWeeklySchedule, ...job.weeklySchedule } : defaultWeeklySchedule;
+    reset({ ...job, weeklySchedule: fullSchedule });
     setSaveStatus('idle'); // Reset save status when job changes
   }, [job, reset]);
 
@@ -147,6 +179,16 @@ export function JobEditor({ job }: JobEditorProps) {
                  {errors.hourlyRate && <p className="text-red-500 text-xs mt-1">{errors.hourlyRate.message}</p>}
              </JobSettingCard>
         </div>
+
+        {/* --- Weekly Schedule --- */}
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg"><CalendarClock /> מערכת שעות קבועה</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <WeeklyScheduleEditor control={control} />
+            </CardContent>
+        </Card>
         
         {/* --- Settings Grid --- */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

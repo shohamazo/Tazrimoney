@@ -171,28 +171,41 @@
           "description": "Base hourly rate for the job."
         },
         "travelRatePerShift": {
-            "type": "number",
-            "description": "Fixed travel expense reimbursement per shift."
+          "type": "number",
+          "description": "Fixed travel expense reimbursement per shift."
         },
         "overtimeThresholdHours": {
-            "type": "number",
-            "description": "Number of hours after which overtime pay starts. E.g., 7 or 8."
+          "type": "number",
+          "description": "Number of hours after which overtime pay starts. E.g., 7 or 8."
         },
         "areBreaksPaid": {
-            "type": "boolean",
-            "description": "Flag to indicate if breaks during a shift are paid."
+          "type": "boolean",
+          "description": "Flag to indicate if breaks during a shift are paid."
         },
         "sickDayPayPercentage": {
-            "type": "number",
-            "description": "Percentage of pay for a sick day (e.g., 50 for 50%)."
+          "type": "number",
+          "description": "Percentage of pay for a sick day (e.g., 50 for 50%)."
         },
         "sickDayStartDay": {
-            "type": "number",
-            "description": "Which sick day the payment starts from (e.g., 2 for from the second day)."
+          "type": "number",
+          "description": "Which sick day the payment starts from (e.g., 2 for from the second day)."
         },
         "isEligibleForGrant": {
-            "type": "boolean",
-            "description": "Flag to indicate if the job is eligible for a work grant."
+          "type": "boolean",
+          "description": "Flag to indicate if the job is eligible for a work grant."
+        },
+        "weeklySchedule": {
+            "type": "object",
+            "description": "The fixed weekly schedule for this job.",
+            "properties": {
+                "sunday": { "$ref": "#/backend/entities/DaySchedule" },
+                "monday": { "$ref": "#/backend/entities/DaySchedule" },
+                "tuesday": { "$ref": "#/backend/entities/DaySchedule" },
+                "wednesday": { "$ref": "#/backend/entities/DaySchedule" },
+                "thursday": { "$ref": "#/backend/entities/DaySchedule" },
+                "friday": { "$ref": "#/backend/entities/DaySchedule" },
+                "saturday": { "$ref": "#/backend/entities/DaySchedule" }
+            }
         }
       },
       "required": [
@@ -201,6 +214,27 @@
         "name",
         "hourlyRate"
       ]
+    },
+    "DaySchedule": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Day Schedule",
+        "type": "object",
+        "description": "Represents the schedule for a single day of the week.",
+        "properties": {
+            "enabled": {
+                "type": "boolean",
+                "description": "Whether this day's schedule is active."
+            },
+            "startTime": {
+                "type": "string",
+                "description": "The start time in HH:mm format."
+            },
+            "endTime": {
+                "type": "string",
+                "description": "The end time in HH:mm format."
+            }
+        },
+        "required": ["enabled", "startTime", "endTime"]
     }
   },
   "auth": {

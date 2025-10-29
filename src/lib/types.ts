@@ -10,6 +10,23 @@ export type UserProfile = {
   theme?: string;
 }
 
+export type DaySchedule = {
+  enabled: boolean;
+  startTime: string; // "HH:mm"
+  endTime: string;   // "HH:mm"
+};
+
+export type WeeklySchedule = {
+  sunday: DaySchedule;
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+};
+
+
 export type Job = {
   id: string;
   name: string;
@@ -21,6 +38,7 @@ export type Job = {
   sickDayStartDay?: number;
   isEligibleForGrant?: boolean;
   shiftReminderTime?: number; // Minutes before shift to send reminder. 0 means disabled.
+  weeklySchedule?: WeeklySchedule;
 };
 
 export type Shift = {
