@@ -53,15 +53,26 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       setProfileLoading(true);
       try {
         const docSnap = await getDoc(userProfileRef);
+        const isTestUser = user.uid === 'TBJEI2HyPhWarj2VEPPcZn3CDC32';
+        
         if (docSnap.exists()) {
           const profile = docSnap.data() as UserProfile;
+          
+          // Ensure the test user is always premium
+          if (isTestUser && profile.tier !== 'premium') {
+            await setDoc(userProfileRef, { tier: 'premium' }, { merge: true });
+            toast({
+              title: "Premium Unlocked",
+              description: "Test user has been granted premium access.",
+            });
+          }
+
           if (!profile.onboardingComplete) {
             startWizard();
           }
         } else {
           // Profile doesn't exist, create it for the new user
-          // Assign premium tier to the specified test user
-          const tier = user.uid === 'TBJEI2HyPhWarj2VEPPcZn3CDC32' ? 'premium' : 'free';
+          const tier = isTestUser ? 'premium' : 'free';
 
           const newProfile: UserProfile = {
             id: user.uid,
@@ -120,5 +131,3 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   // The OnboardingProvider will handle showing the wizard if needed
   return <>{children}</>;
 }
-
-    
