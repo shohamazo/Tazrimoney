@@ -17,6 +17,8 @@ import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
 
+// This component is no longer in use and will be removed in a future update.
+// The new job editor is now on the main jobs page.
 export function JobsList({ jobs, onEdit }: { jobs: Job[], onEdit: (job: Job) => void }) {
     const { firestore, user } = useFirebase();
     const { toast } = useToast();
