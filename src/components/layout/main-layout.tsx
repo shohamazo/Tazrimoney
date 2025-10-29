@@ -28,7 +28,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         </Sidebar>
         <SidebarInset>
             <Header />
-            <main key={pathname} className={cn('p-4 sm:p-6 lg:p-8', 'animate-fade-in')}>
+            <main className={cn('p-4 sm:p-6 lg:p-8')}>
               {children}
             </main>
         </SidebarInset>
