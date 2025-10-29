@@ -13,9 +13,12 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { JobSettingCard } from './job-setting-card';
-import { Bus, Coffee, Gift, Percent, CalendarDays, Loader2, Save } from 'lucide-react';
+import { Bus, Coffee, Gift, Percent, CalendarDays, Loader2, Save, Trash2, AlertTriangle } from 'lucide-react';
 import { OvertimeIcon, SickPayIcon } from './job-icons';
 import { cn } from '@/lib/utils';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+
 
 const jobSchema = z.object({
   name: z.string().min(2, 'שם העבודה חייב להכיל לפחות 2 תווים'),
@@ -32,13 +35,15 @@ type JobFormData = z.infer<typeof jobSchema>;
 
 interface JobEditorProps {
   job: Job;
+  onDelete: (jobId: string) => void;
 }
 
-export function JobEditor({ job }: JobEditorProps) {
+export function JobEditor({ job, onDelete }: JobEditorProps) {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
   const [isSaving, startSavingTransition] = useTransition();
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
   const {
     register,
@@ -104,6 +109,10 @@ export function JobEditor({ job }: JobEditorProps) {
         reset(data); // This will reset the "dirty" state of the form
     });
   };
+
+  const handleDelete = () => {
+    onDelete(job.id);
+  }
 
   return (
     <form onSubmit={(e) => e.preventDefault()}>
@@ -191,6 +200,46 @@ export function JobEditor({ job }: JobEditorProps) {
                 </div>
             </JobSettingCard>
         </div>
+
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <CardTitle className="text-destructive flex items-center gap-2"><AlertTriangle /> אזור מסוכן</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center justify-between">
+              <div>
+                  <p className="font-medium">מחק עבודה זו</p>
+                  <p className="text-sm text-muted-foreground">פעולה זו תמחק את העבודה לצמיתות. לא ניתן לשחזר.</p>
+              </div>
+              <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                      <Button variant="destructive"><Trash2 className="ms-2" /> מחק עבודה</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                      <AlertDialogHeader>
+                          <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                              פעולה זו תמחק את העבודה "{job.name}" לצמיתות.
+                              כדי לאשר, הקלד "{job.name}" בתיבה למטה.
+                          </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <Input 
+                          value={deleteConfirmation}
+                          onChange={(e) => setDeleteConfirmation(e.target.value)}
+                          placeholder={job.name}
+                      />
+                      <AlertDialogFooter>
+                          <AlertDialogCancel onClick={() => setDeleteConfirmation('')}>ביטול</AlertDialogCancel>
+                          <AlertDialogAction 
+                              onClick={handleDelete}
+                              disabled={deleteConfirmation !== job.name}
+                          >
+                               אני מבין, מחק
+                          </AlertDialogAction>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
+          </CardContent>
+        </Card>
       </div>
     </form>
   );
