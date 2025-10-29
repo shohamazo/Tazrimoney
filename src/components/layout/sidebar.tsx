@@ -52,6 +52,7 @@ export function AppSidebar() {
   const { isMobile, setOpenMobile } = useSidebar();
 
   const isPremium = userProfile?.tier === 'premium';
+  const isFreeTier = userProfile?.tier !== 'premium';
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -93,7 +94,7 @@ export function AppSidebar() {
       </div>
 
       <SidebarFooter className="mt-auto border-t border-sidebar-border p-2 space-y-2">
-        {!isPremium && user && (
+        {isFreeTier && user && (
             <div className="group-data-[collapsible=icon]:hidden">
                 <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
                     <Sparkles className="ms-2" />
