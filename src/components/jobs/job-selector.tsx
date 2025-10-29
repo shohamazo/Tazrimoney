@@ -28,35 +28,35 @@ export function JobSelector({ jobs, selectedJobId, onSelectJob, onAddNew, disabl
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
-          className="w-full md:w-64 justify-between"
+          variant="ghost"
+          className="w-full md:w-auto justify-between text-2xl font-bold h-auto p-2"
           disabled={disabled}
         >
           {selectedJob ? (
             <>
-              <Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />
               <span className="truncate flex-1 text-right">{selectedJob.name}</span>
             </>
           ) : (
             'בחר עבודה'
           )}
-          <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-auto h-5 w-5 shrink-0 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-full md:w-64" align="end">
+      <DropdownMenuContent className="w-full md:w-72" align="end">
         {jobs.map((job) => (
           <DropdownMenuItem
             key={job.id}
             onSelect={() => onSelectJob(job.id)}
-            className={cn(job.id === selectedJobId && "bg-accent")}
+            className={cn(job.id === selectedJobId && "bg-accent", "flex items-center gap-2")}
           >
-            {job.name}
+             <Briefcase className="h-4 w-4 text-muted-foreground" />
+            <span>{job.name}</span>
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={onAddNew}>
-          <PlusCircle className="ms-2 h-4 w-4" />
-          הוסף עבודה חדשה
+        <DropdownMenuItem onSelect={onAddNew} className="flex items-center gap-2">
+          <PlusCircle className="h-4 w-4" />
+          <span>הוסף עבודה חדשה</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
