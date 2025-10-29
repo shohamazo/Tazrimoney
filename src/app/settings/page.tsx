@@ -39,14 +39,6 @@ import { themes } from '@/lib/themes';
 import { cn } from '@/lib/utils';
 import { getIdentifierForUser } from '@/lib/utils';
 import { useOnboarding } from '@/components/onboarding/onboarding-provider';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 
 
@@ -99,15 +91,6 @@ export default function SettingsPage() {
         });
     });
   };
-
-  const handleReminderChange = (value: string) => {
-    if (!firestore || !user) return;
-    const reminderTime = parseInt(value, 10);
-    const userProfileRef = doc(firestore, 'users', user.uid);
-    setDocumentNonBlocking(userProfileRef, { shiftReminderTime: reminderTime }, { merge: true });
-    toast({ title: "הגדרות התראה עודכנו" });
-  };
-
 
   const onLinkGoogle = () => {
     startTransition(() => {
@@ -188,37 +171,6 @@ export default function SettingsPage() {
             </Button>
           </CardFooter>
         </form>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Bell /> התראות</CardTitle>
-          <CardDescription>נהל את התראות האפליקציה.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="shiftReminder">תזכורת לפני משמרת</Label>
-            <Select
-              defaultValue={String(userProfile?.shiftReminderTime ?? 0)}
-              onValueChange={handleReminderChange}
-              dir="rtl"
-            >
-              <SelectTrigger id="shiftReminder">
-                <SelectValue placeholder="בחר זמן תזכורת" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">כבוי</SelectItem>
-                <SelectItem value="15">15 דקות לפני</SelectItem>
-                <SelectItem value="30">30 דקות לפני</SelectItem>
-                <SelectItem value="60">שעה לפני</SelectItem>
-                <SelectItem value="120">שעתיים לפני</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground pt-1">
-              קבל התראה בטלפון לפני תחילת משמרת. (דורש הגדרת התראות לדפדפן בנייד)
-            </p>
-          </div>
-        </CardContent>
       </Card>
       
        <Card>

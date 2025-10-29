@@ -13,10 +13,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { JobSettingCard } from './job-setting-card';
-import { Bus, Coffee, Gift, Percent, CalendarDays, Loader2, Save } from 'lucide-react';
+import { Bus, Coffee, Gift, Percent, CalendarDays, Loader2, Save, Bell } from 'lucide-react';
 import { OvertimeIcon, SickPayIcon } from './job-icons';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 const jobSchema = z.object({
@@ -28,6 +28,7 @@ const jobSchema = z.object({
   sickDayPayPercentage: z.coerce.number().min(0).max(100).optional().default(50),
   sickDayStartDay: z.coerce.number().min(1).optional().default(2),
   isEligibleForGrant: z.boolean().optional().default(false),
+  shiftReminderTime: z.coerce.number().optional().default(0),
 });
 
 type JobFormData = z.infer<typeof jobSchema>;
@@ -99,6 +100,7 @@ export function JobEditor({ job }: JobEditorProps) {
             sickDayPayPercentage: data.sickDayPayPercentage || 0,
             sickDayStartDay: data.sickDayStartDay || 1,
             isEligibleForGrant: data.isEligibleForGrant || false,
+            shiftReminderTime: data.shiftReminderTime || 0,
         };
         
         setDocumentNonBlocking(jobRef, jobData, { merge: true });
@@ -106,6 +108,16 @@ export function JobEditor({ job }: JobEditorProps) {
         reset(data); // This will reset the "dirty" state of the form
     });
   };
+  
+  const getReminderDescription = () => {
+    const time = formValues.shiftReminderTime;
+    if (time === 0) return 'כבוי';
+    if (time && time < 60) return `${time} דקות לפני`;
+    if (time === 60) return `שעה לפני`;
+    if (time && time > 60) return `${time / 60} שעות לפני`;
+    return 'כבוי';
+  };
+
 
   return (
     <form onSubmit={(e) => e.preventDefault()}>
@@ -175,11 +187,28 @@ export function JobEditor({ job }: JobEditorProps) {
                     </div>
                 </div>
             </JobSettingCard>
-
-            <JobSettingCard icon={CalendarDays} title="תחילת חישוב" description="מתחילת החודש">
-                <div className="text-center text-muted-foreground p-4">
-                    <p>הגדרות נוספות יתווספו בעתיד</p>
-                </div>
+            
+            <JobSettingCard icon={Bell} title="תזכורת למשמרת" description={getReminderDescription()}>
+                 <Controller
+                    name="shiftReminderTime"
+                    control={control}
+                    render={({ field }) => (
+                    <Select
+                        onValueChange={(value) => field.onChange(parseInt(value, 10))}
+                        value={String(field.value ?? 0)}
+                        dir="rtl"
+                    >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="0">כבוי</SelectItem>
+                            <SelectItem value="15">15 דקות לפני</SelectItem>
+                            <SelectItem value="30">30 דקות לפני</SelectItem>
+                            <SelectItem value="60">שעה לפני</SelectItem>
+                            <SelectItem value="120">שעתיים לפני</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    )}
+                 />
             </JobSettingCard>
 
             <JobSettingCard icon={Gift} title="מענק עבודה" description={formValues.isEligibleForGrant ? "זכאי" : "לא זכאי"}>

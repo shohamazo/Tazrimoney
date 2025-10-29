@@ -8,7 +8,6 @@ export type UserProfile = {
   photoURL?: string | null;
   onboardingComplete?: boolean;
   theme?: string;
-  shiftReminderTime?: number; // Minutes before shift to send reminder. 0 means disabled.
 }
 
 export type Job = {
@@ -21,6 +20,7 @@ export type Job = {
   sickDayPayPercentage?: number;
   sickDayStartDay?: number;
   isEligibleForGrant?: boolean;
+  shiftReminderTime?: number; // Minutes before shift to send reminder. 0 means disabled.
 };
 
 export type Shift = {
