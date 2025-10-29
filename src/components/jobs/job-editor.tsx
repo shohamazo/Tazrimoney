@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useTransition } from 'react';
+import React, { useEffect, useTransition, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,8 +13,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { JobSettingCard } from './job-setting-card';
-import { Bus, Coffee, Gift, Percent, CalendarDays, Loader2 } from 'lucide-react';
+import { Bus, Coffee, Gift, Percent, CalendarDays, Loader2, Save } from 'lucide-react';
 import { OvertimeIcon, SickPayIcon } from './job-icons';
+import { cn } from '@/lib/utils';
 
 const jobSchema = z.object({
   name: z.string().min(2, 'שם העבודה חייב להכיל לפחות 2 תווים'),
@@ -36,7 +37,8 @@ interface JobEditorProps {
 export function JobEditor({ job }: JobEditorProps) {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const [isSaving, startSavingTransition] = useTransition();
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   const {
     register,
@@ -50,17 +52,42 @@ export function JobEditor({ job }: JobEditorProps) {
     defaultValues: job,
   });
   
+  const formValues = watch();
+  
   // When the selected job changes, reset the form with the new job's data
   useEffect(() => {
     reset(job);
+    setSaveStatus('idle'); // Reset save status when job changes
   }, [job, reset]);
 
-  const formValues = watch();
+  // --- Auto-save logic ---
+  useEffect(() => {
+    if (!isDirty) {
+      if(saveStatus === 'saved') {
+         // If we just saved, keep the 'saved' status for a bit.
+         const timer = setTimeout(() => setSaveStatus('idle'), 2000);
+         return () => clearTimeout(timer);
+      }
+      return;
+    };
+
+    setSaveStatus('saving');
+    const debounceTimer = setTimeout(() => {
+      handleSubmit(onSubmit)();
+    }, 1500); // 1.5-second debounce delay
+
+    // Cleanup function to cancel the timer if the user keeps typing
+    return () => clearTimeout(debounceTimer);
+    
+  // We only want to run this effect when formValues or isDirty changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formValues, isDirty]);
+
 
   const onSubmit = (data: JobFormData) => {
     if (!firestore || !user) return;
 
-    startTransition(() => {
+    startSavingTransition(() => {
         const jobRef = doc(firestore, 'users', user.uid, 'jobs', job.id);
         const jobData: JobFormData = {
             ...data,
@@ -73,14 +100,20 @@ export function JobEditor({ job }: JobEditorProps) {
         };
         
         setDocumentNonBlocking(jobRef, jobData, { merge: true });
-        toast({ title: 'עבודה עודכנה', description: `פרטי העבודה '${data.name}' עודכנו.` });
+        setSaveStatus('saved');
         reset(data); // This will reset the "dirty" state of the form
     });
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={(e) => e.preventDefault()}>
       <div className="space-y-6">
+        <div className="flex justify-end h-6">
+            <div className={cn("flex items-center gap-2 text-sm text-muted-foreground transition-opacity", saveStatus !== 'idle' ? 'opacity-100' : 'opacity-0')}>
+              {saveStatus === 'saving' && <> <Loader2 className="h-4 w-4 animate-spin"/> <span>שומר...</span></>}
+              {saveStatus === 'saved' && <> <Save className="h-4 w-4 text-green-500"/> <span className="text-green-500">נשמר</span></>}
+            </div>
+        </div>
         {/* --- Main Details --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 rounded-lg border bg-card p-4">
@@ -158,13 +191,6 @@ export function JobEditor({ job }: JobEditorProps) {
                 </div>
             </JobSettingCard>
         </div>
-      </div>
-      
-      <div className="mt-6 flex justify-end sticky bottom-0 py-4 bg-background/80 backdrop-blur-sm">
-        <Button type="submit" disabled={!isDirty || isPending}>
-            {isPending && <Loader2 className="ms-2 h-4 w-4 animate-spin"/>}
-            {isDirty ? 'שמור שינויים' : 'הכל שמור'}
-        </Button>
       </div>
     </form>
   );
