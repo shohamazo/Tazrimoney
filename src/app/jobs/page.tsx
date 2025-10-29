@@ -2,13 +2,15 @@
 
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import type { Job } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { JobSelector } from '@/components/jobs/job-selector';
 import { JobEditor } from '@/components/jobs/job-editor';
 import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 export default function JobsPage() {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export default function JobsPage() {
         isEligibleForGrant: false,
      };
      const jobsCol = collection(firestore, 'users', user.uid, 'jobs');
-     addDocumentNonBlocking(jobsCol, newJobData).then((docRef) => {
+     addDocumentNonBlocking(jobsCol).then((docRef) => {
         if (docRef) {
           setSelectedJobId(docRef.id);
           toast({ title: "עבודה חדשה נוצרה", description: "תוכל לערוך את פרטיה כאן." });
@@ -58,11 +60,11 @@ export default function JobsPage() {
      });
   };
 
-  const handleDeleteJob = (jobId: string) => {
-    if (!firestore || !user || !jobs) return;
+  const handleDeleteJob = () => {
+    if (!firestore || !user || !jobs || !selectedJobId) return;
 
     // Optimistically find the next job to select
-    const currentIndex = jobs.findIndex(j => j.id === jobId);
+    const currentIndex = jobs.findIndex(j => j.id === selectedJobId);
     let nextSelectedId: string | null = null;
     if (jobs.length > 1) {
       // If it's the last one, select the previous, otherwise select the next.
@@ -71,7 +73,7 @@ export default function JobsPage() {
     
     setSelectedJobId(nextSelectedId); // Switch UI immediately
 
-    const jobRef = doc(firestore, 'users', user.uid, 'jobs', jobId);
+    const jobRef = doc(firestore, 'users', user.uid, 'jobs', selectedJobId);
     deleteDocumentNonBlocking(jobRef);
     toast({ title: "העבודה נמחקה" });
   };
@@ -80,20 +82,43 @@ export default function JobsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row gap-4">
+       <div className="flex justify-between items-center gap-4">
         <JobSelector 
           jobs={jobs || []} 
           selectedJobId={selectedJobId} 
           onSelectJob={setSelectedJobId}
           onAddNew={handleAddNew}
-          disabled={isLoading}
+          disabled={isLoading || !jobs || jobs.length === 0}
         />
+        {selectedJob && (
+           <AlertDialog>
+              <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="icon">
+                      <Trash2 className="h-4 w-4" />
+                  </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                  <AlertDialogHeader>
+                      <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                          פעולה זו תמחק את העבודה "{selectedJob.name}" לצמיתות. לא ניתן לשחזר פעולה זו.
+                      </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                      <AlertDialogCancel>ביטול</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteJob}>
+                           מחק
+                      </AlertDialogAction>
+                  </AlertDialogFooter>
+              </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
       
       {isLoading ? (
         <div className="flex justify-center items-center h-96 border rounded-lg bg-card"><Loader2 className="h-8 w-8 animate-spin" /></div>
       ) : selectedJob ? (
-        <JobEditor key={selectedJob.id} job={selectedJob} onDelete={handleDeleteJob} />
+        <JobEditor key={selectedJob.id} job={selectedJob} />
       ) : (
          <div className="flex flex-col justify-center items-center h-96 border-2 border-dashed rounded-lg bg-card text-center p-8">
             <h3 className="text-xl font-semibold">לא נמצאו עבודות</h3>
