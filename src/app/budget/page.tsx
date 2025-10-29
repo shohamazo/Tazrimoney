@@ -4,19 +4,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, PlusCircle } from 'lucide-react';
 import { BudgetCard } from '@/components/budget/budget-card';
-import type { Budget, Expense } from '@/lib/types';
+import type { Budget } from '@/lib/types';
 import { EditBudgetDialog } from '@/components/budget/edit-budget-dialog';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { startOfMonth } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { simpleBudgetCategories } from '@/lib/expense-categories';
-import { AddBudgetCard } from '@/components/budget/add-budget-card';
+import { AddBudgetDialog } from '@/components/budget/add-budget-dialog';
 
 export default function BudgetPage() {
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [selectedBudget, setSelectedBudget] = React.useState<Budget | null>(null);
-  const [showInactive, setShowInactive] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
 
   const { firestore, user, isUserLoading } = useFirebase();
   const { toast } = useToast();
@@ -48,7 +48,6 @@ export default function BudgetPage() {
       return {
         id: budgetConfig?.id || category,
         category: category,
-        // Use a default of 0 for planned if it doesn't exist, to properly categorize inactive budgets
         planned: budgetConfig?.planned ?? 0,
         spent: spent,
         alertThreshold: budgetConfig?.alertThreshold ?? 80,
@@ -75,7 +74,6 @@ export default function BudgetPage() {
         });
         triggeredAlerts.current.add(alertId);
       } else if (spent < thresholdAmount && triggeredAlerts.current.has(alertId)) {
-        // Optional: Reset alert if spending drops below threshold (e.g., due to a returned item)
         triggeredAlerts.current.delete(alertId);
       }
     });
@@ -84,11 +82,26 @@ export default function BudgetPage() {
 
   const handleEdit = (budget: Budget) => {
     setSelectedBudget(budget);
-    setDialogOpen(true);
+    setEditDialogOpen(true);
   };
 
+  const handleOpenAddDialog = () => {
+    setAddDialogOpen(true);
+  }
+  
+  const handleCategorySelected = (category: string) => {
+    const budgetToAdd = inactiveBudgets.find(b => b.category === category);
+    if (budgetToAdd) {
+        setAddDialogOpen(false);
+        // Defer opening the edit dialog to allow the add dialog to close smoothly
+        setTimeout(() => {
+            handleEdit(budgetToAdd);
+        }, 150);
+    }
+  }
+
   const handleDialogClose = () => {
-    setDialogOpen(false);
+    setEditDialogOpen(false);
     setSelectedBudget(null);
   };
   
@@ -101,37 +114,36 @@ export default function BudgetPage() {
           <h2 className="text-2xl font-bold tracking-tight">ניהול תקציב</h2>
           <p className="text-muted-foreground">הגדר יעדים ועקוב אחר ההוצאות שלך בכל קטגוריה.</p>
         </div>
-         <Button variant="outline" onClick={() => setShowInactive(!showInactive)}>
-            {showInactive ? 'הסתר קטגוריות לא פעילות' : 'הצג קטגוריות לא פעילות'}
+         <Button onClick={handleOpenAddDialog}>
+            <PlusCircle className="ms-2 h-4 w-4" />
+            הוסף קטגוריית תקציב
         </Button>
       </div>
       {isLoading ? (
         <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
       ) : (
-        <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {activeBudgets.map((budget) => (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {activeBudgets.length > 0 ? activeBudgets.map((budget) => (
               <BudgetCard key={budget.category} budget={budget} onEdit={handleEdit} />
-            ))}
-          </div>
-
-          {showInactive && (
-            <div>
-              <h3 className="text-lg font-semibold tracking-tight mt-8 mb-4">קטגוריות לא פעילות</h3>
-               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {inactiveBudgets.map((budget) => (
-                    <AddBudgetCard key={budget.category} budget={budget} onAdd={handleEdit} />
-                ))}
+            )) : (
+              <div className="md:col-span-2 lg:col-span-3 text-center text-muted-foreground py-16">
+                <p>עדיין לא הגדרת תקציבים.</p>
+                <p>לחץ על "הוסף קטגוריית תקציב" כדי להתחיל.</p>
               </div>
-            </div>
-          )}
-        </>
+            )}
+        </div>
       )}
        <EditBudgetDialog
-        isOpen={dialogOpen}
+        isOpen={editDialogOpen}
         onOpenChange={handleDialogClose}
         budget={selectedBudget}
       />
+      <AddBudgetDialog
+        isOpen={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        inactiveBudgets={inactiveBudgets}
+        onCategorySelect={handleCategorySelected}
+       />
     </div>
   );
 }
