@@ -53,39 +53,26 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       setProfileLoading(true);
       try {
         const docSnap = await getDoc(userProfileRef);
-        const isTestUser = user.uid === 'TBJEI2HyPhWarj2VEPPcZn3CDC32';
         
         if (docSnap.exists()) {
           const profile = docSnap.data() as UserProfile;
-          
-          // Ensure the test user is always premium
-          if (isTestUser && profile.tier !== 'premium') {
-            await setDoc(userProfileRef, { tier: 'premium' }, { merge: true });
-            toast({
-              title: "Premium Unlocked",
-              description: "Test user has been granted premium access.",
-            });
-          }
-
           if (!profile.onboardingComplete) {
             startWizard();
           }
         } else {
           // Profile doesn't exist, create it for the new user
-          const tier = isTestUser ? 'premium' : 'free';
-
           const newProfile: UserProfile = {
             id: user.uid,
             email: user.email || null,
             displayName: user.displayName || user.phoneNumber || null,
             photoURL: user.photoURL || null,
             onboardingComplete: false,
-            tier: tier, // Set tier based on UID check
+            tier: 'free',
           };
           await setDoc(userProfileRef, newProfile);
           toast({
-            title: `חשבון נוצר (${tier})`,
-            description: tier === 'premium' ? "הוקצה לך מסלול פרימיום לצורך בדיקות." : "התחלת במסלול החינמי.",
+            title: `חשבון נוצר (Free)`,
+            description: "התחלת במסלול החינמי.",
           });
           startWizard(); // Trigger wizard for new user
         }
