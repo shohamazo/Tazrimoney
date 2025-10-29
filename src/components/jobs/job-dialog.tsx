@@ -31,12 +31,12 @@ import { Separator } from '@/components/ui/separator';
 const jobSchema = z.object({
   name: z.string().min(2, 'שם העבודה חייב להכיל לפחות 2 תווים'),
   hourlyRate: z.coerce.number().min(0, 'תעריף שעתי חייב להיות מספר חיובי'),
-  travelRatePerShift: z.coerce.number().min(0).optional(),
-  overtimeThresholdHours: z.coerce.number().min(0).optional(),
-  areBreaksPaid: z.boolean().optional(),
-  sickDayPayPercentage: z.coerce.number().min(0).max(100).optional(),
-  sickDayStartDay: z.coerce.number().min(1).optional(),
-  isEligibleForGrant: z.boolean().optional(),
+  travelRatePerShift: z.coerce.number().min(0).optional().default(0),
+  overtimeThresholdHours: z.coerce.number().min(0).optional().default(8),
+  areBreaksPaid: z.boolean().optional().default(false),
+  sickDayPayPercentage: z.coerce.number().min(0).max(100).optional().default(50),
+  sickDayStartDay: z.coerce.number().min(1).optional().default(2),
+  isEligibleForGrant: z.boolean().optional().default(false),
 });
 
 type JobFormData = z.infer<typeof jobSchema>;
@@ -91,14 +91,25 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
 
   const onSubmit = (data: JobFormData) => {
     if (!firestore || !user) return;
+    
+    // Ensure optional fields are handled correctly
+    const jobData: JobFormData = {
+        ...data,
+        travelRatePerShift: data.travelRatePerShift || 0,
+        overtimeThresholdHours: data.overtimeThresholdHours || 0,
+        areBreaksPaid: data.areBreaksPaid || false,
+        sickDayPayPercentage: data.sickDayPayPercentage || 0,
+        sickDayStartDay: data.sickDayStartDay || 1,
+        isEligibleForGrant: data.isEligibleForGrant || false,
+    };
 
     if (job) {
       const jobRef = doc(firestore, 'users', user.uid, 'jobs', job.id);
-      setDocumentNonBlocking(jobRef, data, { merge: true });
+      setDocumentNonBlocking(jobRef, jobData, { merge: true });
       toast({ title: 'עבודה עודכנה', description: 'פרטי העבודה עודכנו בהצלחה.' });
     } else {
       const jobsCol = collection(firestore, 'users', user.uid, 'jobs');
-      addDocumentNonBlocking(jobsCol, data);
+      addDocumentNonBlocking(jobsCol, jobData);
       toast({ title: 'עבודה נוספה', description: 'העבודה החדשה נוספה בהצלחה.' });
     }
     onOpenChange(false);
@@ -130,10 +141,10 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
 
                 <Separator className="my-2" />
                 
-                <Accordion type="multiple" className="w-full">
-                    <AccordionItem value="overtime">
-                        <AccordionTrigger>הגדרות שעות נוספות והפסקות</AccordionTrigger>
-                        <AccordionContent className="space-y-4 pt-2">
+                <Accordion type="multiple" className="w-full space-y-2">
+                    <AccordionItem value="overtime" className="rounded-lg border px-3">
+                        <AccordionTrigger className="py-3 text-base">הגדרות שעות נוספות והפסקות</AccordionTrigger>
+                        <AccordionContent className="space-y-4 pt-2 pb-4">
                             <div className="space-y-2">
                                 <Label htmlFor="overtimeThresholdHours">שעות נוספות יחושבו לאחר (שעות)</Label>
                                 <Input id="overtimeThresholdHours" type="number" step="0.5" {...register('overtimeThresholdHours')} placeholder="לדוגמה: 8" />
@@ -161,9 +172,9 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
                             </div>
                         </AccordionContent>
                     </AccordionItem>
-                    <AccordionItem value="benefits">
-                        <AccordionTrigger>הטבות ותנאים</AccordionTrigger>
-                        <AccordionContent className="space-y-4 pt-2">
+                    <AccordionItem value="benefits" className="rounded-lg border px-3">
+                        <AccordionTrigger className="py-3 text-base">הטבות ותנאים</AccordionTrigger>
+                        <AccordionContent className="space-y-4 pt-2 pb-4">
                             <div className="space-y-2">
                                 <Label htmlFor="travelRatePerShift">החזר נסיעות למשמרת (₪)</Label>
                                 <Input id="travelRatePerShift" type="number" step="1" {...register('travelRatePerShift')} />
@@ -190,9 +201,9 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
                             </div>
                         </AccordionContent>
                     </AccordionItem>
-                    <AccordionItem value="sick-days">
-                        <AccordionTrigger>ימי מחלה</AccordionTrigger>
-                        <AccordionContent className="space-y-4 pt-2">
+                    <AccordionItem value="sick-days" className="rounded-lg border px-3">
+                        <AccordionTrigger className="py-3 text-base">ימי מחלה</AccordionTrigger>
+                        <AccordionContent className="space-y-4 pt-2 pb-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="sickDayPayPercentage">אחוז תשלום עבור יום מחלה (%)</Label>
@@ -205,6 +216,7 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
                                      {errors.sickDayStartDay && <p className="text-red-500 text-xs mt-1">{errors.sickDayStartDay.message}</p>}
                                 </div>
                             </div>
+                             <p className="text-xs text-muted-foreground pt-2">לפי החוק, אין תשלום על יום המחלה הראשון. היום השני והשלישי בתשלום 50%, ומהיום הרביעי 100%. תוכל להתאים את ההגדרות כאן לפי התנאים שלך.</p>
                         </AccordionContent>
                     </AccordionItem>
                 </Accordion>
