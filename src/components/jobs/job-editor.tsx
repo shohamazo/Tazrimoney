@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { JobSettingCard } from './job-setting-card';
 import { Bus, Coffee, Gift, Percent, CalendarDays, Loader2, Save, Bell, CalendarClock } from 'lucide-react';
 import { OvertimeIcon, SickPayIcon } from './job-icons';
