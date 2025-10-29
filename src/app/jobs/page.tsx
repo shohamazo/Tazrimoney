@@ -54,13 +54,13 @@ export default function JobsPage() {
   };
   
   const isLoading = isUserLoading || jobsLoading;
+  const pageTitle = selectedJob ? `עריכת עבודה: ${selectedJob.name}` : "ניהול עבודות";
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <h2 className="text-2xl font-bold tracking-tight">ניהול עבודות</h2>
-            <p className="text-muted-foreground">הצג, הוסף וערוך את העבודות והתעריפים שלך.</p>
+            <h2 className="text-2xl font-bold tracking-tight">{pageTitle}</h2>
         </div>
         <JobSelector 
           jobs={jobs || []} 
