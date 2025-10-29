@@ -209,21 +209,5 @@ export const expenseCategories: ExpenseCategory[] = [
     },
 ];
 
-export const simpleBudgetCategories = [
-  'דיור', 
-  'קניות', 
-  'תחבורה', 
-  'אוכל ושתיה', 
-  'חשבונות ושירותים', 
-  'בריאות',
-  'חינוך',
-  'ביגוד והנעלה',
-  'בילוי ופנאי',
-  'תשלומים וחיובים',
-  'חיסכון והשקעות',
-  'חיות מחמד',
-  'נסיעות',
-  'יופי וטיפוח',
-  'משפחה וילדים',
-  'הוצאות שונות'
-];
+// Dynamically generate the simple list from the main source of truth.
+export const simpleBudgetCategories: string[] = expenseCategories.map(c => c.label);

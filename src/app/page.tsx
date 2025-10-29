@@ -2,7 +2,7 @@
 import { StatCard } from '@/components/dashboard/stat-card';
 import { BudgetAlerts } from '@/components/dashboard/budget-alerts';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
-import { TrendingDown, TrendingUp, DollarSign, Clock, Loader2 } from 'lucide-react';
+import { TrendingDown, TrendingUp, DollarSign, Clock, Loader2, Gift } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, Timestamp } from 'firebase/firestore';
 import { useMemo } from 'react';
@@ -10,6 +10,7 @@ import type { Shift, Expense, Job, Budget } from '@/lib/types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { calculateTotalEarningsForShifts } from '@/lib/calculator';
 import { simpleBudgetCategories } from '@/lib/expense-categories';
+import { WorkGrantInfoCard } from '@/components/dashboard/work-grant-info-card';
 
 export default function DashboardPage() {
   const { firestore, user, isUserLoading } = useFirebase();
@@ -56,7 +57,7 @@ export default function DashboardPage() {
       return {
         id: budgetConfig?.id || category,
         category: category,
-        planned: budgetConfig?.planned ?? 1000,
+        planned: budgetConfig?.planned ?? 0,
         spent: spent,
         alertThreshold: budgetConfig?.alertThreshold ?? 80,
       };
@@ -75,6 +76,9 @@ export default function DashboardPage() {
   
   const netBalance = totalEarnings - totalSpent;
   
+  const isEligibleForGrant = useMemo(() => {
+    return jobs?.some(job => job.isEligibleForBonus); // Re-using isEligibleForBonus as the trigger
+  }, [jobs]);
 
   const isLoading = isUserLoading || jobsLoading || shiftsLoading || expensesLoading || budgetsLoading;
 
@@ -113,6 +117,10 @@ export default function DashboardPage() {
           description="ימי עבודה שהוזנו החודש"
         />
       </div>
+      
+      {isEligibleForGrant && (
+        <WorkGrantInfoCard />
+      )}
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -125,5 +133,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

@@ -76,6 +76,10 @@
     color: hsl(var(--foreground));
     @apply font-body;
   }
+  /* Consistent focus rings */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-offset-2 ring-ring ring-offset-background;
+  }
 }
 
 @layer utilities {

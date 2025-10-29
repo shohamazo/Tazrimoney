@@ -37,15 +37,26 @@ export function ReceiptUploadDialog({ isOpen, onOpenChange, onReceiptAnalyzed }:
   const getCameraPermission = useCallback(async () => {
     if (hasCameraPermission === null) {
       try {
+        // First, try to get the back camera
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         setHasCameraPermission(true);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        setError("גישה למצלמה נדחתה. אנא אפשר גישה בהגדרות הדפדפן.");
+      } catch (err) {
+        console.warn("Could not get environment camera, falling back.", err);
+        try {
+            // If that fails, try getting any camera
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            setHasCameraPermission(true);
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (error) {
+            console.error('Error accessing camera:', error);
+            setHasCameraPermission(false);
+            setError("גישה למצלמה נדחתה. אנא אפשר גישה בהגדרות הדפדפן.");
+        }
       }
     }
   }, [hasCameraPermission]);

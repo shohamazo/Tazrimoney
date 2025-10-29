@@ -91,7 +91,18 @@ export default function ShiftsPage() {
       ) : (
         <>
             <ClockInOut jobs={jobs || []} />
-            <ShiftsTable shifts={shifts || []} jobs={jobs || []} onEdit={handleEdit} />
+            {shifts && shifts.length > 0 ? (
+                 <ShiftsTable shifts={shifts} jobs={jobs || []} onEdit={handleEdit} />
+            ) : (
+                <div className="flex flex-col justify-center items-center h-64 border-2 border-dashed rounded-lg bg-card text-center p-8">
+                    <h3 className="text-xl font-semibold">אין משמרות להציג</h3>
+                    <p className="text-muted-foreground mt-2">התחל על ידי הוספת המשמרת הראשונה שלך או שימוש בשעון הנוכחות.</p>
+                    <Button onClick={handleAddNew} className="mt-6">
+                        <PlusCircle className="ms-2 h-4 w-4" />
+                        הוסף משמרת
+                    </Button>
+                </div>
+            )}
         </>
       )}
 

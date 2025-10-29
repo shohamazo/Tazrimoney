@@ -49,10 +49,11 @@ export default function JobsPage() {
         areBreaksPaid: false,
         sickDayPayPercentage: 50,
         sickDayStartDay: 2,
-        isEligibleForGrant: false,
+        isEligibleForBonus: false,
+        bonusPercentage: 0,
      };
      const jobsCol = collection(firestore, 'users', user.uid, 'jobs');
-     addDocumentNonBlocking(jobsCol).then((docRef) => {
+     addDocumentNonBlocking(jobsCol, newJobData).then((docRef) => {
         if (docRef) {
           setSelectedJobId(docRef.id);
           toast({ title: "עבודה חדשה נוצרה", description: "תוכל לערוך את פרטיה כאן." });
@@ -74,7 +75,11 @@ export default function JobsPage() {
     setSelectedJobId(nextSelectedId); // Switch UI immediately
 
     const jobRef = doc(firestore, 'users', user.uid, 'jobs', selectedJobId);
-    deleteDocumentNonBlocking(jobRef);
+    deleteDocumentNonBlocking(jobRef).catch(() => {
+      // Revert UI on failure
+      toast({ variant: 'destructive', title: "Error", description: "Failed to delete job." });
+      setSelectedJobId(selectedJobId);
+    });
     toast({ title: "העבודה נמחקה" });
   };
   
@@ -88,7 +93,7 @@ export default function JobsPage() {
           selectedJobId={selectedJobId} 
           onSelectJob={setSelectedJobId}
           onAddNew={handleAddNew}
-          disabled={isLoading || !jobs || jobs.length === 0}
+          disabled={isLoading}
         />
         {selectedJob && (
            <AlertDialog>

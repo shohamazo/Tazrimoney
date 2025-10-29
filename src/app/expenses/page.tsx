@@ -78,8 +78,17 @@ export default function ExpensesPage() {
       </div>
       {isLoading ? (
          <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+      ) : expenses && expenses.length > 0 ? (
+        <ExpensesTable expenses={expenses} onEdit={handleEdit} />
       ) : (
-        <ExpensesTable expenses={expenses || []} onEdit={handleEdit} />
+        <div className="flex flex-col justify-center items-center h-96 border-2 border-dashed rounded-lg bg-card text-center p-8">
+            <h3 className="text-xl font-semibold">אין הוצאות להציג</h3>
+            <p className="text-muted-foreground mt-2">התחל על ידי הוספת ההוצאה הראשונה שלך או סריקת קבלה.</p>
+            <Button onClick={handleAddNew} className="mt-6">
+              <PlusCircle className="ms-2 h-4 w-4" />
+              הוסף הוצאה
+            </Button>
+        </div>
       )}
       <ExpenseDialog
         isOpen={dialogOpen}
