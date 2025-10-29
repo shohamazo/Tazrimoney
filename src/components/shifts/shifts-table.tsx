@@ -27,21 +27,19 @@ const formatCurrency = (amount: number) => `₪${amount.toFixed(2)}`;
 const CalculationTooltipContent = ({ details }: { details: EarningDetails }) => (
     <div className="p-2 text-xs space-y-1">
         <div className="font-bold text-center mb-2 border-b pb-1">פירוט רווח</div>
-        <div className="flex justify-between gap-4"><span>שעות רגילות:</span> <span className="font-mono">{formatHours(details.regularHours)}</span></div>
-        <div className="flex justify-between gap-4"><span>תשלום רגיל:</span> <span className="font-mono">{formatCurrency(details.regularPay)}</span></div>
         
-        {details.overtime125Hours > 0 && <>
-            <div className="flex justify-between gap-4"><span>שעות נוספות (125%):</span> <span className="font-mono">{formatHours(details.overtime125Hours)}</span></div>
-            <div className="flex justify-between gap-4"><span>תשלום (125%):</span> <span className="font-mono">{formatCurrency(details.overtime125Pay)}</span></div>
-        </>}
-        {details.overtime150Hours > 0 && <>
-            <div className="flex justify-between gap-4"><span>שעות נוספות (150%):</span> <span className="font-mono">{formatHours(details.overtime150Hours)}</span></div>
-            <div className="flex justify-between gap-4"><span>תשלום (150%):</span> <span className="font-mono">{formatCurrency(details.overtime150Pay)}</span></div>
-        </>}
-        {details.shabbatHours > 0 && <>
-            <div className="flex justify-between gap-4"><span>שעות שבת (150%):</span> <span className="font-mono">{formatHours(details.shabbatHours)}</span></div>
-            <div className="flex justify-between gap-4"><span>תשלום שבת:</span> <span className="font-mono">{formatCurrency(details.shabbatPay)}</span></div>
-        </>}
+        {details.regularPay > 0 && <div className="flex justify-between gap-4"><span>תשלום רגיל ({formatHours(details.regularHours)} שעות):</span> <span className="font-mono">{formatCurrency(details.regularPay)}</span></div>}
+        
+        {details.overtime125Pay > 0 && <div className="flex justify-between gap-4"><span>שעות נוספות 125% ({formatHours(details.overtime125Hours)} שעות):</span> <span className="font-mono">{formatCurrency(details.overtime125Pay)}</span></div>}
+        
+        {details.overtime150Pay > 0 && <div className="flex justify-between gap-4"><span>שעות נוספות 150% ({formatHours(details.overtime150Hours)} שעות):</span> <span className="font-mono">{formatCurrency(details.overtime150Pay)}</span></div>}
+        
+        {details.shabbatPay > 0 && <div className="flex justify-between gap-4"><span>שבת ({formatHours(details.shabbatHours)} שעות):</span> <span className="font-mono">{formatCurrency(details.shabbatPay)}</span></div>}
+        
+        {details.bonusPay > 0 && <div className="flex justify-between gap-4"><span>בונוס:</span> <span className="font-mono">{formatCurrency(details.bonusPay)}</span></div>}
+
+        {details.travelPay > 0 && <div className="flex justify-between gap-4"><span>נסיעות:</span> <span className="font-mono">{formatCurrency(details.travelPay)}</span></div>}
+
         <div className="font-bold flex justify-between gap-4 border-t pt-1 mt-1"><span>סה״כ:</span> <span className="font-mono">{formatCurrency(details.totalEarnings)}</span></div>
     </div>
 );
@@ -150,5 +148,3 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
         </div>
     );
 }
-
-    
