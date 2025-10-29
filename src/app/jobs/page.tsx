@@ -57,7 +57,7 @@ export default function JobsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-4">
+      <div className="flex flex-col md:flex-row gap-4">
         <JobSelector 
           jobs={jobs || []} 
           selectedJobId={selectedJobId} 
