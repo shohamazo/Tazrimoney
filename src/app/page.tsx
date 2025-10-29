@@ -10,6 +10,7 @@ import type { Shift, Expense, Job, Budget } from '@/lib/types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { calculateTotalEarningsForShifts } from '@/lib/calculator';
 import { simpleBudgetCategories } from '@/lib/expense-categories';
+import { WorkGrantInfoCard } from '@/components/dashboard/work-grant-info-card';
 
 export default function DashboardPage() {
   const { firestore, user, isUserLoading } = useFirebase();
@@ -75,6 +76,10 @@ export default function DashboardPage() {
   
   const netBalance = totalEarnings - totalSpent;
   
+  const isEligibleForGrant = useMemo(() => {
+    return jobs?.some(job => job.isEligibleForGrant) || false;
+  }, [jobs]);
+
   const isLoading = isUserLoading || jobsLoading || shiftsLoading || expensesLoading || budgetsLoading;
 
   if (isLoading) {
@@ -112,6 +117,10 @@ export default function DashboardPage() {
           description="ימי עבודה שהוזנו החודש"
         />
       </div>
+      
+      {isEligibleForGrant && (
+        <WorkGrantInfoCard />
+      )}
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
