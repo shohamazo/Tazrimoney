@@ -1,8 +1,10 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { CheckCircle, Wand2, ScanLine } from 'lucide-react';
+import { CheckCircle, Wand2, ScanLine, X } from 'lucide-react';
 import { GooglePayButton } from '@/components/premium/google-pay-button';
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 const premiumFeatures = [
   {
@@ -23,10 +25,21 @@ const premiumFeatures = [
 ];
 
 export default function UpgradePage() {
+  const router = useRouter();
+
   return (
     <div className="flex justify-center items-center py-8">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="text-center">
+      <Card className="w-full max-w-lg relative">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute top-2 right-2 h-8 w-8 rounded-full"
+          onClick={() => router.back()}
+        >
+          <X className="h-5 w-5" />
+          <span className="sr-only">Close</span>
+        </Button>
+        <CardHeader className="text-center pt-12">
           <Wand2 className="mx-auto h-12 w-12 text-primary" />
           <CardTitle className="mt-4 text-3xl">שדרג ל-Tazrimoney Premium</CardTitle>
           <CardDescription>
