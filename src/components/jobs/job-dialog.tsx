@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,14 +19,10 @@ import type { Job } from '@/lib/types';
 import { useFirebase, setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
+import { JobSettingCard } from './job-setting-card';
+import { Bus, Clock, Coffee, Gift, Smile, Percent, CalendarDays } from 'lucide-react';
+import { OvertimeIcon, SickPayIcon } from './job-icons';
 
 const jobSchema = z.object({
   name: z.string().min(2, 'שם העבודה חייב להכיל לפחות 2 תווים'),
@@ -50,11 +46,13 @@ interface JobDialogProps {
 export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
+  
   const {
     register,
     handleSubmit,
     reset,
     control,
+    watch,
     formState: { errors },
   } = useForm<JobFormData>({
     resolver: zodResolver(jobSchema),
@@ -69,6 +67,8 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
         isEligibleForGrant: false,
     }
   });
+
+  const formValues = watch();
 
   useEffect(() => {
     if (isOpen) {
@@ -92,7 +92,6 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
   const onSubmit = (data: JobFormData) => {
     if (!firestore || !user) return;
     
-    // Ensure optional fields are handled correctly
     const jobData: JobFormData = {
         ...data,
         travelRatePerShift: data.travelRatePerShift || 0,
@@ -117,7 +116,7 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{job ? 'עריכת עבודה' : 'הוספת עבודה חדשה'}</DialogTitle>
           <DialogDescription>
@@ -125,101 +124,84 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto px-1">
+            <div className="py-4 space-y-6 max-h-[70vh] overflow-y-auto px-1">
+                {/* --- Main Details --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">שם העבודה</Label>
-                        <Input id="name" {...register('name')} />
+                        <Label htmlFor="name" className="text-sm font-medium">שם העבודה</Label>
+                        <Input id="name" {...register('name')} placeholder="לדוגמה: מאבטח"/>
                         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="hourlyRate">תעריף שעתי (₪)</Label>
-                        <Input id="hourlyRate" type="number" step="0.1" {...register('hourlyRate')} />
-                        {errors.hourlyRate && <p className="text-red-500 text-xs mt-1">{errors.hourlyRate.message}</p>}
-                    </div>
+                     <JobSettingCard 
+                        icon={Percent} 
+                        title="תעריף שעתי"
+                        description="התעריף הבסיסי שלך לשעה"
+                        >
+                        <div className="flex items-center gap-2">
+                            <Input id="hourlyRate" type="number" step="0.1" {...register('hourlyRate')} className="w-28 text-lg"/>
+                            <Label htmlFor="hourlyRate" className="text-lg">₪</Label>
+                        </div>
+                         {errors.hourlyRate && <p className="text-red-500 text-xs mt-1">{errors.hourlyRate.message}</p>}
+                     </JobSettingCard>
                 </div>
-
-                <Separator className="my-2" />
                 
-                <Accordion type="multiple" className="w-full space-y-2">
-                    <AccordionItem value="overtime" className="rounded-lg border px-3">
-                        <AccordionTrigger className="py-3 text-base">הגדרות שעות נוספות והפסקות</AccordionTrigger>
-                        <AccordionContent className="space-y-4 pt-2 pb-4">
+                 {/* --- Settings Grid --- */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <JobSettingCard icon={OvertimeIcon} title="שעות נוספות" description={`לאחר ${formValues.overtimeThresholdHours || 0} שעות`}>
+                        <div className="space-y-2">
+                            <Label htmlFor="overtimeThresholdHours">יחושב לאחר (שעות)</Label>
+                            <Input id="overtimeThresholdHours" type="number" step="0.5" {...register('overtimeThresholdHours')} />
+                        </div>
+                    </JobSettingCard>
+
+                    <JobSettingCard icon={Bus} title="נסיעות" description={`₪${formValues.travelRatePerShift || 0} למשמרת`}>
+                         <div className="space-y-2">
+                            <Label htmlFor="travelRatePerShift">החזר נסיעות למשמרת (₪)</Label>
+                            <Input id="travelRatePerShift" type="number" step="1" {...register('travelRatePerShift')} />
+                        </div>
+                    </JobSettingCard>
+
+                    <JobSettingCard icon={Coffee} title="הפסקות" description={formValues.areBreaksPaid ? "בתשלום" : "ללא תשלום"}>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                            <Label htmlFor="areBreaksPaid" className="flex flex-col space-y-1">
+                                <span>הפסקות בתשלום</span>
+                            </Label>
+                            <Controller name="areBreaksPaid" control={control} render={({ field }) => (
+                                <Switch id="areBreaksPaid" checked={field.value} onCheckedChange={field.onChange} />
+                            )}/>
+                        </div>
+                    </JobSettingCard>
+                    
+                    <JobSettingCard icon={SickPayIcon} title="ימי מחלה" description={`${formValues.sickDayPayPercentage || 0}% מהיום ה-${formValues.sickDayStartDay || 0}`}>
+                        <div className="space-y-4">
+                             <div className="space-y-2">
+                                <Label htmlFor="sickDayPayPercentage">אחוז תשלום (%)</Label>
+                                <Input id="sickDayPayPercentage" type="number" {...register('sickDayPayPercentage')}/>
+                            </div>
                             <div className="space-y-2">
-                                <Label htmlFor="overtimeThresholdHours">שעות נוספות יחושבו לאחר (שעות)</Label>
-                                <Input id="overtimeThresholdHours" type="number" step="0.5" {...register('overtimeThresholdHours')} placeholder="לדוגמה: 8" />
-                                <p className="text-xs text-muted-foreground">השאר 0 אם אין שעות נוספות. ברירת מחדל היא 8.</p>
-                                {errors.overtimeThresholdHours && <p className="text-red-500 text-xs mt-1">{errors.overtimeThresholdHours.message}</p>}
+                                <Label htmlFor="sickDayStartDay">החל מהיום ה-</Label>
+                                <Input id="sickDayStartDay" type="number" {...register('sickDayStartDay')}/>
                             </div>
-                             <div className="flex items-center justify-between rounded-lg border p-3">
-                                <Label htmlFor="areBreaksPaid" className="flex flex-col space-y-1">
-                                    <span>הפסקות בתשלום</span>
-                                    <span className="font-normal leading-snug text-muted-foreground">
-                                    האם הפסקות במהלך המשמרת מחושבות כשעות עבודה?
-                                    </span>
-                                </Label>
-                                <Controller
-                                    name="areBreaksPaid"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <Switch
-                                            id="areBreaksPaid"
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                        />
-                                    )}
-                                />
-                            </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                    <AccordionItem value="benefits" className="rounded-lg border px-3">
-                        <AccordionTrigger className="py-3 text-base">הטבות ותנאים</AccordionTrigger>
-                        <AccordionContent className="space-y-4 pt-2 pb-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="travelRatePerShift">החזר נסיעות למשמרת (₪)</Label>
-                                <Input id="travelRatePerShift" type="number" step="1" {...register('travelRatePerShift')} />
-                                {errors.travelRatePerShift && <p className="text-red-500 text-xs mt-1">{errors.travelRatePerShift.message}</p>}
-                            </div>
-                             <div className="flex items-center justify-between rounded-lg border p-3">
-                                <Label htmlFor="isEligibleForGrant" className="flex flex-col space-y-1">
-                                    <span>זכאות למענק עבודה</span>
-                                    <span className="font-normal leading-snug text-muted-foreground">
-                                    האם עבודה זו מזכה במענק עבודה (מס הכנסה שלילי)?
-                                    </span>
-                                </Label>
-                                 <Controller
-                                    name="isEligibleForGrant"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <Switch
-                                            id="isEligibleForGrant"
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                        />
-                                    )}
-                                />
-                            </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                    <AccordionItem value="sick-days" className="rounded-lg border px-3">
-                        <AccordionTrigger className="py-3 text-base">ימי מחלה</AccordionTrigger>
-                        <AccordionContent className="space-y-4 pt-2 pb-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="sickDayPayPercentage">אחוז תשלום עבור יום מחלה (%)</Label>
-                                    <Input id="sickDayPayPercentage" type="number" {...register('sickDayPayPercentage')} placeholder="לדוגמה: 50"/>
-                                     {errors.sickDayPayPercentage && <p className="text-red-500 text-xs mt-1">{errors.sickDayPayPercentage.message}</p>}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="sickDayStartDay">תשלום ימי מחלה החל מהיום ה-</Label>
-                                    <Input id="sickDayStartDay" type="number" {...register('sickDayStartDay')} placeholder="לדוגמה: 2"/>
-                                     {errors.sickDayStartDay && <p className="text-red-500 text-xs mt-1">{errors.sickDayStartDay.message}</p>}
-                                </div>
-                            </div>
-                             <p className="text-xs text-muted-foreground pt-2">לפי החוק, אין תשלום על יום המחלה הראשון. היום השני והשלישי בתשלום 50%, ומהיום הרביעי 100%. תוכל להתאים את ההגדרות כאן לפי התנאים שלך.</p>
-                        </AccordionContent>
-                    </AccordionItem>
-                </Accordion>
+                        </div>
+                    </JobSettingCard>
+
+                    <JobSettingCard icon={CalendarDays} title="תחילת חישוב" description="מתחילת החודש">
+                        <div className="text-center text-muted-foreground p-4">
+                            <p>הגדרות נוספות יתווספו בעתיד</p>
+                        </div>
+                    </JobSettingCard>
+
+                    <JobSettingCard icon={Gift} title="מענק עבודה" description={formValues.isEligibleForGrant ? "זכאי" : "לא זכאי"}>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                            <Label htmlFor="isEligibleForGrant" className="flex flex-col space-y-1">
+                                <span>זכאות למענק</span>
+                            </Label>
+                             <Controller name="isEligibleForGrant" control={control} render={({ field }) => (
+                                <Switch id="isEligibleForGrant" checked={field.value} onCheckedChange={field.onChange} />
+                            )}/>
+                        </div>
+                    </JobSettingCard>
+                </div>
           </div>
           <DialogFooter className="pt-4 border-t">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
