@@ -152,7 +152,7 @@ export default function SettingsPage() {
   const identifier = user ? getIdentifierForUser(user) : 'לא זמין';
   const confirmationText = user?.email || identifier;
 
-  // IMPORTANT: Replace this with your actual UID during development to see the dev tools
+  // The user with this ID will see the developer tools.
   const developerUid = 'gHZ9n7s2b9X8fJ2kP3s5t8YxVOE2'; 
   const isDeveloper = user?.uid === developerUid;
 
