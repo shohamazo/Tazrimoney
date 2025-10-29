@@ -63,6 +63,10 @@
         "jobType": {
           "type": "string",
           "description": "Type of job performed during the shift."
+        },
+        "salesAmount": {
+          "type": "number",
+          "description": "The total sales amount generated during the shift, for bonus calculation."
         }
       },
       "required": [
@@ -190,9 +194,13 @@
           "type": "number",
           "description": "Which sick day the payment starts from (e.g., 2 for from the second day)."
         },
-        "isEligibleForGrant": {
+        "isEligibleForBonus": {
           "type": "boolean",
-          "description": "Flag to indicate if the job is eligible for a work grant."
+          "description": "Flag to indicate if the job is eligible for sales bonuses."
+        },
+        "bonusPercentage": {
+          "type": "number",
+          "description": "The sales bonus percentage (e.g., 5 for 5%)."
         },
         "weeklySchedule": {
             "type": "object",
@@ -346,3 +354,5 @@
     "reasoning": "The Firestore structure is designed to manage user data related to shifts, expenses, budgets, and jobs within the Tazrimony application. The structure prioritizes authorization independence and data clarity. User-owned data is stored under the `/users/{userId}` path, facilitating straightforward security rules based on user ID. Each subcollection (shifts, expenses, budgets, jobs) maintains this pattern, ensuring that all documents within a collection share the same security requirements, which simplifies rules and enhances security.  Authorization Independence is achieved by storing all data directly under the user's document, eliminating the need for `get()` calls in security rules. This approach ensures that security rules can be based solely on `request.auth.uid` and the path, enabling atomic operations.  QAPs are supported through structural segregation, ensuring that list operations are secure because each collection's security posture is homogeneous."
   }
 }
+
+    

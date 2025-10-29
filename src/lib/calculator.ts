@@ -37,6 +37,7 @@ export type EarningDetails = {
   overtime125Pay: number;
   overtime150Pay: number;
   shabbatPay: number;
+  bonusPay: number;
 };
 
 
@@ -57,6 +58,7 @@ export function calculateShiftEarnings(shift: Shift, job: Job | undefined): Earn
     overtime125Pay: 0,
     overtime150Pay: 0,
     shabbatPay: 0,
+    bonusPay: 0,
   };
 
   if (!job) return initialDetails;
@@ -111,8 +113,13 @@ export function calculateShiftEarnings(shift: Shift, job: Job | undefined): Earn
   initialDetails.overtime125Pay = initialDetails.overtime125Hours * hourlyRate * 1.25;
   initialDetails.overtime150Pay = initialDetails.overtime150Hours * hourlyRate * 1.5;
   initialDetails.shabbatPay = initialDetails.shabbatHours * hourlyRate * 1.5;
+
+  // Calculate bonus pay
+  if (job.isEligibleForBonus && job.bonusPercentage && shift.salesAmount) {
+      initialDetails.bonusPay = shift.salesAmount * (job.bonusPercentage / 100);
+  }
   
-  let totalPay = initialDetails.regularPay + initialDetails.overtime125Pay + initialDetails.overtime150Pay + initialDetails.shabbatPay;
+  let totalPay = initialDetails.regularPay + initialDetails.overtime125Pay + initialDetails.overtime150Pay + initialDetails.shabbatPay + initialDetails.bonusPay;
 
   // Add travel rate if applicable
   if (job.travelRatePerShift && job.travelRatePerShift > 0) {
@@ -149,3 +156,5 @@ export function calculateTotalEarningsForShifts(shifts: Shift[], jobs: Job[]) {
 
     return { totalEarnings, daysWorked: workedDays.size };
 }
+
+    

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,7 @@ const shiftSchema = z.object({
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "פורמט שעה לא תקין (HH:mm)"),
   endDate: z.date({ required_error: "יש לבחור תאריך סיום" }),
   endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "פורמט שעה לא תקין (HH:mm)"),
+  salesAmount: z.coerce.number().min(0, "סכום המכירות חייב להיות מספר חיובי").optional(),
 }).refine(data => {
     const startDateTime = new Date(data.startDate);
     const [startHours, startMinutes] = data.startTime.split(':').map(Number);
@@ -63,10 +64,14 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
     handleSubmit,
     register,
     reset,
+    watch,
     formState: { errors },
   } = useForm<ShiftFormData>({
     resolver: zodResolver(shiftSchema),
   });
+  
+  const selectedJobId = watch('jobId');
+  const selectedJob = useMemo(() => jobs.find(j => j.id === selectedJobId), [selectedJobId, jobs]);
 
   useEffect(() => {
     if (isOpen) {
@@ -80,6 +85,7 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
           startTime: format(start, 'HH:mm'),
           endDate: end,
           endTime: format(end, 'HH:mm'),
+          salesAmount: shift.salesAmount || 0,
         });
       } else {
         // Adding a new shift - default to a future time
@@ -93,6 +99,7 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
           startTime: format(tomorrow, 'HH:mm'),
           endDate: futureEnd,
           endTime: format(futureEnd, 'HH:mm'),
+          salesAmount: 0,
         });
       }
     }
@@ -113,6 +120,7 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
         jobId: data.jobId,
         start: Timestamp.fromDate(startDateTime),
         end: Timestamp.fromDate(endDateTime),
+        salesAmount: data.salesAmount,
     };
 
     if (shift) {
@@ -215,6 +223,14 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
              {errors.endDate && <p className="text-red-500 text-xs text-right mt-1">{errors.endDate.message}</p>}
              {errors.endTime && <p className="text-red-500 text-xs text-right mt-1">{errors.endTime.message}</p>}
           </div>
+          
+          {selectedJob?.isEligibleForBonus && (
+            <div className="space-y-2">
+                <Label htmlFor="salesAmount">סכום מכירות (₪)</Label>
+                <Input id="salesAmount" type="number" step="0.01" {...register('salesAmount')} />
+                {errors.salesAmount && <p className="text-red-500 text-xs text-right mt-1">{errors.salesAmount.message}</p>}
+            </div>
+          )}
 
           <DialogFooter>
              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>ביטול</Button>
@@ -225,3 +241,5 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
     </Dialog>
   );
 }
+
+    

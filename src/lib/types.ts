@@ -36,7 +36,8 @@ export type Job = {
   areBreaksPaid?: boolean;
   sickDayPayPercentage?: number;
   sickDayStartDay?: number;
-  isEligibleForGrant?: boolean;
+  isEligibleForBonus?: boolean;
+  bonusPercentage?: number;
   shiftReminderTime?: number; // Minutes before shift to send reminder. 0 means disabled.
   weeklySchedule?: WeeklySchedule;
 };
@@ -46,6 +47,7 @@ export type Shift = {
   jobId: string;
   start: Date | Timestamp;
   end: Date | Timestamp;
+  salesAmount?: number;
   earnings?: number; // Will be calculated
   earningsDetails?: EarningDetails;
 };
@@ -67,3 +69,5 @@ export type Budget = {
   spent: number;
   alertThreshold: number; // Percentage (0-100)
 };
+
+    

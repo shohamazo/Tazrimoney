@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -9,6 +10,7 @@ import type { Job } from '@/lib/types';
 import { useFirebase, addDocumentNonBlocking } from '@/firebase';
 import { collection, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { SalesInputDialog } from './sales-input-dialog';
 
 interface ActiveShift {
   jobId: string;
@@ -19,6 +21,8 @@ export function ClockInOut({ jobs }: { jobs: Job[] }) {
   const [selectedJobId, setSelectedJobId] = useState<string | undefined>(jobs[0]?.id);
   const [activeShift, setActiveShift] = useState<ActiveShift | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isSalesDialogOpen, setSalesDialogOpen] = useState(false);
+
 
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
@@ -77,15 +81,35 @@ export function ClockInOut({ jobs }: { jobs: Job[] }) {
 
   const handleClockOut = () => {
     if (!activeShift || !firestore || !user) return;
+    
+    const job = jobs.find(j => j.id === activeShift.jobId);
+    if (job?.isEligibleForBonus) {
+        setSalesDialogOpen(true);
+    } else {
+        saveShift();
+    }
+  };
+
+  const saveShift = (salesAmount?: number) => {
+     if (!activeShift || !firestore || !user) return;
 
     const endTime = new Date();
     const startTime = new Date(activeShift.startTime);
 
-    const shiftData = {
+    const shiftData: {
+        jobId: string;
+        start: Timestamp;
+        end: Timestamp;
+        salesAmount?: number;
+    } = {
       jobId: activeShift.jobId,
       start: Timestamp.fromDate(startTime),
       end: Timestamp.fromDate(endTime),
     };
+    
+    if (salesAmount !== undefined) {
+        shiftData.salesAmount = salesAmount;
+    }
 
     const shiftsCol = collection(firestore, 'users', user.uid, 'shifts');
     addDocumentNonBlocking(shiftsCol, shiftData);
@@ -98,6 +122,17 @@ export function ClockInOut({ jobs }: { jobs: Job[] }) {
     setActiveShift(null);
     localStorage.removeItem('activeShift');
     setElapsedTime(0);
+  }
+
+  const handleSalesDialogSubmit = (salesAmount: number) => {
+    setSalesDialogOpen(false);
+    saveShift(salesAmount);
+  };
+  
+  const handleSalesDialogClose = () => {
+    setSalesDialogOpen(false);
+    // If the user closes the dialog, save the shift without sales data
+    saveShift();
   };
 
   const formatElapsedTime = (ms: number) => {
@@ -114,49 +149,56 @@ export function ClockInOut({ jobs }: { jobs: Job[] }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>שעון נוכחות</CardTitle>
-        <CardDescription>התחל וסיים משמרת בלחיצת כפתור.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
-        {activeShift ? (
-          <>
-            <div className="flex w-full items-center gap-3 rounded-md bg-secondary p-3 flex-1">
-                <Timer className="h-6 w-6 text-primary" />
-                <div className="flex-1">
-                    <p className="text-sm text-muted-foreground">משמרת פעילה ב: <span className="font-bold text-foreground">{getJobName(activeShift.jobId)}</span></p>
-                    <p className="text-2xl font-bold font-mono tracking-wider">{formatElapsedTime(elapsedTime)}</p>
+    <>
+        <Card>
+        <CardHeader>
+            <CardTitle>שעון נוכחות</CardTitle>
+            <CardDescription>התחל וסיים משמרת בלחיצת כפתור.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
+            {activeShift ? (
+            <>
+                <div className="flex w-full items-center gap-3 rounded-md bg-secondary p-3 flex-1">
+                    <Timer className="h-6 w-6 text-primary" />
+                    <div className="flex-1">
+                        <p className="text-sm text-muted-foreground">משמרת פעילה ב: <span className="font-bold text-foreground">{getJobName(activeShift.jobId)}</span></p>
+                        <p className="text-2xl font-bold font-mono tracking-wider">{formatElapsedTime(elapsedTime)}</p>
+                    </div>
                 </div>
-            </div>
-            <Button onClick={handleClockOut} className="w-full shrink-0 sm:w-auto bg-destructive hover:bg-destructive/90">
-              <Square className="ms-2 h-4 w-4" />
-              סיום משמרת (Clock Out)
-            </Button>
-          </>
-        ) : (
-          <>
-            <div className="w-full sm:w-64">
-              <Select onValueChange={setSelectedJobId} defaultValue={selectedJobId} dir="rtl">
-                <SelectTrigger>
-                  <SelectValue placeholder="בחר עבודה" />
-                </SelectTrigger>
-                <SelectContent>
-                  {jobs.map((job) => (
-                    <SelectItem key={job.id} value={job.id}>
-                      {job.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={handleClockIn} disabled={!selectedJobId} className="w-full shrink-0 sm:w-auto">
-              <Play className="ms-2 h-4 w-4" />
-              התחל משמרת (Clock In)
-            </Button>
-          </>
-        )}
-      </CardContent>
-    </Card>
+                <Button onClick={handleClockOut} className="w-full shrink-0 sm:w-auto bg-destructive hover:bg-destructive/90">
+                <Square className="ms-2 h-4 w-4" />
+                סיום משמרת (Clock Out)
+                </Button>
+            </>
+            ) : (
+            <>
+                <div className="w-full sm:w-64">
+                <Select onValueChange={setSelectedJobId} defaultValue={selectedJobId} dir="rtl">
+                    <SelectTrigger>
+                    <SelectValue placeholder="בחר עבודה" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {jobs.map((job) => (
+                        <SelectItem key={job.id} value={job.id}>
+                        {job.name}
+                        </SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                </div>
+                <Button onClick={handleClockIn} disabled={!selectedJobId} className="w-full shrink-0 sm:w-auto">
+                <Play className="ms-2 h-4 w-4" />
+                התחל משמרת (Clock In)
+                </Button>
+            </>
+            )}
+        </CardContent>
+        </Card>
+        <SalesInputDialog
+            isOpen={isSalesDialogOpen}
+            onClose={handleSalesDialogClose}
+            onSubmit={handleSalesDialogSubmit}
+        />
+    </>
   );
 }

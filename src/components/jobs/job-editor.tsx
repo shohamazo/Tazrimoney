@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { JobSettingCard } from './job-setting-card';
-import { Bus, Coffee, Gift, Percent, CalendarDays, Loader2, Save, Bell, CalendarClock } from 'lucide-react';
+import { Bus, Coffee, Percent, CalendarClock, Loader2, Save, Bell, Award } from 'lucide-react';
 import { OvertimeIcon, SickPayIcon } from './job-icons';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -44,7 +44,8 @@ const jobSchema = z.object({
   areBreaksPaid: z.boolean().optional().default(false),
   sickDayPayPercentage: z.coerce.number().min(0).max(100).optional().default(50),
   sickDayStartDay: z.coerce.number().min(1).optional().default(2),
-  isEligibleForGrant: z.boolean().optional().default(false),
+  isEligibleForBonus: z.boolean().optional().default(false),
+  bonusPercentage: z.coerce.number().min(0).max(100).optional().default(0),
   shiftReminderTime: z.coerce.number().optional().default(0),
   weeklySchedule: weeklyScheduleSchema,
 });
@@ -131,7 +132,8 @@ export function JobEditor({ job }: JobEditorProps) {
             areBreaksPaid: data.areBreaksPaid || false,
             sickDayPayPercentage: data.sickDayPayPercentage || 0,
             sickDayStartDay: data.sickDayStartDay || 1,
-            isEligibleForGrant: data.isEligibleForGrant || false,
+            isEligibleForBonus: data.isEligibleForBonus || false,
+            bonusPercentage: data.bonusPercentage || 0,
             shiftReminderTime: data.shiftReminderTime || 0,
         };
         
@@ -252,19 +254,30 @@ export function JobEditor({ job }: JobEditorProps) {
                     )}
                  />
             </JobSettingCard>
-
-            <JobSettingCard icon={Gift} title="מענק עבודה" description={formValues.isEligibleForGrant ? "זכאי" : "לא זכאי"}>
-                <div className="flex items-center justify-between rounded-lg border p-3">
-                    <Label htmlFor="isEligibleForGrant" className="flex flex-col space-y-1">
-                        <span>זכאות למענק</span>
-                    </Label>
-                     <Controller name="isEligibleForGrant" control={control} render={({ field }) => (
-                        <Switch id="isEligibleForGrant" checked={field.value} onCheckedChange={field.onChange} />
-                    )}/>
+            
+            <JobSettingCard icon={Award} title="בונוס / עמלות" description={formValues.isEligibleForBonus ? `זכאי (${formValues.bonusPercentage || 0}%)` : "לא זכאי"}>
+                 <div className="space-y-4">
+                    <div className="flex items-center justify-between rounded-lg border p-3">
+                        <Label htmlFor="isEligibleForBonus" className="flex flex-col space-y-1">
+                            <span>זכאות לבונוס</span>
+                        </Label>
+                        <Controller name="isEligibleForBonus" control={control} render={({ field }) => (
+                            <Switch id="isEligibleForBonus" checked={field.value} onCheckedChange={field.onChange} />
+                        )}/>
+                    </div>
+                    {formValues.isEligibleForBonus && (
+                        <div className="space-y-2">
+                            <Label htmlFor="bonusPercentage">אחוז בונוס (%)</Label>
+                            <Input id="bonusPercentage" type="number" {...register('bonusPercentage')} />
+                        </div>
+                    )}
                 </div>
             </JobSettingCard>
+
         </div>
       </div>
     </form>
   );
 }
+
+    

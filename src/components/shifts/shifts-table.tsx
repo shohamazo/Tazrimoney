@@ -93,7 +93,7 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
                                 <TableHead>התחלה</TableHead>
                                 <TableHead>סיום</TableHead>
                                 <TableHead>משך</TableHead>
-                                <TableHead>תעריף</TableHead>
+                                <TableHead>מכירות</TableHead>
                                 <TableHead>רווח (מוערך)</TableHead>
                                 <TableHead className="text-left"></TableHead>
                             </TableRow>
@@ -106,7 +106,9 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
                                     <TableCell>{formatTime(shift.start)}</TableCell>
                                     <TableCell>{formatTime(shift.end)}</TableCell>
                                     <TableCell>{shift.duration}</TableCell>
-                                    <TableCell>₪{shift.hourlyRate.toFixed(2)}</TableCell>
+                                    <TableCell>
+                                        {shift.salesAmount !== undefined ? formatCurrency(shift.salesAmount) : '—'}
+                                    </TableCell>
                                     <TableCell className="text-green-600 font-medium whitespace-nowrap">
                                         <div className="flex items-center gap-2">
                                             <span>₪{shift.earnings.toFixed(2)}</span>
@@ -148,3 +150,5 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
         </div>
     );
 }
+
+    
