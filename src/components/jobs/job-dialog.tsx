@@ -106,7 +106,7 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{job ? 'עריכת עבודה' : 'הוספת עבודה חדשה'}</DialogTitle>
           <DialogDescription>
@@ -114,16 +114,18 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto px-1">
-                <div className="space-y-2">
-                    <Label htmlFor="name">שם העבודה</Label>
-                    <Input id="name" {...register('name')} />
-                    {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="hourlyRate">תעריף שעתי (₪)</Label>
-                    <Input id="hourlyRate" type="number" step="0.1" {...register('hourlyRate')} />
-                    {errors.hourlyRate && <p className="text-red-500 text-xs mt-1">{errors.hourlyRate.message}</p>}
+            <div className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto px-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">שם העבודה</Label>
+                        <Input id="name" {...register('name')} />
+                        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="hourlyRate">תעריף שעתי (₪)</Label>
+                        <Input id="hourlyRate" type="number" step="0.1" {...register('hourlyRate')} />
+                        {errors.hourlyRate && <p className="text-red-500 text-xs mt-1">{errors.hourlyRate.message}</p>}
+                    </div>
                 </div>
 
                 <Separator className="my-2" />
@@ -191,21 +193,23 @@ export function JobDialog({ isOpen, onOpenChange, job }: JobDialogProps) {
                     <AccordionItem value="sick-days">
                         <AccordionTrigger>ימי מחלה</AccordionTrigger>
                         <AccordionContent className="space-y-4 pt-2">
-                            <div className="space-y-2">
-                                <Label htmlFor="sickDayPayPercentage">אחוז תשלום עבור יום מחלה (%)</Label>
-                                <Input id="sickDayPayPercentage" type="number" {...register('sickDayPayPercentage')} placeholder="לדוגמה: 50"/>
-                                 {errors.sickDayPayPercentage && <p className="text-red-500 text-xs mt-1">{errors.sickDayPayPercentage.message}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="sickDayStartDay">תשלום ימי מחלה החל מהיום ה-</Label>
-                                <Input id="sickDayStartDay" type="number" {...register('sickDayStartDay')} placeholder="לדוגמה: 2"/>
-                                 {errors.sickDayStartDay && <p className="text-red-500 text-xs mt-1">{errors.sickDayStartDay.message}</p>}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="sickDayPayPercentage">אחוז תשלום עבור יום מחלה (%)</Label>
+                                    <Input id="sickDayPayPercentage" type="number" {...register('sickDayPayPercentage')} placeholder="לדוגמה: 50"/>
+                                     {errors.sickDayPayPercentage && <p className="text-red-500 text-xs mt-1">{errors.sickDayPayPercentage.message}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="sickDayStartDay">תשלום ימי מחלה החל מהיום ה-</Label>
+                                    <Input id="sickDayStartDay" type="number" {...register('sickDayStartDay')} placeholder="לדוגמה: 2"/>
+                                     {errors.sickDayStartDay && <p className="text-red-500 text-xs mt-1">{errors.sickDayStartDay.message}</p>}
+                                </div>
                             </div>
                         </AccordionContent>
                     </AccordionItem>
                 </Accordion>
           </div>
-          <DialogFooter className="pt-4">
+          <DialogFooter className="pt-4 border-t">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               ביטול
             </Button>
