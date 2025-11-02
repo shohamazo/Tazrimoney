@@ -60,7 +60,7 @@ export function JobsList({ jobs, onEdit }: { jobs: Job[], onEdit: (job: Job) => 
                                             ימי מחלה
                                         </Badge>
                                     )}
-                                     {job.isEligibleForGrant && (
+                                     {job.isEligibleForBonus && (
                                         <Badge variant="outline" className="flex items-center gap-1">
                                             <Gift className="h-3 w-3" />
                                             מענק עבודה
