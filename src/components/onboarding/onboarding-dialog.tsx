@@ -440,5 +440,3 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
     </Dialog>
   );
 }
-
-    
