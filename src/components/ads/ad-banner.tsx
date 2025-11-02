@@ -25,8 +25,8 @@ export function AdBanner() {
               4. Replace "YYYYYYYYYY" with your slot ID.
             */}
             <Adsense
-                client="ca-pub-XXXXXXXXXXXXXXXX"
-                slot="YYYYYYYYYY"
+                client="ca-pub-9668904483593517"
+                slot="9944833469"
                 style={{ display: 'block' }}
                 layout="in-article"
                 format="fluid"
