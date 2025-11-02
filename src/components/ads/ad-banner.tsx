@@ -23,13 +23,13 @@ export function AdBanner() {
   }, []);
 
   return (
-    <div className="fixed bottom-0 left-0 w-full bg-card p-2 z-40 md:left-auto md:w-[calc(100%-var(--sidebar-width-icon))] group-data-[state=expanded]:md:w-[calc(100%-var(--sidebar-width))] transition-[width] duration-300">
+    <div className="fixed bottom-0 left-0 w-full bg-card p-1 z-40 md:left-auto md:w-[calc(100%-var(--sidebar-width-icon))] group-data-[state=expanded]:md:w-[calc(100%-var(--sidebar-width))] transition-[width] duration-300">
         <div className="mx-auto w-full max-w-5xl">
             {/* 
               This is where the Google Ad will be displayed.
               We are using the direct HTML snippet from AdSense for reliability.
             */}
-            <div className="w-full h-full min-h-[60px] flex items-center justify-center" dangerouslySetInnerHTML={{ __html: adCode }} />
+            <div className="w-full h-full min-h-[50px] flex items-center justify-center" dangerouslySetInnerHTML={{ __html: adCode }} />
         </div>
     </div>
   );
