@@ -1,6 +1,5 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
 import React, { useEffect } from 'react';
 
 // This is the ad unit code from Google AdSense
@@ -24,14 +23,14 @@ export function AdBanner() {
   }, []);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 p-2 sm:p-4 peer-data-[variant=sidebar]:md:pl-[calc(var(--sidebar-width-icon)+1rem)] peer-data-[state=expanded]:md:pl-[calc(var(--sidebar-width)+1rem)] transition-[padding] duration-300">
-        <Card className="w-full bg-card p-2 flex items-center justify-center gap-4 shadow-lg border min-h-[60px]">
+    <div className="fixed bottom-0 left-0 w-full bg-background p-2 z-40 md:left-auto md:w-[calc(100%-var(--sidebar-width-icon))] group-data-[state=expanded]:md:w-[calc(100%-var(--sidebar-width))] transition-[width] duration-300">
+        <div className="mx-auto w-full max-w-5xl">
             {/* 
               This is where the Google Ad will be displayed.
               We are using the direct HTML snippet from AdSense for reliability.
             */}
-            <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: adCode }} />
-        </Card>
+            <div className="w-full h-full min-h-[60px] flex items-center justify-center" dangerouslySetInnerHTML={{ __html: adCode }} />
+        </div>
     </div>
   );
 }
