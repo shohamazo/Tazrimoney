@@ -199,7 +199,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'miscellaneous',
         label: 'הוצאות שונות',
         icon: '📈',
-        defaultFrequency: 'One-time',
+        defaultFrequency: 'One-Time',
         subcategories: [
             { value: 'app-subscriptions', label: 'מנויים לאפליקציות', defaultFrequency: 'Monthly' },
             { value: 'donations', label: 'תרומות' },
