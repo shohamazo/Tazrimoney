@@ -8,6 +8,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { ThemeProvider } from '@/components/theme/theme-provider';
 import { OnboardingProvider } from '@/components/onboarding/onboarding-provider';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'Tazrimoney',
@@ -31,6 +32,12 @@ export default function RootLayout({
         <link
           href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap"
           rel="stylesheet"
+        />
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9668904483593517"
+          crossOrigin="anonymous"
+          strategy="lazyOnload"
         />
       </head>
       <body className={cn('font-body antialiased')}>
