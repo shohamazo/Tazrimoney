@@ -23,7 +23,7 @@ export function AdBanner() {
   }, []);
 
   return (
-    <div className="fixed bottom-0 left-0 w-full bg-background p-2 z-40 md:left-auto md:w-[calc(100%-var(--sidebar-width-icon))] group-data-[state=expanded]:md:w-[calc(100%-var(--sidebar-width))] transition-[width] duration-300">
+    <div className="w-full p-2 z-40 bg-card border-t">
         <div className="mx-auto w-full max-w-5xl">
             {/* 
               This is where the Google Ad will be displayed.
