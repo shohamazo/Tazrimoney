@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, PlusCircle } from 'lucide-react';
 import { BudgetCard } from '@/components/budget/budget-card';
-import type { Budget } from '@/lib/types';
+import type { Budget, Expense } from '@/lib/types';
 import { EditBudgetDialog } from '@/components/budget/edit-budget-dialog';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
