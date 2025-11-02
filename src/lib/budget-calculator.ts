@@ -1,4 +1,5 @@
 
+
 import { simpleBudgetCategories } from "./expense-categories";
 
 export type BudgetItem = {
@@ -111,7 +112,7 @@ export function generateInitialBudget(input: InitialBudgetInput): BudgetItem[] {
     suggestions['חשבונות ושירותים'] = billsTotal;
 
     // Health
-    suggestions['בריאות'] = input.takesMeds === 'yes' ? 300 : 100;
+    suggestions['בריאות'] = input.takesMeds ? 300 : 100;
 
     // Clothing
     let clothingMultiplier = 1.0;
