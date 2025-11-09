@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useTransition } from 'react';
+import React, { useEffect, useTransition, useCallback } from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WeeklyScheduleEditor } from './weekly-schedule-editor';
 import { Button } from '../ui/button';
+import { useDebouncedCallback } from 'use-debounce';
 
 const dayScheduleSchema = z.object({
     enabled: z.boolean(),
@@ -89,9 +90,9 @@ export function JobEditor({ job }: JobEditorProps) {
   });
   
   const formValues = useWatch({ control });
-  
-  const onSubmit = (data: JobFormData) => {
-    if (!firestore || !user || !isDirty) return;
+
+  const debouncedSave = useDebouncedCallback(async (data: JobFormData) => {
+    if (!firestore || !user ) return;
     
     startSavingTransition(async () => {
         const jobRef = doc(firestore, 'users', user.uid, 'jobs', job.id);
@@ -109,16 +110,26 @@ export function JobEditor({ job }: JobEditorProps) {
         
         try {
             await setDoc(jobRef, jobData, { merge: true });
-            toast({ title: "השינויים נשמרו" });
-            reset(data); // Important to reset dirty state after save
+            // We don't call toast or reset here. The re-fetch from useCollection will handle the reset.
         } catch(error) {
-            console.error("Failed to save job:", error);
-            toast({ variant: 'destructive', title: "שגיאה", description: "לא ניתן היה לשמור את השינויים."});
+            console.error("Failed to auto-save job:", error);
+            toast({ variant: 'destructive', title: "שגיאת שמירה", description: "לא ניתן היה לשמור את השינויים אוטומטית."});
         }
     });
-  };
+  }, 1000); // 1-second debounce delay
 
-  // When the selected job changes, reset the form with the new job's data
+  useEffect(() => {
+    const subscription = control._subjects.watch.subscribe({
+      next: ({ name, type, values }) => {
+        if (isDirty) {
+          debouncedSave(values as JobFormData);
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [control, isDirty, debouncedSave]);
+  
+  // When the selected job changes from parent, reset the form with the new job's data
   useEffect(() => {
     const fullSchedule = job.weeklySchedule ? { ...defaultWeeklySchedule, ...job.weeklySchedule } : defaultWeeklySchedule;
     reset({ ...job, weeklySchedule: fullSchedule });
@@ -136,8 +147,8 @@ export function JobEditor({ job }: JobEditorProps) {
 
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="relative">
-      <div className="space-y-6 pb-20"> {/* Add padding-bottom to avoid overlap with sticky button */}
+    <form onSubmit={(e) => e.preventDefault()} className="relative">
+      <div className="space-y-6"> 
         {/* --- Main Details --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 rounded-lg border bg-card p-4">
@@ -249,13 +260,6 @@ export function JobEditor({ job }: JobEditorProps) {
                     )}
                 </div>
             </JobSettingCard>
-
-        </div>
-         <div className="fixed bottom-0 right-0 w-full bg-background/80 backdrop-blur-sm flex justify-end p-4 border-t md:right-auto md:w-[calc(100%-var(--sidebar-width-icon))] group-data-[state=expanded]:md:w-[calc(100%-var(--sidebar-width))] transition-[width] duration-300 z-20">
-             <Button type="submit" disabled={!isDirty || isSaving}>
-                 {isSaving ? <Loader2 className="ms-2 h-4 w-4 animate-spin" /> : <Save className="ms-2 h-4 w-4" />}
-                 {isSaving ? 'שומר...' : 'שמור שינויים'}
-            </Button>
         </div>
       </div>
     </form>
