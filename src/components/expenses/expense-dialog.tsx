@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { expenseCategories, type ExpenseCategory, type ExpenseSubcategory } from '@/lib/expense-categories';
 
 const expenseSchema = z.object({
-  description: z.string().min(2, "תיאור חייב להכיל לפחות 2 תווים"),
+  description: z.string().optional(),
   amount: z.coerce.number().positive("הסכום חייב להיות מספר חיובי"),
   category: z.string().min(1, "יש לבחור קטגוריה"),
   subcategory: z.string().min(1, "יש לבחור תת-קטגוריה"),
@@ -109,6 +109,7 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense, prefilledData }: 
 
     const expenseData = {
         ...data,
+        description: data.description || data.subcategory || 'הוצאה',
         date: Timestamp.fromDate(data.date),
     };
 
@@ -136,7 +137,7 @@ export function ExpenseDialog({ isOpen, onOpenChange, expense, prefilledData }: 
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="description">תיאור</Label>
+            <Label htmlFor="description">תיאור (אופציונלי)</Label>
             <Input id="description" {...register('description')} />
             {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
           </div>

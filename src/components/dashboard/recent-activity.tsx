@@ -48,7 +48,7 @@ export function RecentActivity({ shifts, expenses, jobs }: { shifts: Shift[], ex
                         <AvatarFallback className="bg-red-100 dark:bg-red-900"><Wallet className="size-5 text-red-500" /></AvatarFallback>
                     </Avatar>
                     <div className="ms-4 space-y-1">
-                        <p className="text-sm font-medium leading-none">{expense.description}</p>
+                        <p className="text-sm font-medium leading-none">{expense.description || expense.category}</p>
                         <p className="text-sm text-muted-foreground">{expense.category}</p>
                     </div>
                     <div className="ms-auto font-medium text-red-500">-₪{expense.amount.toFixed(2)}</div>
