@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useForm, Controller, Control, useWatch } from 'react-hook-form';
+import { Controller, Control, useWatch, UseFormSetValue } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -23,16 +23,14 @@ const days: { key: DayOfWeek, label: string }[] = [
 
 interface WeeklyScheduleEditorProps {
     control: Control<any>;
+    setValue: UseFormSetValue<any>;
 }
 
 // A new component to encapsulate the logic for a single day
-function DayRow({ day, control }: { day: { key: DayOfWeek, label: string }, control: Control<any> }) {
+function DayRow({ day, control, setValue }: { day: { key: DayOfWeek, label: string }, control: Control<any>, setValue: UseFormSetValue<any> }) {
     const isEnabled = useWatch({ control, name: `weeklySchedule.${day.key}.enabled` });
     const startTime = useWatch({ control, name: `weeklySchedule.${day.key}.startTime` });
     
-    // We need setValue from the form, so we get it from the control object.
-    const { setValue } = useForm({ control });
-
 
     useEffect(() => {
         // Don't auto-suggest if the day is disabled or start time is invalid
@@ -99,12 +97,12 @@ function DayRow({ day, control }: { day: { key: DayOfWeek, label: string }, cont
     );
 }
 
-export function WeeklyScheduleEditor({ control }: WeeklyScheduleEditorProps) {
+export function WeeklyScheduleEditor({ control, setValue }: WeeklyScheduleEditorProps) {
 
     return (
         <div className="space-y-4">
             {days.map((day) => (
-                <DayRow key={day.key} day={day} control={control} />
+                <DayRow key={day.key} day={day} control={control} setValue={setValue} />
             ))}
         </div>
     );

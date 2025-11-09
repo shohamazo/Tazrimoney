@@ -77,6 +77,7 @@ export function JobEditor({ job }: JobEditorProps) {
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors, isDirty },
   } = useForm<JobFormData>({
     resolver: zodResolver(jobSchema),
@@ -160,7 +161,7 @@ export function JobEditor({ job }: JobEditorProps) {
                 <CardTitle className="flex items-center gap-2 text-lg"><CalendarClock /> מערכת שעות קבועה</CardTitle>
             </CardHeader>
             <CardContent>
-                <WeeklyScheduleEditor control={control} />
+                <WeeklyScheduleEditor control={control} setValue={setValue} />
             </CardContent>
         </Card>
         
@@ -247,7 +248,7 @@ export function JobEditor({ job }: JobEditorProps) {
             </JobSettingCard>
 
         </div>
-         <div className="fixed bottom-0 right-0 w-full bg-background/80 backdrop-blur-sm flex justify-end p-4 border-t md:right-auto md:w-[calc(100%-var(--sidebar-width-icon))] group-data-[state=expanded]:md:w-[calc(100%-var(--sidebar-width))] transition-[width] duration-300">
+         <div className="fixed bottom-0 right-0 w-full bg-background/80 backdrop-blur-sm flex justify-end p-4 border-t md:right-auto md:w-[calc(100%-var(--sidebar-width-icon))] group-data-[state=expanded]:md:w-[calc(100%-var(--sidebar-width))] transition-[width] duration-300 z-20">
              <Button type="submit" disabled={!isDirty || isSaving}>
                  {isSaving ? <Loader2 className="ms-2 h-4 w-4 animate-spin" /> : <Save className="ms-2 h-4 w-4" />}
                  {isSaving ? 'שומר...' : 'שמור שינויים'}
