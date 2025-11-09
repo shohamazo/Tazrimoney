@@ -14,7 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import type { Shift, Job } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { format, addDays, addHours, setHours, setMinutes, min } from 'date-fns';
+import { format, addHours, setHours, setMinutes, min } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useFirebase, setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import { doc, collection, Timestamp } from 'firebase/firestore';
@@ -92,15 +92,13 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
           salesAmount: shift.salesAmount || 0,
         });
       } else {
-        // Adding a new shift - default to a future time
-        const tomorrow = addDays(new Date(), 1);
-        tomorrow.setHours(9, 0, 0, 0); // Set to 9:00 AM
-        const futureEnd = addHours(tomorrow, 8); // 8-hour shift
-
+        // Adding a new shift - default to today at the current time
+        const now = new Date();
+        const futureEnd = addHours(now, 7);
         reset({
           jobId: jobs[0]?.id || '',
-          startDate: tomorrow,
-          startTime: format(tomorrow, 'HH:mm'),
+          startDate: now,
+          startTime: format(now, 'HH:mm'),
           endDate: futureEnd,
           endTime: format(futureEnd, 'HH:mm'),
           salesAmount: 0,
@@ -270,5 +268,3 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
     </Dialog>
   );
 }
-
-    

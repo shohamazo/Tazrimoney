@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useTransition, useState } from 'react';
+import React, { useEffect, useTransition, useState, useCallback } from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,7 +19,6 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WeeklyScheduleEditor } from './weekly-schedule-editor';
 import { Button } from '../ui/button';
-
 
 const dayScheduleSchema = z.object({
     enabled: z.boolean(),
@@ -80,6 +79,7 @@ export function JobEditor({ job }: JobEditorProps) {
     reset,
     control,
     formState: { errors, isDirty },
+    getValues,
   } = useForm<JobFormData>({
     resolver: zodResolver(jobSchema),
     defaultValues: {
@@ -90,16 +90,9 @@ export function JobEditor({ job }: JobEditorProps) {
   
   const formValues = useWatch({ control });
   
-  // When the selected job changes, reset the form with the new job's data
-  useEffect(() => {
-    const fullSchedule = job.weeklySchedule ? { ...defaultWeeklySchedule, ...job.weeklySchedule } : defaultWeeklySchedule;
-    reset({ ...job, weeklySchedule: fullSchedule });
-  }, [job, reset]);
-
-
   const onSubmit = (data: JobFormData) => {
     if (!firestore || !user) return;
-    setIsSuccessfullySaved(false);
+    
     startSavingTransition(() => {
         const jobRef = doc(firestore, 'users', user.uid, 'jobs', job.id);
         const jobData: JobFormData = {
@@ -117,13 +110,32 @@ export function JobEditor({ job }: JobEditorProps) {
         setDocumentNonBlocking(jobRef, jobData, { merge: true }).then(() => {
             setIsSuccessfullySaved(true);
             toast({ title: "השינויים נשמרו" });
-            reset(data, { keepValues: true, keepDirty: false, keepDefaultValues: false });
+            reset(data); // Important to reset dirty state
              setTimeout(() => setIsSuccessfullySaved(false), 2000);
         }).catch(() => {
             toast({ variant: 'destructive', title: "שגיאה", description: "לא ניתן היה לשמור את השינויים."});
         });
     });
   };
+
+  // Debounced auto-save
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handler = setTimeout(() => {
+        handleSubmit(onSubmit)();
+    }, 1500); // Save 1.5 seconds after user stops typing
+
+    return () => clearTimeout(handler);
+  }, [formValues, isDirty, handleSubmit]);
+
+
+  // When the selected job changes, reset the form with the new job's data
+  useEffect(() => {
+    const fullSchedule = job.weeklySchedule ? { ...defaultWeeklySchedule, ...job.weeklySchedule } : defaultWeeklySchedule;
+    reset({ ...job, weeklySchedule: fullSchedule });
+  }, [job, reset]);
+
   
   const getReminderDescription = () => {
     const time = formValues.shiftReminderTime;
@@ -137,7 +149,7 @@ export function JobEditor({ job }: JobEditorProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="relative">
-      <div className="space-y-6">
+      <div className="space-y-6 pb-20"> {/* Add padding-bottom to avoid overlap with sticky button */}
         {/* --- Main Details --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 rounded-lg border bg-card p-4">
@@ -252,9 +264,9 @@ export function JobEditor({ job }: JobEditorProps) {
 
         </div>
          <div className="sticky bottom-0 right-0 p-4 bg-background/80 backdrop-blur-sm flex justify-end">
-            <Button type="submit" disabled={!isDirty || isSaving}>
-                {isSaving ? <Loader2 className="ms-2 h-4 w-4 animate-spin" /> : <Save className="ms-2 h-4 w-4" />}
-                {isSaving ? 'שומר...' : (isSuccessfullySaved ? 'נשמר!' : 'שמור שינויים')}
+             <Button type="submit" disabled={!isDirty || isSaving}>
+                 {isSaving ? <Loader2 className="ms-2 h-4 w-4 animate-spin" /> : <Save className="ms-2 h-4 w-4" />}
+                 {isSaving ? 'שומר...' : (isSuccessfullySaved ? 'נשמר!' : 'שמור שינויים')}
             </Button>
         </div>
       </div>
