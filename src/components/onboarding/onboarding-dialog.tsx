@@ -252,9 +252,9 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                      <div className="text-right">
                         <Label>אילו מנויים/שירותים חודשיים יש לך?</Label>
                         <div className="mt-2 space-y-2">
-                            <div className="flex items-center justify-end"><Checkbox id="sub-tv" checked={subscriptions.includes('tv')} onCheckedChange={() => handleSubscriptionChange('tv')} className="ml-2"/><Label htmlFor="sub-tv" className="mr-2">שירותי סטרימינג (נטפליקס, דיסני+)</Label></div>
-                            <div className="flex items-center justify-end"><Checkbox id="sub-music" checked={subscriptions.includes('music')} onCheckedChange={() => handleSubscriptionChange('music')} className="ml-2"/><Label htmlFor="sub-music" className="mr-2">מנוי מוזיקה (ספוטיפיי, אפל מיוזיק)</Label></div>
-                            <div className="flex items-center justify-end"><Checkbox id="sub-gym" checked={subscriptions.includes('gym')} onCheckedChange={() => handleSubscriptionChange('gym')} className="ml-2"/><Label htmlFor="sub-gym" className="mr-2">מנוי לחדר כושר</Label></div>
+                            <div className="flex items-center"><Checkbox id="sub-tv" checked={subscriptions.includes('tv')} onCheckedChange={() => handleSubscriptionChange('tv')} className="ml-2"/><Label htmlFor="sub-tv">שירותי סטרימינג (נטפליקס, דיסני+)</Label></div>
+                            <div className="flex items-center"><Checkbox id="sub-music" checked={subscriptions.includes('music')} onCheckedChange={() => handleSubscriptionChange('music')} className="ml-2"/><Label htmlFor="sub-music">מנוי מוזיקה (ספוטיפיי, אפל מיוזיק)</Label></div>
+                            <div className="flex items-center"><Checkbox id="sub-gym" checked={subscriptions.includes('gym')} onCheckedChange={() => handleSubscriptionChange('gym')} className="ml-2"/><Label htmlFor="sub-gym">מנוי לחדר כושר</Label></div>
                         </div>
                     </div>
 
