@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useForm, useFieldArray, Controller, Control, useWatch } from 'react-hook-form';
+import { useForm, Controller, Control, useWatch } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -35,6 +35,7 @@ function DayRow({ day, control }: { day: { key: DayOfWeek, label: string }, cont
 
 
     useEffect(() => {
+        // Don't auto-suggest if the day is disabled or start time is invalid
         if (!isEnabled || !startTime || !/^\d{2}:\d{2}$/.test(startTime)) {
             return;
         }
@@ -42,9 +43,12 @@ function DayRow({ day, control }: { day: { key: DayOfWeek, label: string }, cont
         const today = new Date();
         const startDateTime = parse(startTime, 'HH:mm', today);
 
+        // Check if parsing was successful
         if (isNaN(startDateTime.getTime())) return;
 
+        // Suggest end time 7 hours later
         const suggestedEndDateTime = addHours(startDateTime, 7);
+        // Cap the suggestion at 23:00
         const capDateTime = setHours(setMinutes(today, 0), 23);
 
         const finalEndDateTime = min([suggestedEndDateTime, capDateTime]);
@@ -54,6 +58,7 @@ function DayRow({ day, control }: { day: { key: DayOfWeek, label: string }, cont
         const formattedNewEndTime = format(finalEndDateTime, 'HH:mm');
 
         if(currentEndTime !== formattedNewEndTime) {
+            // Update the form value for the end time
             setValue(`weeklySchedule.${day.key}.endTime`, formattedNewEndTime, { shouldDirty: true });
         }
         
