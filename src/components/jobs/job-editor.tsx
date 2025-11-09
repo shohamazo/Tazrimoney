@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useTransition, useState, useCallback } from 'react';
+import React, { useEffect, useTransition, useState } from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -71,7 +71,6 @@ export function JobEditor({ job }: JobEditorProps) {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
   const [isSaving, startSavingTransition] = useTransition();
-  const [isSuccessfullySaved, setIsSuccessfullySaved] = useState(false);
 
   const {
     register,
@@ -79,7 +78,6 @@ export function JobEditor({ job }: JobEditorProps) {
     reset,
     control,
     formState: { errors, isDirty },
-    getValues,
   } = useForm<JobFormData>({
     resolver: zodResolver(jobSchema),
     defaultValues: {
@@ -108,27 +106,13 @@ export function JobEditor({ job }: JobEditorProps) {
         };
         
         setDocumentNonBlocking(jobRef, jobData, { merge: true }).then(() => {
-            setIsSuccessfullySaved(true);
             toast({ title: "השינויים נשמרו" });
-            reset(data); // Important to reset dirty state
-             setTimeout(() => setIsSuccessfullySaved(false), 2000);
+            reset(data); // Important to reset dirty state after save
         }).catch(() => {
             toast({ variant: 'destructive', title: "שגיאה", description: "לא ניתן היה לשמור את השינויים."});
         });
     });
   };
-
-  // Debounced auto-save
-  useEffect(() => {
-    if (!isDirty) return;
-
-    const handler = setTimeout(() => {
-        handleSubmit(onSubmit)();
-    }, 1500); // Save 1.5 seconds after user stops typing
-
-    return () => clearTimeout(handler);
-  }, [formValues, isDirty, handleSubmit]);
-
 
   // When the selected job changes, reset the form with the new job's data
   useEffect(() => {
@@ -263,10 +247,10 @@ export function JobEditor({ job }: JobEditorProps) {
             </JobSettingCard>
 
         </div>
-         <div className="sticky bottom-0 right-0 p-4 bg-background/80 backdrop-blur-sm flex justify-end">
+         <div className="fixed bottom-0 right-0 w-full bg-background/80 backdrop-blur-sm flex justify-end p-4 border-t md:right-auto md:w-[calc(100%-var(--sidebar-width-icon))] group-data-[state=expanded]:md:w-[calc(100%-var(--sidebar-width))] transition-[width] duration-300">
              <Button type="submit" disabled={!isDirty || isSaving}>
                  {isSaving ? <Loader2 className="ms-2 h-4 w-4 animate-spin" /> : <Save className="ms-2 h-4 w-4" />}
-                 {isSaving ? 'שומר...' : (isSuccessfullySaved ? 'נשמר!' : 'שמור שינויים')}
+                 {isSaving ? 'שומר...' : 'שמור שינויים'}
             </Button>
         </div>
       </div>
