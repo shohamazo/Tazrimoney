@@ -18,6 +18,7 @@ import { OvertimeIcon, SickPayIcon } from './job-icons';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WeeklyScheduleEditor } from './weekly-schedule-editor';
+import { Button } from '../ui/button';
 
 
 const dayScheduleSchema = z.object({
@@ -71,7 +72,7 @@ export function JobEditor({ job }: JobEditorProps) {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
   const [isSaving, startSavingTransition] = useTransition();
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [isSuccessfullySaved, setIsSuccessfullySaved] = useState(false);
 
   const {
     register,
@@ -93,36 +94,12 @@ export function JobEditor({ job }: JobEditorProps) {
   useEffect(() => {
     const fullSchedule = job.weeklySchedule ? { ...defaultWeeklySchedule, ...job.weeklySchedule } : defaultWeeklySchedule;
     reset({ ...job, weeklySchedule: fullSchedule });
-    setSaveStatus('idle'); // Reset save status when job changes
   }, [job, reset]);
-
-  // --- Auto-save logic ---
-  useEffect(() => {
-    if (!isDirty) {
-      if(saveStatus === 'saved') {
-         // If we just saved, keep the 'saved' status for a bit.
-         const timer = setTimeout(() => setSaveStatus('idle'), 2000);
-         return () => clearTimeout(timer);
-      }
-      return;
-    };
-
-    setSaveStatus('saving');
-    const debounceTimer = setTimeout(() => {
-      handleSubmit(onSubmit)();
-    }, 800); // 0.8-second debounce delay
-
-    // Cleanup function to cancel the timer if the user keeps typing
-    return () => clearTimeout(debounceTimer);
-    
-  // We only want to run this effect when formValues or isDirty changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formValues, isDirty]);
 
 
   const onSubmit = (data: JobFormData) => {
     if (!firestore || !user) return;
-
+    setIsSuccessfullySaved(false);
     startSavingTransition(() => {
         const jobRef = doc(firestore, 'users', user.uid, 'jobs', job.id);
         const jobData: JobFormData = {
@@ -138,11 +115,12 @@ export function JobEditor({ job }: JobEditorProps) {
         };
         
         setDocumentNonBlocking(jobRef, jobData, { merge: true }).then(() => {
-            // After the Firestore promise resolves, we update the state.
-            setSaveStatus('saved');
+            setIsSuccessfullySaved(true);
+            toast({ title: "השינויים נשמרו" });
             reset(data, { keepValues: true, keepDirty: false, keepDefaultValues: false });
+             setTimeout(() => setIsSuccessfullySaved(false), 2000);
         }).catch(() => {
-            setSaveStatus('idle');
+            toast({ variant: 'destructive', title: "שגיאה", description: "לא ניתן היה לשמור את השינויים."});
         });
     });
   };
@@ -158,14 +136,8 @@ export function JobEditor({ job }: JobEditorProps) {
 
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="relative">
-        <div className="absolute top-0 right-0 h-8">
-            <div className={cn("flex items-center gap-2 text-sm text-muted-foreground transition-opacity", saveStatus !== 'idle' ? 'opacity-100' : 'opacity-0')}>
-              {saveStatus === 'saving' && <> <Loader2 className="h-4 w-4 animate-spin"/> <span>שומר...</span></>}
-              {saveStatus === 'saved' && <> <Save className="h-4 w-4 text-green-500"/> <span className="text-green-500">נשמר</span></>}
-            </div>
-        </div>
-      <div className="space-y-6 pt-8">
+    <form onSubmit={handleSubmit(onSubmit)} className="relative">
+      <div className="space-y-6">
         {/* --- Main Details --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 rounded-lg border bg-card p-4">
@@ -278,6 +250,12 @@ export function JobEditor({ job }: JobEditorProps) {
                 </div>
             </JobSettingCard>
 
+        </div>
+         <div className="sticky bottom-0 right-0 p-4 bg-background/80 backdrop-blur-sm flex justify-end">
+            <Button type="submit" disabled={!isDirty || isSaving}>
+                {isSaving ? <Loader2 className="ms-2 h-4 w-4 animate-spin" /> : <Save className="ms-2 h-4 w-4" />}
+                {isSaving ? 'שומר...' : (isSuccessfullySaved ? 'נשמר!' : 'שמור שינויים')}
+            </Button>
         </div>
       </div>
     </form>
