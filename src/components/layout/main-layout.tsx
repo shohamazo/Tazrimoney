@@ -19,8 +19,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     // Explicitly check if the user is NOT premium. Users without a tier will be treated as free.
     const isFreeTier = userProfile?.tier !== 'premium';
     
-    // Don't render the main layout on the login or verification pages
-    if (pathname === '/login' || pathname === '/verify-email') {
+    // Don't render the main layout on the login, verification, or upgrade pages
+    if (pathname === '/login' || pathname === '/verify-email' || pathname === '/upgrade') {
         return <>{children}</>;
     }
 
