@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, Wand2 } from 'lucide-react';
+import { Loader2, Wand2, Info } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -23,7 +23,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Checkbox } from '../ui/checkbox';
-import { simpleBudgetCategories } from '@/lib/expense-categories';
+import { expenseCategories, simpleBudgetCategories } from '@/lib/expense-categories';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
 
 interface OnboardingDialogProps {
   isOpen: boolean;
@@ -37,6 +39,8 @@ const STEPS = [
   { id: 'ai-suggestions', title: 'הצעות תקציב מותאמות' },
   { id: 'summary', title: 'סיכום וסיום' },
 ];
+
+const categoryDescriptions = new Map(expenseCategories.map(cat => [cat.label, cat.description]));
 
 export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   const [currentStep, setCurrentStep] = useState(0);
@@ -252,9 +256,9 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                      <div className="text-right">
                         <Label>אילו מנויים/שירותים חודשיים יש לך?</Label>
                         <div className="mt-2 space-y-2">
-                            <div className="flex items-center"><Checkbox id="sub-tv" checked={subscriptions.includes('tv')} onCheckedChange={() => handleSubscriptionChange('tv')} className="ml-2"/><Label htmlFor="sub-tv">שירותי סטרימינג (נטפליקס, דיסני+)</Label></div>
-                            <div className="flex items-center"><Checkbox id="sub-music" checked={subscriptions.includes('music')} onCheckedChange={() => handleSubscriptionChange('music')} className="ml-2"/><Label htmlFor="sub-music">מנוי מוזיקה (ספוטיפיי, אפל מיוזיק)</Label></div>
-                            <div className="flex items-center"><Checkbox id="sub-gym" checked={subscriptions.includes('gym')} onCheckedChange={() => handleSubscriptionChange('gym')} className="ml-2"/><Label htmlFor="sub-gym">מנוי לחדר כושר</Label></div>
+                            <div className="flex items-center"><Label htmlFor="sub-tv" className="mr-2">שירותי סטרימינג (נטפליקס, דיסני+)</Label><Checkbox id="sub-tv" checked={subscriptions.includes('tv')} onCheckedChange={() => handleSubscriptionChange('tv')} /></div>
+                            <div className="flex items-center"><Label htmlFor="sub-music" className="mr-2">מנוי מוזיקה (ספוטיפיי, אפל מיוזיק)</Label><Checkbox id="sub-music" checked={subscriptions.includes('music')} onCheckedChange={() => handleSubscriptionChange('music')} /></div>
+                            <div className="flex items-center"><Label htmlFor="sub-gym" className="mr-2">מנוי לחדר כושר</Label><Checkbox id="sub-gym" checked={subscriptions.includes('gym')} onCheckedChange={() => handleSubscriptionChange('gym')} /></div>
                         </div>
                     </div>
 
@@ -359,9 +363,24 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                     <div className="space-y-4 py-4">
                         <div className="max-h-72 overflow-y-auto pr-2 space-y-4">
                             {suggestions.map((suggestion) => (
-                                <div key={suggestion.category} className="flex items-center gap-4">
-                                    <Label htmlFor={suggestion.category} className="w-28 text-right">{suggestion.category}</Label>
-                                    <Input id={suggestion.category} type="number" value={suggestion.planned} onChange={e => handleSuggestionChange(suggestion.category, e.target.value)} className="flex-1" />
+                                <div key={suggestion.category} className="flex items-center gap-2">
+                                     <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                                                <Info className="h-4 w-4" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-64" side="top" align="start">
+                                            <div className="space-y-2 text-sm">
+                                                <p className="font-bold">{suggestion.category}</p>
+                                                <p className="text-muted-foreground">
+                                                    {categoryDescriptions.get(suggestion.category) || 'אין תיאור זמין.'}
+                                                </p>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <Label htmlFor={suggestion.category} className="text-right truncate">{suggestion.category}</Label>
+                                    <Input id={suggestion.category} type="number" value={suggestion.planned} onChange={e => handleSuggestionChange(suggestion.category, e.target.value)} className="w-28 text-left" />
                                 </div>
                             ))}
                         </div>

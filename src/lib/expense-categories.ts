@@ -9,6 +9,7 @@ export type ExpenseCategory = {
   value: string;
   label: string;
   icon: string;
+  description: string;
   defaultFrequency?: 'Monthly' | 'One-Time';
   subcategories: ExpenseSubcategory[];
 };
@@ -18,6 +19,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'housing',
         label: 'דיור',
         icon: '🏠',
+        description: 'הוצאות קבועות על מגורים כמו שכר דירה, משכנתא, ארנונה, ועד בית וחשבונות (מים, חשמל, גז).',
         defaultFrequency: 'Monthly',
         subcategories: [
             { value: 'rent', label: 'שכר דירה', defaultFrequency: 'Monthly' },
@@ -33,6 +35,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'shopping',
         label: 'קניות',
         icon: '🛒',
+        description: 'קניות כלליות לבית, בעיקר בסופרמרקט, כולל מוצרי מזון, ניקיון וטואלטיקה.',
         defaultFrequency: 'One-Time',
         subcategories: [
             { value: 'supermarket', label: 'קניות בסופר' },
@@ -44,6 +47,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'transportation',
         label: 'תחבורה',
         icon: '🚗',
+        description: 'כל מה שקשור להתניידות: דלק, ביטוח רכב, תחבורה ציבורית, מוניות וחניה.',
         defaultFrequency: 'One-Time',
         subcategories: [
             { value: 'fuel', label: 'דלק' },
@@ -57,6 +61,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'food',
         label: 'אוכל ושתיה',
         icon: '🍔',
+        description: 'הוצאות על אוכל מחוץ לבית - מסעדות, בתי קפה, אוכל מהיר ומשלוחים.',
         defaultFrequency: 'One-Time',
         subcategories: [
             { value: 'restaurants', label: 'מסעדות' },
@@ -69,6 +74,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'utilities',
         label: 'חשבונות ושירותים',
         icon: '💡',
+        description: 'חשבונות תקשורת ומדיה: טלפון נייד, אינטרנט, כבלים ומנויים לשירותי סטרימינג (כמו נטפליקס או ספוטיפיי).',
         defaultFrequency: 'Monthly',
         subcategories: [
             { value: 'phone', label: 'טלפון' },
@@ -81,6 +87,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'health',
         label: 'בריאות',
         icon: '🏥',
+        description: 'הוצאות רפואיות: ביקורי רופאים, תרופות, ביטוח בריאות וטיפולים שונים.',
         defaultFrequency: 'One-Time',
         subcategories: [
             { value: 'doctors', label: 'רופאים', defaultFrequency: 'One-Time' },
@@ -93,6 +100,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'education',
         label: 'חינוך',
         icon: '🎓',
+        description: 'הוצאות על לימודים והתפתחות אישית, כמו שכר לימוד, ספרים, חוגים וקורסים מקצועיים.',
         defaultFrequency: 'Monthly',
         subcategories: [
             { value: 'tuition', label: 'שכר לימוד' },
@@ -105,6 +113,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'clothing',
         label: 'ביגוד והנעלה',
         icon: '👕',
+        description: 'קניות של בגדים, נעליים ואביזרי אופנה נלווים.',
         defaultFrequency: 'One-Time',
         subcategories: [
             { value: 'clothes', label: 'בגדים' },
@@ -116,6 +125,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'entertainment',
         label: 'בילוי ופנאי',
         icon: '🎁',
+        description: 'הוצאות על בילויים, תחביבים ופעילויות לשעות הפנאי, כמו סרטים, הופעות, וטיולים.',
         defaultFrequency: 'One-Time',
         subcategories: [
             { value: 'movies', label: 'סרטים' },
@@ -129,6 +139,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'payments',
         label: 'תשלומים וחיובים',
         icon: '💳',
+        description: 'תשלומים פיננסיים כמו החזר הלוואות, עמלות בנקאיות או חיובים בכרטיסי אשראי.',
         defaultFrequency: 'Monthly',
         subcategories: [
             { value: 'credit-cards', label: 'כרטיסי אשראי', defaultFrequency: 'Monthly' },
@@ -140,6 +151,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'savings',
         label: 'חיסכון והשקעות',
         icon: '🏦',
+        description: 'כספים המופרשים לטובת העתיד: חיסכון לפנסיה, קופות גמל, השקעות בשוק ההון וביטוחי חיים.',
         defaultFrequency: 'Monthly',
         subcategories: [
             { value: 'pension', label: 'חיסכון לפנסיה', defaultFrequency: 'Monthly' },
@@ -152,6 +164,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'pets',
         label: 'חיות מחמד',
         icon: '🐶',
+        description: 'הוצאות הקשורות לגידול חיות מחמד, כולל מזון, ציוד, צעצועים וביקורים אצל הווטרינר.',
         defaultFrequency: 'Monthly',
         subcategories: [
             { value: 'pet-food', label: 'אוכל לחיות', defaultFrequency: 'Monthly' },
@@ -163,6 +176,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'travel',
         label: 'נסיעות',
         icon: '✈️',
+        description: 'הוצאות על חופשות ונסיעות, כולל טיסות, מלונות, הוצאות בחו"ל וביטוח נסיעות.',
         defaultFrequency: 'One-Time',
         subcategories: [
             { value: 'flights', label: 'טיסות' },
@@ -175,6 +189,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'beauty',
         label: 'יופי וטיפוח',
         icon: '💃',
+        description: 'הוצאות על טיפוח אישי: תספורת, קוסמטיקאית, מוצרי טיפוח, ציפורניים וכדומה.',
         defaultFrequency: 'One-Time',
         subcategories: [
             { value: 'hairdresser', label: 'ספר' },
@@ -187,6 +202,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'family',
         label: 'משפחה וילדים',
         icon: '👪',
+        description: 'הוצאות הקשורות לילדים: צעצועים, בגדים, בייביסיטר, חוגים ופעילויות.',
         defaultFrequency: 'Monthly',
         subcategories: [
             { value: 'toys', label: 'צעצועים' },
@@ -199,6 +215,7 @@ export const expenseCategories: ExpenseCategory[] = [
         value: 'miscellaneous',
         label: 'הוצאות שונות',
         icon: '📈',
+        description: 'כל שאר ההוצאות שלא מתאימות לקטגוריה אחרת, כמו מתנות, תרומות, והוצאות בלתי צפויות.',
         defaultFrequency: 'One-Time',
         subcategories: [
             { value: 'app-subscriptions', label: 'מנויים לאפליקציות', defaultFrequency: 'Monthly' },
