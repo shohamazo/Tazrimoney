@@ -1,12 +1,13 @@
+
 'use client';
 
-import React, { useEffect, useTransition, useState } from 'react';
+import React, { useEffect, useTransition } from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import type { Job, WeeklySchedule } from '@/lib/types';
-import { useFirebase, setDocumentNonBlocking } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -90,9 +91,9 @@ export function JobEditor({ job }: JobEditorProps) {
   const formValues = useWatch({ control });
   
   const onSubmit = (data: JobFormData) => {
-    if (!firestore || !user) return;
+    if (!firestore || !user || !isDirty) return;
     
-    startSavingTransition(() => {
+    startSavingTransition(async () => {
         const jobRef = doc(firestore, 'users', user.uid, 'jobs', job.id);
         const jobData: JobFormData = {
             ...data,
@@ -106,12 +107,14 @@ export function JobEditor({ job }: JobEditorProps) {
             shiftReminderTime: data.shiftReminderTime || 0,
         };
         
-        setDocumentNonBlocking(jobRef, jobData, { merge: true }).then(() => {
+        try {
+            await setDoc(jobRef, jobData, { merge: true });
             toast({ title: "השינויים נשמרו" });
             reset(data); // Important to reset dirty state after save
-        }).catch(() => {
+        } catch(error) {
+            console.error("Failed to save job:", error);
             toast({ variant: 'destructive', title: "שגיאה", description: "לא ניתן היה לשמור את השינויים."});
-        });
+        }
     });
   };
 
