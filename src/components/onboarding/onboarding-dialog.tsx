@@ -256,9 +256,9 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                      <div className="text-right">
                         <Label>אילו מנויים/שירותים חודשיים יש לך?</Label>
                         <div className="mt-2 space-y-2">
-                            <div className="flex items-center"><Label htmlFor="sub-tv" className="mr-2">שירותי סטרימינג (נטפליקס, דיסני+)</Label><Checkbox id="sub-tv" checked={subscriptions.includes('tv')} onCheckedChange={() => handleSubscriptionChange('tv')} /></div>
-                            <div className="flex items-center"><Label htmlFor="sub-music" className="mr-2">מנוי מוזיקה (ספוטיפיי, אפל מיוזיק)</Label><Checkbox id="sub-music" checked={subscriptions.includes('music')} onCheckedChange={() => handleSubscriptionChange('music')} /></div>
-                            <div className="flex items-center"><Label htmlFor="sub-gym" className="mr-2">מנוי לחדר כושר</Label><Checkbox id="sub-gym" checked={subscriptions.includes('gym')} onCheckedChange={() => handleSubscriptionChange('gym')} /></div>
+                            <div className="flex items-center"><Checkbox id="sub-tv" checked={subscriptions.includes('tv')} onCheckedChange={() => handleSubscriptionChange('tv')} className="ml-2" /><Label htmlFor="sub-tv">שירותי סטרימינג (נטפליקס, דיסני+)</Label></div>
+                            <div className="flex items-center"><Checkbox id="sub-music" checked={subscriptions.includes('music')} onCheckedChange={() => handleSubscriptionChange('music')} className="ml-2" /><Label htmlFor="sub-music">מנוי מוזיקה (ספוטיפיי, אפל מיוזיק)</Label></div>
+                            <div className="flex items-center"><Checkbox id="sub-gym" checked={subscriptions.includes('gym')} onCheckedChange={() => handleSubscriptionChange('gym')} className="ml-2" /><Label htmlFor="sub-gym">מנוי לחדר כושר</Label></div>
                         </div>
                     </div>
 
@@ -364,13 +364,14 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                         <div className="max-h-72 overflow-y-auto pr-2 space-y-4">
                             {suggestions.map((suggestion) => (
                                 <div key={suggestion.category} className="flex items-center gap-2">
+                                    <Label htmlFor={suggestion.category} className="flex-1 text-right truncate">{suggestion.category}</Label>
                                      <Popover>
                                         <PopoverTrigger asChild>
                                             <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
                                                 <Info className="h-4 w-4" />
                                             </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-64" side="top" align="start">
+                                        <PopoverContent className="w-64" side="top" align="center">
                                             <div className="space-y-2 text-sm">
                                                 <p className="font-bold">{suggestion.category}</p>
                                                 <p className="text-muted-foreground">
@@ -379,7 +380,6 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                                             </div>
                                         </PopoverContent>
                                     </Popover>
-                                    <Label htmlFor={suggestion.category} className="text-right truncate">{suggestion.category}</Label>
                                     <Input id={suggestion.category} type="number" value={suggestion.planned} onChange={e => handleSuggestionChange(suggestion.category, e.target.value)} className="w-28 text-left" />
                                 </div>
                             ))}
