@@ -1,8 +1,8 @@
 
 'use client';
 
-import React, { useEffect, useTransition, useCallback } from 'react';
-import { useForm, Controller, useWatch } from 'react-hook-form';
+import React, { useEffect, useTransition, useCallback, useRef } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import type { Job, WeeklySchedule } from '@/lib/types';
@@ -14,12 +14,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { JobSettingCard } from './job-setting-card';
-import { Bus, Coffee, Percent, CalendarClock, Loader2, Save, Bell, Award } from 'lucide-react';
+import { Bus, Coffee, Percent, CalendarClock, Loader2, Award, Bell } from 'lucide-react';
 import { OvertimeIcon, SickPayIcon } from './job-icons';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WeeklyScheduleEditor } from './weekly-schedule-editor';
-import { Button } from '../ui/button';
 import { useDebouncedCallback } from 'use-debounce';
 
 const dayScheduleSchema = z.object({
@@ -73,12 +72,14 @@ export function JobEditor({ job }: JobEditorProps) {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
   const [isSaving, startSavingTransition] = useTransition();
+  const isInitialMount = useRef(true);
 
   const {
     register,
     handleSubmit,
     reset,
     control,
+    watch,
     setValue,
     formState: { errors, isDirty },
   } = useForm<JobFormData>({
@@ -89,7 +90,7 @@ export function JobEditor({ job }: JobEditorProps) {
     },
   });
   
-  const formValues = useWatch({ control });
+  const formValues = watch();
 
   const debouncedSave = useDebouncedCallback(async (data: JobFormData) => {
     if (!firestore || !user ) return;
@@ -110,29 +111,27 @@ export function JobEditor({ job }: JobEditorProps) {
         
         try {
             await setDoc(jobRef, jobData, { merge: true });
-            // We don't call toast or reset here. The re-fetch from useCollection will handle the reset.
         } catch(error) {
             console.error("Failed to auto-save job:", error);
             toast({ variant: 'destructive', title: "שגיאת שמירה", description: "לא ניתן היה לשמור את השינויים אוטומטית."});
         }
     });
-  }, 1000); // 1-second debounce delay
+  }, 1000);
 
   useEffect(() => {
-    const subscription = control._subjects.watch.subscribe({
-      next: ({ name, type, values }) => {
-        if (isDirty) {
-          debouncedSave(values as JobFormData);
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [control, isDirty, debouncedSave]);
+    if (isInitialMount.current) {
+        isInitialMount.current = false;
+        return;
+    }
+    if (isDirty) {
+        debouncedSave(formValues);
+    }
+  }, [formValues, debouncedSave, isDirty]);
   
-  // When the selected job changes from parent, reset the form with the new job's data
   useEffect(() => {
     const fullSchedule = job.weeklySchedule ? { ...defaultWeeklySchedule, ...job.weeklySchedule } : defaultWeeklySchedule;
     reset({ ...job, weeklySchedule: fullSchedule });
+    isInitialMount.current = true; // Reset for the new job
   }, [job, reset]);
 
   
@@ -148,8 +147,13 @@ export function JobEditor({ job }: JobEditorProps) {
 
   return (
     <form onSubmit={(e) => e.preventDefault()} className="relative">
+        <div className="absolute top-2 left-2 flex items-center gap-2 text-sm text-muted-foreground transition-opacity duration-300">
+            {isSaving && <>
+                <Loader2 className="h-4 w-4 animate-spin"/>
+                <span>שומר...</span>
+            </>}
+        </div>
       <div className="space-y-6"> 
-        {/* --- Main Details --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 rounded-lg border bg-card p-4">
                 <Label htmlFor="name" className="text-sm font-medium">שם העבודה</Label>
@@ -169,17 +173,15 @@ export function JobEditor({ job }: JobEditorProps) {
              </JobSettingCard>
         </div>
 
-        {/* --- Weekly Schedule --- */}
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg"><CalendarClock /> מערכת שעות קבועה</CardTitle>
             </CardHeader>
             <CardContent>
-                <WeeklyScheduleEditor control={control} setValue={setValue} />
+                <WeeklyScheduleEditor control={control} setValue={setValue}/>
             </CardContent>
         </Card>
         
-        {/* --- Settings Grid --- */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <JobSettingCard icon={OvertimeIcon} title="שעות נוספות" description={`לאחר ${formValues.overtimeThresholdHours || 0} שעות`}>
                 <div className="space-y-2">
