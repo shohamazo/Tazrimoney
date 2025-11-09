@@ -256,9 +256,9 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                      <div className="text-right">
                         <Label>אילו מנויים/שירותים חודשיים יש לך?</Label>
                         <div className="mt-2 space-y-2">
-                            <div className="flex items-center"><Checkbox id="sub-tv" checked={subscriptions.includes('tv')} onCheckedChange={() => handleSubscriptionChange('tv')} className="ml-2" /><Label htmlFor="sub-tv">שירותי סטרימינג (נטפליקס, דיסני+)</Label></div>
-                            <div className="flex items-center"><Checkbox id="sub-music" checked={subscriptions.includes('music')} onCheckedChange={() => handleSubscriptionChange('music')} className="ml-2" /><Label htmlFor="sub-music">מנוי מוזיקה (ספוטיפיי, אפל מיוזיק)</Label></div>
-                            <div className="flex items-center"><Checkbox id="sub-gym" checked={subscriptions.includes('gym')} onCheckedChange={() => handleSubscriptionChange('gym')} className="ml-2" /><Label htmlFor="sub-gym">מנוי לחדר כושר</Label></div>
+                            <div className="flex items-center justify-end"><Label htmlFor="sub-tv" className="mr-2">שירותי סטרימינג (נטפליקס, דיסני+)</Label><Checkbox id="sub-tv" checked={subscriptions.includes('tv')} onCheckedChange={() => handleSubscriptionChange('tv')} /></div>
+                            <div className="flex items-center justify-end"><Label htmlFor="sub-music" className="mr-2">מנוי מוזיקה (ספוטיפיי, אפל מיוזיק)</Label><Checkbox id="sub-music" checked={subscriptions.includes('music')} onCheckedChange={() => handleSubscriptionChange('music')} /></div>
+                            <div className="flex items-center justify-end"><Label htmlFor="sub-gym" className="mr-2">מנוי לחדר כושר</Label><Checkbox id="sub-gym" checked={subscriptions.includes('gym')} onCheckedChange={() => handleSubscriptionChange('gym')} /></div>
                         </div>
                     </div>
 
@@ -360,7 +360,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                         <p>מעבד נתונים...</p>
                     </div>
                 ) : (
-                    <div className="space-y-4 py-4">
+                    <div className="space-y-4 py-4" dir="rtl">
                         <div className="max-h-72 overflow-y-auto pr-2 space-y-4">
                             {suggestions.map((suggestion) => (
                                 <div key={suggestion.category} className="flex items-center gap-2">
@@ -372,7 +372,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-64" side="top" align="center">
-                                            <div className="space-y-2 text-sm">
+                                            <div className="space-y-2 text-sm text-right">
                                                 <p className="font-bold">{suggestion.category}</p>
                                                 <p className="text-muted-foreground">
                                                     {categoryDescriptions.get(suggestion.category) || 'אין תיאור זמין.'}
