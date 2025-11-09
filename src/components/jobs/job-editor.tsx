@@ -110,7 +110,7 @@ export function JobEditor({ job }: JobEditorProps) {
     setSaveStatus('saving');
     const debounceTimer = setTimeout(() => {
       handleSubmit(onSubmit)();
-    }, 1500); // 1.5-second debounce delay
+    }, 800); // 0.8-second debounce delay
 
     // Cleanup function to cancel the timer if the user keeps typing
     return () => clearTimeout(debounceTimer);
@@ -154,14 +154,14 @@ export function JobEditor({ job }: JobEditorProps) {
 
 
   return (
-    <form onSubmit={(e) => e.preventDefault()}>
-      <div className="space-y-6">
-        <div className="flex justify-end h-6">
+    <form onSubmit={(e) => e.preventDefault()} className="relative">
+       <div className="absolute top-0 right-0 h-6">
             <div className={cn("flex items-center gap-2 text-sm text-muted-foreground transition-opacity", saveStatus !== 'idle' ? 'opacity-100' : 'opacity-0')}>
               {saveStatus === 'saving' && <> <Loader2 className="h-4 w-4 animate-spin"/> <span>שומר...</span></>}
               {saveStatus === 'saved' && <> <Save className="h-4 w-4 text-green-500"/> <span className="text-green-500">נשמר</span></>}
             </div>
         </div>
+      <div className="space-y-6 pt-8">
         {/* --- Main Details --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 rounded-lg border bg-card p-4">
