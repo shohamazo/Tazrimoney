@@ -137,9 +137,13 @@ export function JobEditor({ job }: JobEditorProps) {
             shiftReminderTime: data.shiftReminderTime || 0,
         };
         
-        setDocumentNonBlocking(jobRef, jobData, { merge: true });
-        setSaveStatus('saved');
-        reset(data); // This will reset the "dirty" state of the form
+        setDocumentNonBlocking(jobRef, jobData, { merge: true }).then(() => {
+            // After the Firestore promise resolves, we update the state.
+            setSaveStatus('saved');
+            reset(data, { keepValues: true, keepDirty: false, keepDefaultValues: false });
+        }).catch(() => {
+            setSaveStatus('idle');
+        });
     });
   };
   
@@ -155,7 +159,7 @@ export function JobEditor({ job }: JobEditorProps) {
 
   return (
     <form onSubmit={(e) => e.preventDefault()} className="relative">
-       <div className="absolute top-0 right-0 h-6">
+        <div className="absolute top-0 right-0 h-8">
             <div className={cn("flex items-center gap-2 text-sm text-muted-foreground transition-opacity", saveStatus !== 'idle' ? 'opacity-100' : 'opacity-0')}>
               {saveStatus === 'saving' && <> <Loader2 className="h-4 w-4 animate-spin"/> <span>שומר...</span></>}
               {saveStatus === 'saved' && <> <Save className="h-4 w-4 text-green-500"/> <span className="text-green-500">נשמר</span></>}
@@ -279,5 +283,3 @@ export function JobEditor({ job }: JobEditorProps) {
     </form>
   );
 }
-
-    
