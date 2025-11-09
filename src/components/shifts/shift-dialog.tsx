@@ -14,7 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import type { Shift, Job } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { format, addDays, addHours } from 'date-fns';
+import { format, addDays, addHours, setHours, setMinutes, min } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useFirebase, setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import { doc, collection, Timestamp } from 'firebase/firestore';
@@ -65,13 +65,17 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
     register,
     reset,
     watch,
-    formState: { errors },
+    setValue,
+    formState: { errors, isDirty },
   } = useForm<ShiftFormData>({
     resolver: zodResolver(shiftSchema),
   });
   
   const selectedJobId = watch('jobId');
   const selectedJob = useMemo(() => jobs.find(j => j.id === selectedJobId), [selectedJobId, jobs]);
+  
+  const startDate = watch('startDate');
+  const startTime = watch('startTime');
 
   useEffect(() => {
     if (isOpen) {
@@ -104,6 +108,31 @@ export function ShiftDialog({ isOpen, onOpenChange, shift, jobs }: ShiftDialogPr
       }
     }
   }, [shift, isOpen, reset, jobs]);
+  
+  // Auto-suggest end time
+  useEffect(() => {
+    // Only auto-suggest for new shifts, not when editing an existing one,
+    // and only if the user hasn't already manually changed the end time.
+    if (shift || !isOpen || !startDate || !/^\d{2}:\d{2}$/.test(startTime)) {
+        return;
+    }
+    
+    // Combine date and time
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const startDateTime = setMinutes(setHours(startDate, startHours), startMinutes);
+    
+    // Calculate suggested end time
+    const suggestedEndDateTime = addHours(startDateTime, 7);
+    
+    // Cap at 23:00 on the same day
+    const capDateTime = setMinutes(setHours(startDate, 23), 0);
+    const finalEndDateTime = min([suggestedEndDateTime, capDateTime]);
+    
+    // Update form values
+    setValue('endDate', finalEndDateTime, { shouldDirty: true });
+    setValue('endTime', format(finalEndDateTime, 'HH:mm'), { shouldDirty: true });
+
+  }, [startDate, startTime, shift, isOpen, setValue]);
 
   const onSubmit = (data: ShiftFormData) => {
     if (!firestore || !user) return;
