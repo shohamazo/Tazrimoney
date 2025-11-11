@@ -17,7 +17,6 @@ const tiers = [
   {
     name: 'Free',
     monthlyPrice: 0,
-    yearlyPrice: 0,
     features: [
       'ניהול משמרות והוצאות',
       'מחשבון עלות-עבודה',
@@ -29,7 +28,7 @@ const tiers = [
   {
     name: 'Basic',
     monthlyPrice: 10,
-    yearlyPrice: 8.4, // 10 * 12 * (1 - 0.16) / 12
+    yearlyDiscount: 0.16, // 16% discount
     features: [
       'כל יכולות ה-Free',
       'סריקת קבלות (AI)',
@@ -42,7 +41,7 @@ const tiers = [
   {
     name: 'Pro',
     monthlyPrice: 20,
-    yearlyPrice: 16, // 20 * 12 * (1 - 0.20) / 12
+    yearlyDiscount: 0.20, // 20% discount
     features: [
       'כל יכולות ה-Basic',
       'סנכרון אוטומטי לבנקים',
@@ -110,8 +109,18 @@ export default function UpgradePage() {
                 {tiers.map((tier) => {
                     const isCurrent = tier.name.toLowerCase() === currentTierName;
                     const isRecommended = tier.name === 'Basic';
-                    const price = billingCycle === 'yearly' ? tier.yearlyPrice : tier.monthlyPrice;
-                    const priceDescription = billingCycle === 'yearly' && tier.name !== 'Free' ? 'לחודש, בחיוב שנתי' : 'לחודש';
+                    
+                    let price, priceDescription, savingText = null;
+
+                    if (billingCycle === 'yearly' && tier.name !== 'Free') {
+                        const yearlyTotal = tier.monthlyPrice * 12 * (1 - (tier.yearlyDiscount || 0));
+                        price = yearlyTotal;
+                        priceDescription = 'לשנה';
+                        savingText = `חסוך ${((tier.yearlyDiscount || 0) * 100)}%`;
+                    } else {
+                        price = tier.monthlyPrice;
+                        priceDescription = 'לחודש';
+                    }
 
                     return (
                         <Card key={tier.name} className={cn("flex flex-col h-full", isRecommended && 'border-primary border-2 shadow-lg')}>
@@ -126,11 +135,9 @@ export default function UpgradePage() {
                                     {tier.badge}
                                 </div>
                                 <div className="mt-4 h-20">
-                                    <span className="text-4xl font-bold">₪{price.toLocaleString()}</span>
+                                    <span className="text-4xl font-bold">₪{price.toLocaleString(undefined, { minimumFractionDigits: price % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}</span>
                                     <span className="text-muted-foreground">{priceDescription}</span>
-                                    {billingCycle === 'yearly' && tier.name === 'Basic' && <p className="text-sm text-accent font-medium">חסוך 16%</p>}
-                                    {billingCycle === 'yearly' && tier.name === 'Pro' && <p className="text-sm text-accent font-medium">חסוך 20%</p>}
-
+                                    {savingText && <p className="text-sm text-accent font-medium">{savingText}</p>}
                                 </div>
                             </CardHeader>
                             <CardContent className="flex-1">
@@ -146,7 +153,7 @@ export default function UpgradePage() {
                             <CardFooter>
                                 <Button 
                                     className="w-full" 
-                                    disabled={isCurrent || (tier.name === 'Pro' && billingCycle === 'monthly') || (tier.name === 'Pro' && billingCycle === 'yearly')} 
+                                    disabled={isCurrent || (tier.name === 'Pro')} 
                                     variant={isRecommended ? 'default' : 'outline'}
                                     onClick={() => handleChoosePlan(tier.name)}
                                 >
