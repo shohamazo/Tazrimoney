@@ -191,17 +191,6 @@ export default function LoginPage() {
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
       <div id="recaptcha-container"></div>
-       <div className="hidden bg-muted lg:flex items-center justify-center p-10">
-        <div className="text-center">
-            <PiggyBank className="size-24 text-accent mx-auto" />
-            <h1 className="mt-6 text-4xl font-bold tracking-tighter">Tazrimoney</h1>
-            <p className="mt-4 text-lg text-muted-foreground">
-              נהל את הכספים שלך, בדרך החכמה.
-              <br />
-              התחבר כדי לעקוב אחר ההכנסות וההוצאות שלך.
-            </p>
-        </div>
-      </div>
       <div className="flex items-center justify-center p-6 lg:p-10">
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
@@ -270,6 +259,17 @@ export default function LoginPage() {
           </div>
         </Card>
       </div>
+      <div className="hidden bg-muted lg:flex items-center justify-center p-10">
+        <div className="text-center">
+            <PiggyBank className="size-24 text-accent mx-auto" />
+            <h1 className="mt-6 text-4xl font-bold tracking-tighter">Tazrimoney</h1>
+            <p className="mt-4 text-lg text-muted-foreground">
+              נהל את הכספים שלך, בדרך החכמה.
+              <br />
+              התחבר כדי לעקוב אחר ההכנסות וההוצאות שלך.
+            </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -280,4 +280,5 @@ declare global {
     grecaptcha?: any;
   }
 }
+    
     
