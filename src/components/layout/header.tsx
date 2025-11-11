@@ -11,6 +11,7 @@ const pageTitles: { [key: string]: string } = {
   '/jobs': 'ניהול עבודות',
   '/reports': 'דוחות כספיים',
   '/settings': 'הגדרות',
+  '/calculator': 'מחשבון רכישה',
 };
 
 export function Header() {

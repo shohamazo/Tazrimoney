@@ -14,6 +14,7 @@ import {
   Loader2,
   Settings,
   Sparkles,
+  Calculator,
 } from 'lucide-react';
 import {
   SidebarHeader,
@@ -44,6 +45,7 @@ const navItems = [
   { href: '/budget', label: 'תקציב', icon: Target },
   { href: '/jobs', label: 'עבודות', icon: Briefcase },
   { href: '/reports', label: 'דוחות', icon: AreaChart },
+  { href: '/calculator', label: 'מחשבון', icon: Calculator },
 ];
 
 export function AppSidebar() {
