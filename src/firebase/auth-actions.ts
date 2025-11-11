@@ -10,10 +10,6 @@ import {
   updateProfile,
   linkWithPopup,
   deleteUser,
-  sendEmailVerification,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  ConfirmationResult,
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
@@ -51,7 +47,6 @@ export async function handlePasswordSignUp(email: string, password: string) {
   const auth = await getFirebaseAuth();
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await sendEmailVerification(userCredential.user);
     return userCredential;
   } catch (error) {
     console.error('Password Sign-Up Error:', error);
@@ -68,49 +63,6 @@ export async function handlePasswordSignIn(email: string, password: string) {
     throw error;
   }
 }
-
-export async function sendPhoneVerificationCode(phoneNumber: string, verifier: RecaptchaVerifier) {
-    const auth = await getFirebaseAuth();
-
-    // Sanitize the phone number to the E.164 format required by Firebase
-    let cleanNumber = phoneNumber.replace(/\D/g, ''); // Remove all non-digit characters
-
-    if (cleanNumber.startsWith('972')) {
-        // Number already has country code, just ensure it has a '+'
-        cleanNumber = `+${cleanNumber}`;
-    } else if (cleanNumber.startsWith('0')) {
-        // Replace leading 0 with country code
-        cleanNumber = `+972${cleanNumber.substring(1)}`;
-    } else if (cleanNumber.length > 0) {
-        // Assume it's a local number without a leading 0 and add country code
-        cleanNumber = `+972${cleanNumber}`;
-    } else {
-        // If the number is empty after cleaning, throw an error
-        throw new Error("Invalid phone number provided.");
-    }
-    
-    const e164PhoneNumber = cleanNumber;
-    
-    try {
-        const confirmationResult = await signInWithPhoneNumber(auth, e164PhoneNumber, verifier);
-        return confirmationResult;
-    } catch (error) {
-        console.error('SMS Sending Error:', error);
-        throw error;
-    }
-}
-
-
-export async function verifyPhoneCode(confirmationResult: ConfirmationResult, code: string) {
-    try {
-        const userCredential = await confirmationResult.confirm(code);
-        return userCredential.user;
-    } catch (error) {
-        console.error('Phone Verification Error:', error);
-        throw error;
-    }
-}
-
 
 export async function handleSignOut() {
   const auth = await getFirebaseAuth();
@@ -164,19 +116,4 @@ export async function handleDeleteUser() {
     } else {
         throw new Error("No user is currently signed in.");
     }
-}
-
-export async function resendVerificationEmail() {
-  const auth = await getFirebaseAuth();
-  const user = auth.currentUser;
-  if (user) {
-    try {
-      await sendEmailVerification(user);
-    } catch (error) {
-      console.error('Resend Verification Email Error:', error);
-      throw error;
-    }
-  } else {
-    throw new Error('No user is currently signed in.');
-  }
 }

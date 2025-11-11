@@ -9,7 +9,7 @@ import type { UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useOnboarding } from '@/components/onboarding/onboarding-provider';
 
-const publicRoutes = ['/login', '/verify-email'];
+const publicRoutes = ['/login'];
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -21,16 +21,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   const [isProfileLoading, setProfileLoading] = useState(true);
   
-  const isPublicRoute = publicRoutes.includes(pathname);
+  const isPublicRoute = publicRoutes.includes(pathname) || pathname === '/verify-email'; // Keep verify-email public to avoid redirect loops if it's accessed directly
 
   // Handle route protection based on auth state
   useEffect(() => {
     if (isUserLoading) return;
 
     if (user) {
-      if (user.providerData.some(p => p.providerId === 'password') && !user.emailVerified && pathname !== '/verify-email') {
-        router.replace('/verify-email');
-      } else if (isPublicRoute) {
+      if (isPublicRoute) {
         router.replace('/');
       }
     } else if (!isPublicRoute) {
@@ -104,14 +102,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
   
   // Handle redirects for logged-in users on public/special routes
-  if (user) {
-    if (isPublicRoute) {
-       return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
-    }
-    
-     if (user.providerData.some(p => p.providerId === 'password') && !user.emailVerified && pathname !== '/verify-email') {
-        return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
-      }
+  if (user && isPublicRoute) {
+     return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
   }
 
   // If all checks pass, render the requested page
