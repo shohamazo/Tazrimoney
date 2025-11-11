@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Card,
@@ -189,87 +190,83 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
+    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-muted/40 p-4">
       <div id="recaptcha-container"></div>
-      <div className="flex items-center justify-center p-6 lg:p-10">
-        <Card className="w-full max-w-sm">
-          <CardHeader className="text-center">
-            <CardTitle>{authMode === 'signin' ? 'התחברות' : 'יצירת חשבון'}</CardTitle>
-            <CardDescription>הזן את המייל או הטלפון שלך להמשיך.</CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <CardContent className="space-y-4">
-              {confirmationResult ? (
-                 <div className="space-y-2">
-                    <Label htmlFor="code">קוד אימות</Label>
-                    <Input id="code" type="text" {...register('code')} placeholder="123456" />
-                     {errors.code && <p className="text-xs text-destructive">{errors.code.message}</p>}
+      
+      <div className="text-center mb-8">
+        <PiggyBank className="size-16 text-accent mx-auto" />
+        <h1 className="mt-4 text-4xl font-bold tracking-tighter">Tazrimoney</h1>
+        <p className="mt-2 text-lg text-muted-foreground">
+          נהל את הכספים שלך, בדרך החכמה.
+        </p>
+      </div>
+
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+          <CardTitle>{authMode === 'signin' ? 'התחברות' : 'יצירת חשבון'}</CardTitle>
+          <CardDescription>הזן את המייל או הטלפון שלך להמשיך.</CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <CardContent className="space-y-4">
+            {confirmationResult ? (
+                <div className="space-y-2">
+                  <Label htmlFor="code">קוד אימות</Label>
+                  <Input id="code" type="text" {...register('code')} placeholder="123456" />
+                    {errors.code && <p className="text-xs text-destructive">{errors.code.message}</p>}
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="emailOrPhone">אימייל או טלפון</Label>
+                  <Input id="emailOrPhone" placeholder="mail@example.com / 050-123-4567" {...register('emailOrPhone')} />
+                  {errors.emailOrPhone && (
+                    <p className="text-xs text-destructive">{errors.emailOrPhone.message}</p>
+                  )}
                 </div>
-              ) : (
-                <>
+                {!isPhoneAuth && (
                   <div className="space-y-2">
-                    <Label htmlFor="emailOrPhone">אימייל או טלפון</Label>
-                    <Input id="emailOrPhone" placeholder="mail@example.com / 050-123-4567" {...register('emailOrPhone')} />
-                    {errors.emailOrPhone && (
-                      <p className="text-xs text-destructive">{errors.emailOrPhone.message}</p>
+                    <Label htmlFor="password">סיסמה</Label>
+                    <Input id="password" type="password" {...register('password')} />
+                    {errors.password && (
+                      <p className="text-xs text-destructive">{errors.password.message}</p>
                     )}
                   </div>
-                  {!isPhoneAuth && (
-                    <div className="space-y-2">
-                      <Label htmlFor="password">סיסמה</Label>
-                      <Input id="password" type="password" {...register('password')} />
-                      {errors.password && (
-                        <p className="text-xs text-destructive">{errors.password.message}</p>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-            </CardContent>
-            <CardFooter className="flex-col gap-4">
-              <Button className="w-full" type="submit" disabled={isPending}>
-                {isPending ? (
-                  <Loader2 className="animate-spin" />
-                ) : confirmationResult ? (
-                  'אימות והתחברות'
-                ) : isPhoneAuth ? (
-                  authMode === 'signin' ? 'התחברות עם SMS' : 'הרשמה עם SMS'
-                ) : (
-                  authMode === 'signin' ? 'התחברות' : 'יצירת חשבון'
                 )}
-              </Button>
-            </CardFooter>
-          </form>
-          <div className="my-4 px-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">או המשך עם</span>
-              </div>
+              </>
+            )}
+          </CardContent>
+          <CardFooter className="flex-col gap-4">
+            <Button className="w-full" type="submit" disabled={isPending}>
+              {isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : confirmationResult ? (
+                'אימות והתחברות'
+              ) : isPhoneAuth ? (
+                authMode === 'signin' ? 'התחברות עם SMS' : 'הרשמה עם SMS'
+              ) : (
+                authMode === 'signin' ? 'התחברות' : 'יצירת חשבון'
+              )}
+            </Button>
+          </CardFooter>
+        </form>
+        <div className="my-4 px-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">או המשך עם</span>
             </div>
-            <Button variant="outline" className="mt-4 w-full" onClick={handleGoogleSignInClick} disabled={isPending}>
-              {isPending ? <Loader2 className="animate-spin" /> : <> <svg role="img" viewBox="0 0 24 24" className="ms-2 h-4 w-4"> <path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.05 1.05-2.36 1.67-4.06 1.67-3.4 0-6.17-2.83-6.17-6.23s2.77-6.23 6.17-6.23c1.87 0 3.13.78 3.87 1.48l2.6-2.6C16.3 3.83 14.37 3 12.48 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c4.9 0 8.7-3.34 8.7-8.82 0-.64-.07-1.25-.16-1.84z"></path> </svg> Google</>}
-            </Button>
           </div>
-          <div className="mt-4 text-center text-sm">
-            {authMode === 'signin' ? "אין לך חשבון?" : "כבר יש לך חשבון?"}{' '}
-            <Button variant="link" className="p-0 h-auto" onClick={switchAuthMode}>
-               {authMode === 'signin' ? 'הרשמה' : 'התחברות'}
-            </Button>
-          </div>
-        </Card>
-      </div>
-      <div className="hidden bg-muted lg:flex items-center justify-center p-10">
-        <div className="text-center">
-            <PiggyBank className="size-24 text-accent mx-auto" />
-            <h1 className="mt-6 text-4xl font-bold tracking-tighter">Tazrimoney</h1>
-            <p className="mt-4 text-lg text-muted-foreground">
-              נהל את הכספים שלך, בדרך החכמה.
-              <br />
-              התחבר כדי לעקוב אחר ההכנסות וההוצאות שלך.
-            </p>
+          <Button variant="outline" className="mt-4 w-full" onClick={handleGoogleSignInClick} disabled={isPending}>
+            {isPending ? <Loader2 className="animate-spin" /> : <> <svg role="img" viewBox="0 0 24 24" className="ms-2 h-4 w-4"> <path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.05 1.05-2.36 1.67-4.06 1.67-3.4 0-6.17-2.83-6.17-6.23s2.77-6.23 6.17-6.23c1.87 0 3.13.78 3.87 1.48l2.6-2.6C16.3 3.83 14.37 3 12.48 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c4.9 0 8.7-3.34 8.7-8.82 0-.64-.07-1.25-.16-1.84z"></path> </svg> Google</>}
+          </Button>
         </div>
-      </div>
+        <div className="mt-4 text-center text-sm pb-6">
+          {authMode === 'signin' ? "אין לך חשבון?" : "כבר יש לך חשבון?"}{' '}
+          <Button variant="link" className="p-0 h-auto" onClick={switchAuthMode}>
+              {authMode === 'signin' ? 'הרשמה' : 'התחברות'}
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }
