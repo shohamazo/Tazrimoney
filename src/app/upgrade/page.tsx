@@ -6,14 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Check, Info, Sparkles, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { useFirebase } from '@/firebase';
+import { useFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { PremiumBadge } from '@/components/premium/premium-badge';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { doc, Timestamp } from 'firebase/firestore';
+import { Loader2 } from 'lucide-react';
 
 
 const tiers = [
@@ -58,19 +60,46 @@ const tiers = [
 
 export default function UpgradePage() {
   const router = useRouter();
-  const { userProfile } = useFirebase();
+  const { user, firestore, userProfile } = useFirebase();
   const { toast } = useToast();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
-
+  const [isPending, startTransition] = useTransition();
 
   const handleChoosePlan = (tierName: string) => {
-    if(tierName === 'Pro' || tierName === 'Basic'){
-         toast({
-            title: 'בקרוב...',
-            description: `התשלום עבור תוכנית ${tierName} יהיה זמין בקרוב.`,
-        });
+    const newTier = tierName.toLowerCase() as 'free' | 'basic' | 'pro';
+    
+    if (newTier === 'pro') {
+      toast({
+        title: 'בקרוב...',
+        description: 'התשלום עבור תוכנית Pro יהיה זמין בקרוב.',
+      });
+      return;
     }
-  }
+
+    if (newTier === 'basic' && user && firestore) {
+      startTransition(async () => {
+        const userRef = doc(firestore, 'users', user.uid);
+        try {
+          // Reset cache and update tier
+          await updateDocumentNonBlocking(userRef, {
+            tier: newTier,
+            cachedReport: null,
+            lastReportDate: null,
+          });
+          toast({
+            title: 'שודרגת בהצלחה!',
+            description: `עברת לתוכנית ${tierName}. הדוח החדש שלך יחכה לך בעמוד הדוחות.`,
+          });
+        } catch (error) {
+          toast({
+            variant: 'destructive',
+            title: 'שגיאה',
+            description: 'לא ניתן היה לעדכן את התוכנית שלך. נסה שוב.',
+          });
+        }
+      });
+    }
+  };
 
   const currentTierName = userProfile?.tier || 'free';
 
@@ -96,11 +125,11 @@ export default function UpgradePage() {
             <div className="flex justify-center items-center gap-4 mb-8">
                 <Tabs value={billingCycle} onValueChange={(value) => setBillingCycle(value as 'monthly' | 'yearly')} className="w-auto">
                     <TabsList className="grid grid-cols-2">
-                        <TabsTrigger value="yearly">
-                        <Badge variant="secondary" className="bg-accent/20 text-accent border-accent/30 ms-2">חסוך עד 20%</Badge>
-                            חיוב שנתי
-                        </TabsTrigger>
                         <TabsTrigger value="monthly">חיוב חודשי</TabsTrigger>
+                         <TabsTrigger value="yearly">
+                            חיוב שנתי
+                            <Badge variant="secondary" className="bg-accent/20 text-accent border-accent/30 me-2">חסוך עד 20%</Badge>
+                        </TabsTrigger>
                     </TabsList>
                 </Tabs>
             </div>
@@ -154,10 +183,11 @@ export default function UpgradePage() {
                             <CardFooter>
                                 <Button 
                                     className="w-full" 
-                                    disabled={isCurrent || (tier.name === 'Pro')} 
+                                    disabled={isCurrent || tier.name === 'Pro' || tier.name === 'Free' || isPending} 
                                     variant={isRecommended ? 'default' : 'outline'}
                                     onClick={() => handleChoosePlan(tier.name)}
                                 >
+                                    {isPending && tier.name === 'Basic' && <Loader2 className="ms-2 h-4 w-4 animate-spin" />}
                                     {isCurrent ? 'התוכנית הנוכחית' : tier.cta}
                                 </Button>
                             </CardFooter>
