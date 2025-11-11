@@ -39,8 +39,8 @@ const tiers = [
   },
   {
     name: 'Pro',
-    price: 'בקרוב',
-    priceDescription: 'יתומחר בהמשך',
+    price: '₪20',
+    priceDescription: 'לחודש',
     features: [
       'כל יכולות ה-Basic',
       'סנכרון אוטומטי לבנקים',
