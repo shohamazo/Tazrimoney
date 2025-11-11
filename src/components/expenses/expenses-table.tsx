@@ -65,7 +65,7 @@ export function ExpensesTable({ expenses, onEdit }: { expenses: Expense[], onEdi
                                      <div className="flex items-center text-muted-foreground gap-2">
                                         <Badge variant="outline">{expense.category}</Badge>
                                         <span>/</span>
-                                        <Badge variant="outline" className="font-light">{expense.subcategory}</Badge>
+                                        <Badge variant="secondary" className="font-light">{expense.subcategory}</Badge>
                                      </div>
                                      <div className="flex items-center text-muted-foreground"><Calendar className="w-4 h-4 ms-2" /><span>{formatDate(expense.date)}</span></div>
                                 </div>
@@ -104,7 +104,7 @@ export function ExpensesTable({ expenses, onEdit }: { expenses: Expense[], onEdi
                             <TableCell>
                                 <div className="flex flex-col gap-1">
                                     <Badge variant="outline">{expense.category}</Badge>
-                                    <Badge variant="ghost">{expense.subcategory}</Badge>
+                                    <Badge variant="secondary">{expense.subcategory}</Badge>
                                 </div>
                             </TableCell>
                             <TableCell className="text-red-600 font-medium">{formatCurrency(expense.amount)}</TableCell>
