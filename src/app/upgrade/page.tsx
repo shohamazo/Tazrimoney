@@ -8,46 +8,47 @@ import { cn } from '@/lib/utils';
 import { useFirebase } from '@/firebase';
 import { PremiumBadge } from '@/components/premium/premium-badge';
 import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 const tiers = [
   {
     name: 'Free',
-    price: '₪0',
-    priceDescription: 'ללא עלות',
+    monthlyPrice: 0,
+    yearlyPrice: 0,
     features: [
       'ניהול משמרות והוצאות',
       'מחשבון עלות-עבודה',
       'תמיכה בסיסית',
       'כולל פרסומות',
     ],
-    isCurrent: false,
     cta: 'התוכנית הנוכחית שלך',
   },
   {
     name: 'Basic',
-    price: '₪10',
-    priceDescription: 'לחודש',
+    monthlyPrice: 10,
+    yearlyPrice: 8.4, // 10 * 12 * (1 - 0.16) / 12
     features: [
       'כל יכולות ה-Free',
       'סריקת קבלות (AI)',
       'דוחות וניתוחי AI',
       'חוויה ללא פרסומות',
     ],
-    isCurrent: false,
     cta: 'בחר תוכנית',
     badge: <PremiumBadge tier="Basic" />,
   },
   {
     name: 'Pro',
-    price: '₪20',
-    priceDescription: 'לחודש',
+    monthlyPrice: 20,
+    yearlyPrice: 16, // 20 * 12 * (1 - 0.20) / 12
     features: [
       'כל יכולות ה-Basic',
       'סנכרון אוטומטי לבנקים',
       'תובנות והתראות חכמות',
       'תמיכה מועדפת',
     ],
-    isCurrent: false,
     cta: 'בקרוב',
     badge: <PremiumBadge tier="Pro" />,
   },
@@ -57,6 +58,8 @@ export default function UpgradePage() {
   const router = useRouter();
   const { userProfile } = useFirebase();
   const { toast } = useToast();
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
 
   const handleChoosePlan = (tierName: string) => {
     if(tierName === 'Pro' || tierName === 'Basic'){
@@ -88,10 +91,27 @@ export default function UpgradePage() {
                 <p className="mt-2 text-lg text-muted-foreground">בחר את התוכנית המתאימה ביותר לצרכים שלך.</p>
             </div>
 
+            <div className="flex justify-center items-center gap-4 mb-8">
+                <Label htmlFor="billing-cycle" className={cn(billingCycle === 'monthly' ? 'text-primary' : 'text-muted-foreground')}>חיוב חודשי</Label>
+                <Switch
+                    id="billing-cycle"
+                    checked={billingCycle === 'yearly'}
+                    onCheckedChange={(checked) => setBillingCycle(checked ? 'yearly' : 'monthly')}
+                    aria-label="Toggle billing cycle"
+                />
+                <Label htmlFor="billing-cycle" className={cn(billingCycle === 'yearly' ? 'text-primary' : 'text-muted-foreground')}>
+                    חיוב שנתי
+                </Label>
+                <Badge variant="secondary" className="bg-accent/20 text-accent border-accent/30">חסוך עד 20%</Badge>
+            </div>
+
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 {tiers.map((tier) => {
                     const isCurrent = tier.name.toLowerCase() === currentTierName;
                     const isRecommended = tier.name === 'Basic';
+                    const price = billingCycle === 'yearly' ? tier.yearlyPrice : tier.monthlyPrice;
+                    const priceDescription = billingCycle === 'yearly' && tier.name !== 'Free' ? 'לחודש, בחיוב שנתי' : 'לחודש';
 
                     return (
                         <Card key={tier.name} className={cn("flex flex-col h-full", isRecommended && 'border-primary border-2 shadow-lg')}>
@@ -105,9 +125,12 @@ export default function UpgradePage() {
                                     <CardTitle className="text-2xl">{tier.name}</CardTitle>
                                     {tier.badge}
                                 </div>
-                                <div className="mt-4">
-                                    <span className="text-4xl font-bold">{tier.price}</span>
-                                    <span className="text-muted-foreground">{tier.priceDescription}</span>
+                                <div className="mt-4 h-20">
+                                    <span className="text-4xl font-bold">₪{price.toLocaleString()}</span>
+                                    <span className="text-muted-foreground">{priceDescription}</span>
+                                    {billingCycle === 'yearly' && tier.name === 'Basic' && <p className="text-sm text-accent font-medium">חסוך 16%</p>}
+                                    {billingCycle === 'yearly' && tier.name === 'Pro' && <p className="text-sm text-accent font-medium">חסוך 20%</p>}
+
                                 </div>
                             </CardHeader>
                             <CardContent className="flex-1">
@@ -123,7 +146,7 @@ export default function UpgradePage() {
                             <CardFooter>
                                 <Button 
                                     className="w-full" 
-                                    disabled={isCurrent || tier.name === 'Pro'} 
+                                    disabled={isCurrent || (tier.name === 'Pro' && billingCycle === 'monthly') || (tier.name === 'Pro' && billingCycle === 'yearly')} 
                                     variant={isRecommended ? 'default' : 'outline'}
                                     onClick={() => handleChoosePlan(tier.name)}
                                 >
