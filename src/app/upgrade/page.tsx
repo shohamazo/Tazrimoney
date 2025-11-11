@@ -47,8 +47,8 @@ const tiers = [
   {
     name: 'Pro',
     monthlyPrice: 20,
-    yearlyPrice: 210,
-    yearlyDiscount: 1 - (210 / (20 * 12)),
+    yearlyPrice: 192,
+    yearlyDiscount: 0.20,
     features: [
       'כל יכולות ה-Basic',
       'סנכרון אוטומטי לבנקים',
@@ -130,7 +130,7 @@ export default function UpgradePage() {
                         <TabsTrigger value="monthly">חיוב חודשי</TabsTrigger>
                          <TabsTrigger value="yearly">
                             חיוב שנתי
-                            <Badge variant="secondary" className="bg-accent/20 text-accent border-accent/30 me-2">חסוך עד 17%</Badge>
+                            <Badge variant="secondary" className="bg-accent/20 text-accent border-accent/30 me-2">חסוך עד 20%</Badge>
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
