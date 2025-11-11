@@ -137,8 +137,8 @@ export default function UpgradePage() {
                                 </div>
                                 <div className="mt-4 h-20">
                                     <span className="text-4xl font-bold">₪{price.toLocaleString(undefined, { minimumFractionDigits: price % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}</span>
-                                    <span className="text-muted-foreground">{priceDescription}</span>
-                                    {savingText && <p className="text-sm text-accent font-medium">{savingText}</p>}
+                                    <span className="text-muted-foreground">/{priceDescription}</span>
+                                    {savingText && <p className="text-sm text-accent font-medium mt-1">{savingText}</p>}
                                 </div>
                             </CardHeader>
                             <CardContent className="flex-1">
