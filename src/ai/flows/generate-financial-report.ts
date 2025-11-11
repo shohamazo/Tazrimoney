@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const OnboardingDataSchema = z.object({
     monthlyIncome: z.number().optional(),
@@ -51,7 +51,7 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateFinancialReportOutputSchema},
   prompt: `You are a helpful financial assistant. Your task is to analyze the provided 6-month financial data and generate a clear, insightful summary in Hebrew.
 
-{{#if (eq tier "pro")}}
+{{#if onboardingData}}
 # PRO TIER REPORT
 You are a Pro-level financial advisor. In addition to the basic analysis, you must provide advanced, predictive, and actionable insights.
 
@@ -102,5 +102,3 @@ const generateFinancialReportFlow = ai.defineFlow(
 export async function generateFinancialReport(input: GenerateFinancialReportInput): Promise<GenerateFinancialReportOutput> {
   return generateFinancialReportFlow(input);
 }
-
-    
