@@ -9,6 +9,8 @@ export type UserProfile = {
   onboardingComplete?: boolean;
   theme?: string;
   tier?: 'free' | 'basic' | 'pro';
+  lastReportDate?: Timestamp;
+  cachedReport?: string;
 }
 
 export type DaySchedule = {
@@ -70,5 +72,7 @@ export type Budget = {
   spent: number;
   alertThreshold: number; // Percentage (0-100)
 };
+
+    
 
     

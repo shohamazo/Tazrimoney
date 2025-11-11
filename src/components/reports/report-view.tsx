@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useState, useTransition, useEffect, useCallback, useMemo } from 'react';
-import { Loader2, Wand2, ShoppingCart } from 'lucide-react';
+import { Loader2, Wand2, ShoppingCart, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, Sector } from 'recharts';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { generateFinancialReport } from '@/ai/flows/generate-financial-report';
-import type { Shift, Job, Expense } from '@/lib/types';
-import { collection, query, where, Timestamp } from 'firebase/firestore';
-import { endOfMonth, startOfMonth, subMonths, format } from 'date-fns';
+import type { Shift, Job, Expense, UserProfile } from '@/lib/types';
+import { collection, query, where, Timestamp, doc } from 'firebase/firestore';
+import { endOfMonth, startOfMonth, subMonths, format, subDays } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { calculateShiftEarnings } from '@/lib/calculator';
 import { UpgradeTierCard } from '../premium/upgrade-tier-card';
+import { Button } from '../ui/button';
 
 
 interface ChartData {
@@ -119,46 +120,111 @@ export function ReportView() {
 
   const isDataLoading = isUserLoading || jobsLoading || shiftsLoading || expensesLoading;
 
+  const generateNewReport = useCallback(async (currentData: { shifts: Shift[], expenses: Expense[], jobs: Job[] }) => {
+    if (!canUseAI || !firestore || !user) return;
+
+    startAiTransition(async () => {
+      setError(null);
+      setSummary(null);
+      try {
+         const jobsMap = new Map(currentData.jobs.map(j => [j.id, j]));
+         const monthlyData: { [key: string]: { income: number; expenses: number } } = {};
+         for (let i = 5; i >= 0; i--) {
+            const date = subMonths(new Date(), i);
+            const monthKey = format(date, 'yyyy-MM');
+            monthlyData[monthKey] = { income: 0, expenses: 0 };
+         }
+         currentData.shifts.forEach(shift => {
+            const shiftDate = (shift.start as Timestamp).toDate();
+            const monthKey = format(shiftDate, 'yyyy-MM');
+            if (monthlyData[monthKey]) {
+            const job = jobsMap.get(shift.jobId);
+            monthlyData[monthKey].income += calculateShiftEarnings(shift, job).totalEarnings;
+            }
+        });
+        currentData.expenses.forEach(expense => {
+            const expenseDate = (expense.date as Timestamp).toDate();
+            const monthKey = format(expenseDate, 'yyyy-MM');
+            if (monthlyData[monthKey]) {
+                monthlyData[monthKey].expenses += expense.amount;
+            }
+        });
+        const finalChartData = Object.entries(monthlyData).map(([month, data]) => ({
+            name: format(new Date(month), 'MMM', { locale: he }),
+            income: parseFloat(data.income.toFixed(2)),
+            expenses: parseFloat(data.expenses.toFixed(2)),
+        }));
+
+        const dataForAI = {
+          period: `Last 6 months (${format(reportStartDate, 'MMM yyyy')} - ${format(reportEndDate, 'MMM yyyy')})`,
+          monthlyBreakdown: finalChartData,
+          rawExpenses: currentData.expenses.map(e => ({
+            date: (e.date as Timestamp).toDate().toISOString(),
+            amount: e.amount,
+            category: e.category,
+            description: e.description,
+          })),
+        };
+
+        const result = await generateFinancialReport({ data: JSON.stringify(dataForAI, null, 2) });
+        
+        const newSummary = result.summary;
+        setSummary(newSummary);
+
+        // Cache the new report
+        const userRef = doc(firestore, 'users', user.uid);
+        updateDocumentNonBlocking(userRef, {
+            cachedReport: newSummary,
+            lastReportDate: Timestamp.now(),
+        });
+        
+      } catch (e) {
+        console.error("Failed to generate AI summary:", e);
+        setError(e instanceof Error ? e.message : "An unexpected error occurred while generating the summary.");
+      }
+    });
+  }, [canUseAI, firestore, user, reportStartDate, reportEndDate]);
+  
   useEffect(() => {
     if (isDataLoading || !shifts || !expenses || !jobs) return;
-     if (shifts.length === 0 && expenses.length === 0) {
-        setChartData([]);
-        setSummary("לא נמצאו נתונים כספיים ב-6 החודשים האחרונים.");
-        return;
+    if (shifts.length === 0 && expenses.length === 0) {
+      setChartData([]);
+      setSummary("לא נמצאו נתונים כספיים ב-6 החודשים האחרונים.");
+      return;
     }
 
     const jobsMap = new Map(jobs.map(j => [j.id, j]));
     const monthlyData: { [key: string]: { income: number; expenses: number } } = {};
 
     for (let i = 5; i >= 0; i--) {
-        const date = subMonths(new Date(), i);
-        const monthKey = format(date, 'yyyy-MM');
-        monthlyData[monthKey] = { income: 0, expenses: 0 };
+      const date = subMonths(new Date(), i);
+      const monthKey = format(date, 'yyyy-MM');
+      monthlyData[monthKey] = { income: 0, expenses: 0 };
     }
 
     shifts.forEach(shift => {
-        const shiftDate = (shift.start as Timestamp).toDate();
-        const monthKey = format(shiftDate, 'yyyy-MM');
-        if (monthlyData[monthKey]) {
+      const shiftDate = (shift.start as Timestamp).toDate();
+      const monthKey = format(shiftDate, 'yyyy-MM');
+      if (monthlyData[monthKey]) {
         const job = jobsMap.get(shift.jobId);
         monthlyData[monthKey].income += calculateShiftEarnings(shift, job).totalEarnings;
-        }
+      }
     });
 
     const expenseByCategory: { [key: string]: number } = {};
     expenses.forEach(expense => {
-        const expenseDate = (expense.date as Timestamp).toDate();
-        const monthKey = format(expenseDate, 'yyyy-MM');
-        if (monthlyData[monthKey]) {
-            monthlyData[monthKey].expenses += expense.amount;
-        }
-        expenseByCategory[expense.category] = (expenseByCategory[expense.category] || 0) + expense.amount;
+      const expenseDate = (expense.date as Timestamp).toDate();
+      const monthKey = format(expenseDate, 'yyyy-MM');
+      if (monthlyData[monthKey]) {
+        monthlyData[monthKey].expenses += expense.amount;
+      }
+      expenseByCategory[expense.category] = (expenseByCategory[expense.category] || 0) + expense.amount;
     });
 
     const finalChartData = Object.entries(monthlyData).map(([month, data]) => ({
-        name: format(new Date(month), 'MMM', { locale: he }),
-        income: parseFloat(data.income.toFixed(2)),
-        expenses: parseFloat(data.expenses.toFixed(2)),
+      name: format(new Date(month), 'MMM', { locale: he }),
+      income: parseFloat(data.income.toFixed(2)),
+      expenses: parseFloat(data.expenses.toFixed(2)),
     }));
     
     setChartData(finalChartData);
@@ -169,35 +235,29 @@ export function ReportView() {
     const sortedExpenses = [...expenses].sort((a,b) => b.amount - a.amount);
     setTopExpenses(sortedExpenses.slice(0,3));
 
-    // AI Summary Generation
-    if (canUseAI) {
-      startAiTransition(async () => {
-        setError(null);
-        try {
-          const dataForAI = {
-              period: `Last 6 months (${format(reportStartDate, 'MMM yyyy')} - ${format(reportEndDate, 'MMM yyyy')})`,
-              monthlyBreakdown: finalChartData,
-              rawExpenses: expenses.map(e => ({ 
-                  date: (e.date as Timestamp).toDate().toISOString(), 
-                  amount: e.amount, 
-                  category: e.category,
-                  description: e.description,
-              })),
-          };
+    // AI Summary Logic with Caching
+    if (canUseAI && userProfile) {
+        const now = new Date();
+        const lastReportDate = userProfile.lastReportDate?.toDate();
+        const tier = userProfile.tier;
 
-          const result = await generateFinancialReport({
-            data: JSON.stringify(dataForAI, null, 2),
-          });
-          setSummary(result.summary);
-        } catch (e) {
-          console.error("Failed to generate AI summary:", e);
-          setError(e instanceof Error ? e.message : "An unexpected error occurred while generating the summary.");
+        let isCacheStale = true; // Assume stale by default
+        if(lastReportDate) {
+            if (tier === 'pro') {
+                isCacheStale = now > subDays(lastReportDate, -1);
+            } else if (tier === 'basic') {
+                isCacheStale = now > subDays(lastReportDate, -7);
+            }
         }
-      });
+        
+        if (userProfile.cachedReport && !isCacheStale) {
+             setSummary(userProfile.cachedReport);
+        } else {
+            generateNewReport({ shifts, expenses, jobs });
+        }
     }
 
-
-  }, [isDataLoading, shifts, expenses, jobs, reportStartDate, reportEndDate, canUseAI]);
+  }, [isDataLoading, shifts, expenses, jobs, userProfile, canUseAI, generateNewReport]);
 
 
   const onPieEnter = useCallback((_: any, index: number) => {
@@ -230,17 +290,24 @@ export function ReportView() {
       {canUseAI ? (
         <Card className="lg:col-span-2 bg-primary/5 border-primary/20">
             <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <Wand2 className="text-primary"/>
-                סיכום AI
-            </CardTitle>
-            <CardDescription>ניתוח חכם של הפעילות הפיננסית שלך.</CardDescription>
+            <div className="flex justify-between items-start">
+                <div>
+                    <CardTitle className="flex items-center gap-2">
+                        <Wand2 className="text-primary"/>
+                        סיכום AI
+                    </CardTitle>
+                    <CardDescription>ניתוח חכם של הפעילות הפיננסית שלך.</CardDescription>
+                </div>
+                 <Button variant="ghost" size="icon" onClick={() => generateNewReport({shifts: shifts || [], expenses: expenses || [], jobs: jobs || []})} disabled={isAiPending}>
+                    <RefreshCw className={`h-4 w-4 ${isAiPending ? 'animate-spin' : ''}`} />
+                 </Button>
+            </div>
             </CardHeader>
             <CardContent>
-            {isAiPending && (
+            {isAiPending && !summary && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin"/>
-                    <span>מפיק תובנות...</span>
+                    <span>מפיק דוח חדש...</span>
                 </div>
             )}
             {error && !isAiPending && (
@@ -339,3 +406,5 @@ export function ReportView() {
     </div>
   );
 }
+
+    

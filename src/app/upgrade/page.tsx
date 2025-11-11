@@ -96,11 +96,11 @@ export default function UpgradePage() {
             <div className="flex justify-center items-center gap-4 mb-8">
                 <Tabs value={billingCycle} onValueChange={(value) => setBillingCycle(value as 'monthly' | 'yearly')} className="w-auto">
                     <TabsList className="grid grid-cols-2">
-                        <TabsTrigger value="monthly">חיוב חודשי</TabsTrigger>
                         <TabsTrigger value="yearly">
+                        <Badge variant="secondary" className="bg-accent/20 text-accent border-accent/30 ms-2">חסוך עד 20%</Badge>
                             חיוב שנתי
-                            <Badge variant="secondary" className="bg-accent/20 text-accent border-accent/30 ms-2">חסוך עד 20%</Badge>
                         </TabsTrigger>
+                        <TabsTrigger value="monthly">חיוב חודשי</TabsTrigger>
                     </TabsList>
                 </Tabs>
             </div>
