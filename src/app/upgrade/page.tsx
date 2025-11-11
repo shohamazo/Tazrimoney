@@ -33,7 +33,8 @@ const tiers = [
   {
     name: 'Basic',
     monthlyPrice: 10,
-    yearlyDiscount: 0.16, // 16% discount
+    yearlyPrice: 100,
+    yearlyDiscount: 0.1667, // ~16.7% discount
     features: [
       'כל יכולות ה-Free',
       'סריקת קבלות (AI)',
@@ -46,7 +47,8 @@ const tiers = [
   {
     name: 'Pro',
     monthlyPrice: 20,
-    yearlyDiscount: 0.20, // 20% discount
+    yearlyPrice: 200,
+    yearlyDiscount: 0.1667, // ~16.7% discount
     features: [
       'כל יכולות ה-Basic',
       'סנכרון אוטומטי לבנקים',
@@ -128,7 +130,7 @@ export default function UpgradePage() {
                         <TabsTrigger value="monthly">חיוב חודשי</TabsTrigger>
                          <TabsTrigger value="yearly">
                             חיוב שנתי
-                            <Badge variant="secondary" className="bg-accent/20 text-accent border-accent/30 me-2">חסוך עד 20%</Badge>
+                            <Badge variant="secondary" className="bg-accent/20 text-accent border-accent/30 me-2">חסוך עד 17%</Badge>
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
@@ -143,10 +145,9 @@ export default function UpgradePage() {
                     let price, priceDescription, savingText = null;
 
                     if (billingCycle === 'yearly' && tier.name !== 'Free') {
-                        const yearlyTotal = tier.monthlyPrice * 12 * (1 - (tier.yearlyDiscount || 0));
-                        price = yearlyTotal;
+                        price = (tier as any).yearlyPrice;
                         priceDescription = 'לשנה';
-                        savingText = `חסוך ${((tier.yearlyDiscount || 0) * 100)}%`;
+                        savingText = `חסוך ${(((tier.yearlyDiscount || 0)) * 100).toFixed(0)}%`;
                     } else {
                         price = tier.monthlyPrice;
                         priceDescription = 'לחודש';
