@@ -39,6 +39,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
           strategy="lazyOnload"
         />
+        <Script src="https://js.stripe.com/v3/" strategy="beforeInteractive" />
       </head>
       <body className={cn('font-body antialiased')}>
         <FirebaseClientProvider>

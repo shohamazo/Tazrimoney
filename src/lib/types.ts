@@ -13,6 +13,9 @@ export type UserProfile = {
   lastReportDate?: Timestamp;
   cachedReport?: string;
   onboardingData?: InitialBudgetInput;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  stripeCurrentPeriodEnd?: Date;
 }
 
 export type DaySchedule = {

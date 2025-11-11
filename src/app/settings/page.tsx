@@ -1,11 +1,11 @@
 
 'use client';
 
-import React from 'react';
+import React, { useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useFirebase, setDocumentNonBlocking } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import {
   Card,
   CardContent,
@@ -43,7 +43,6 @@ import { useOnboarding } from '@/components/onboarding/onboarding-provider';
 import type { UserProfile } from '@/lib/types';
 import { PremiumBadge } from '@/components/premium/premium-badge';
 import Link from 'next/link';
-import { doc } from 'firebase/firestore';
 
 
 const profileSchema = z.object({
@@ -59,6 +58,7 @@ export default function SettingsPage() {
   const [deleteConfirmation, setDeleteConfirmation] = React.useState('');
   const { theme, setTheme } = useTheme();
   const { startWizard } = useOnboarding();
+  const [isPortalLoading, setIsPortalLoading] = React.useState(false);
 
 
   const {
@@ -125,6 +125,29 @@ export default function SettingsPage() {
       });
       // AuthGuard will handle redirect on successful deletion
     });
+  };
+
+  const redirectToCustomerPortal = async () => {
+    if (!user) return;
+    setIsPortalLoading(true);
+    try {
+      const response = await fetch('/api/stripe/create-portal-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.uid }),
+      });
+      const { url } = await response.json();
+      window.location.href = url;
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not redirect to customer portal.',
+      });
+    } finally {
+      setIsPortalLoading(false);
+    }
   };
   
   const isGoogleLinked = user?.providerData.some(p => p.providerId === 'google.com');
@@ -249,12 +272,19 @@ export default function SettingsPage() {
                        {getTierLabel()}
                     </div>
                 </div>
-                <Button asChild>
+                 {userProfile?.tier === 'free' ? (
+                  <Button asChild>
                     <Link href="/upgrade">
                       <Sparkles className="ms-2 h-4 w-4" />
-                       נהל מנוי
+                       שדרג
                     </Link>
-                </Button>
+                  </Button>
+                 ) : (
+                  <Button onClick={redirectToCustomerPortal} disabled={isPortalLoading}>
+                     {isPortalLoading && <Loader2 className="ms-2 h-4 w-4 animate-spin" />}
+                      נהל מנוי
+                  </Button>
+                 )}
             </div>
         </CardContent>
       </Card>
@@ -330,5 +360,4 @@ export default function SettingsPage() {
     </div>
   );
 }
-
     
