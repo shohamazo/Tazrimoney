@@ -6,16 +6,30 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ArrowDown, Hourglass } from 'lucide-react';
+import { Loader2, ArrowDown, Hourglass, ShoppingCart } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import type { Job } from '@/lib/types';
+import type { Job, Expense } from '@/lib/types';
 import { collection } from 'firebase/firestore';
+import { ExpenseDialog } from '@/components/expenses/expense-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function CalculatorPage() {
   const { firestore, user, isUserLoading } = useFirebase();
   const [itemCost, setItemCost] = useState<number | ''>('');
   const [selectedJobId, setSelectedJobId] = useState<string>('');
   const [calculatedHours, setCalculatedHours] = useState<number | null>(null);
+  const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
+
 
   const jobsQuery = useMemoFirebase(
     () => (firestore && user ? collection(firestore, 'users', user.uid, 'jobs') : null),
@@ -40,6 +54,10 @@ export default function CalculatorPage() {
       setCalculatedHours(hours);
     }
   };
+  
+  const handleOpenExpenseDialog = () => {
+    setIsExpenseDialogOpen(true);
+  }
 
   const isLoading = isUserLoading || jobsLoading;
 
@@ -65,6 +83,7 @@ export default function CalculatorPage() {
   }
 
   return (
+    <>
     <div className="flex justify-center items-start pt-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
@@ -112,11 +131,40 @@ export default function CalculatorPage() {
                   {calculatedHours.toFixed(1)}
                   <span className="text-xl font-medium ms-1">שעות</span>
                 </p>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="mt-6">
+                      <ShoppingCart className="ms-2 h-4 w-4" />
+                      בטוח שאתה רוצה לקנות?
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>הוסף כהוצאה</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        האם תרצה להוסיף את הרכישה הזו לרשימת ההוצאות שלך כעת?
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>לא, רק בדקתי</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleOpenExpenseDialog}>
+                        כן, הוסף
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </CardContent>
             </Card>
           )}
         </CardContent>
       </Card>
     </div>
+     <ExpenseDialog
+        isOpen={isExpenseDialogOpen}
+        onOpenChange={setIsExpenseDialogOpen}
+        expense={null}
+        prefilledData={{ amount: itemCost !== '' ? itemCost : 0 }}
+      />
+    </>
   );
 }
