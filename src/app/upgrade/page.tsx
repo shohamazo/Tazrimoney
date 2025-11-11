@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,8 @@ import { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 
 const tiers = [
   {
@@ -91,17 +94,15 @@ export default function UpgradePage() {
             </div>
 
             <div className="flex justify-center items-center gap-4 mb-8">
-                <Label htmlFor="billing-cycle" className={cn(billingCycle === 'monthly' ? 'text-primary' : 'text-muted-foreground')}>חיוב חודשי</Label>
-                <Switch
-                    id="billing-cycle"
-                    checked={billingCycle === 'yearly'}
-                    onCheckedChange={(checked) => setBillingCycle(checked ? 'yearly' : 'monthly')}
-                    aria-label="Toggle billing cycle"
-                />
-                <Label htmlFor="billing-cycle" className={cn(billingCycle === 'yearly' ? 'text-primary' : 'text-muted-foreground')}>
-                    חיוב שנתי
-                </Label>
-                <Badge variant="secondary" className="bg-accent/20 text-accent border-accent/30">חסוך עד 20%</Badge>
+                <Tabs value={billingCycle} onValueChange={(value) => setBillingCycle(value as 'monthly' | 'yearly')} className="w-auto">
+                    <TabsList className="grid grid-cols-2">
+                        <TabsTrigger value="monthly">חיוב חודשי</TabsTrigger>
+                        <TabsTrigger value="yearly">
+                            חיוב שנתי
+                            <Badge variant="secondary" className="bg-accent/20 text-accent border-accent/30 ms-2">חסוך עד 20%</Badge>
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
             </div>
 
 
