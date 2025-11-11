@@ -34,7 +34,7 @@ const tiers = [
     name: 'Basic',
     monthlyPrice: 10,
     yearlyPrice: 100,
-    yearlyDiscount: 0.1667, // ~16.7% discount
+    yearlyDiscount: 1 - (100 / (10 * 12)),
     features: [
       'כל יכולות ה-Free',
       'סריקת קבלות (AI)',
@@ -47,8 +47,8 @@ const tiers = [
   {
     name: 'Pro',
     monthlyPrice: 20,
-    yearlyPrice: 200,
-    yearlyDiscount: 0.1667, // ~16.7% discount
+    yearlyPrice: 210,
+    yearlyDiscount: 1 - (210 / (20 * 12)),
     features: [
       'כל יכולות ה-Basic',
       'סנכרון אוטומטי לבנקים',
