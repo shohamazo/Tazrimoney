@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useTransition, useEffect, useCallback, useMemo } from 'react';
-import { Loader2, Wand2, ShoppingCart, RefreshCw } from 'lucide-react';
+import { Loader2, Wand2, ShoppingCart } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, Sector } from 'recharts';
@@ -13,7 +13,6 @@ import { endOfMonth, startOfMonth, subMonths, format, subDays } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { calculateShiftEarnings } from '@/lib/calculator';
 import { UpgradeTierCard } from '../premium/upgrade-tier-card';
-import { Button } from '../ui/button';
 
 
 interface ChartData {
@@ -264,6 +263,12 @@ export function ReportView() {
     setActiveIndex(index);
   }, []);
 
+  const lastUpdatedText = useMemo(() => {
+    if (!userProfile?.lastReportDate) return null;
+    const date = userProfile.lastReportDate.toDate();
+    return `עודכן לאחרונה: ${format(date, 'dd/MM/yy HH:mm')}`;
+  }, [userProfile?.lastReportDate]);
+
   if (isDataLoading) {
      return (
          <div className="flex items-center justify-center p-8 h-64">
@@ -298,9 +303,9 @@ export function ReportView() {
                     </CardTitle>
                     <CardDescription>ניתוח חכם של הפעילות הפיננסית שלך.</CardDescription>
                 </div>
-                 <Button variant="ghost" size="icon" onClick={() => generateNewReport({shifts: shifts || [], expenses: expenses || [], jobs: jobs || []})} disabled={isAiPending}>
-                    <RefreshCw className={`h-4 w-4 ${isAiPending ? 'animate-spin' : ''}`} />
-                 </Button>
+                 {lastUpdatedText && (
+                   <p className="text-xs text-muted-foreground">{lastUpdatedText}</p>
+                 )}
             </div>
             </CardHeader>
             <CardContent>
@@ -406,5 +411,3 @@ export function ReportView() {
     </div>
   );
 }
-
-    
