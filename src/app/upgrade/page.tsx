@@ -1,77 +1,144 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { CheckCircle, Wand2, ScanLine, X } from 'lucide-react';
-import { GooglePayButton } from '@/components/premium/google-pay-button';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Check, Info, Sparkles, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { useFirebase } from '@/firebase';
+import { PremiumBadge } from '@/components/premium/premium-badge';
+import { useToast } from '@/hooks/use-toast';
 
-const premiumFeatures = [
+const tiers = [
   {
-    icon: Wand2,
-    title: 'דוחות וניתוחי AI',
-    description: 'קבל תובנות חכמות וסיכומים אוטומטיים על הפעילות הפיננסית שלך.',
+    name: 'Free',
+    price: '₪0',
+    priceDescription: 'ללא עלות',
+    features: [
+      'ניהול משמרות והוצאות',
+      'מחשבון עלות-עבודה',
+      'תמיכה בסיסית',
+      'כולל פרסומות',
+    ],
+    isCurrent: false,
+    cta: 'התוכנית הנוכחית שלך',
   },
   {
-    icon: ScanLine,
-    title: 'סריקת קבלות',
-    description: 'צלם קבלה והמערכת תזין את ההוצאה עבורך באופן אוטומטי.',
+    name: 'Basic',
+    price: '₪10',
+    priceDescription: 'לחודש',
+    features: [
+      'כל יכולות ה-Free',
+      'סריקת קבלות (AI)',
+      'דוחות וניתוחי AI',
+      'חוויה ללא פרסומות',
+    ],
+    isCurrent: false,
+    cta: 'בחר תוכנית',
+    badge: <PremiumBadge tier="Basic" />,
   },
-    {
-    icon: CheckCircle,
-    title: 'חוויה ללא פרסומות',
-    description: 'תהנה משימוש נקי ורציף באפליקציה, ללא כל הפרעות.',
-    },
+  {
+    name: 'Pro',
+    price: 'בקרוב',
+    priceDescription: 'יתומחר בהמשך',
+    features: [
+      'כל יכולות ה-Basic',
+      'סנכרון אוטומטי לבנקים',
+      'תובנות והתראות חכמות',
+      'תמיכה מועדפת',
+    ],
+    isCurrent: false,
+    cta: 'בקרוב',
+    badge: <PremiumBadge tier="Pro" />,
+  },
 ];
 
 export default function UpgradePage() {
   const router = useRouter();
+  const { userProfile } = useFirebase();
+  const { toast } = useToast();
+
+  const handleChoosePlan = (tierName: string) => {
+    if(tierName === 'Pro' || tierName === 'Basic'){
+         toast({
+            title: 'בקרוב...',
+            description: `התשלום עבור תוכנית ${tierName} יהיה זמין בקרוב.`,
+        });
+    }
+  }
+
+  const currentTierName = userProfile?.tier || 'free';
 
   return (
-    <div className="flex justify-center items-center py-8">
-      <Card className="w-full max-w-lg relative">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="absolute top-2 right-2 h-8 w-8 rounded-full"
-          onClick={() => router.back()}
-        >
-          <X className="h-5 w-5" />
-          <span className="sr-only">Close</span>
-        </Button>
-        <CardHeader className="text-center pt-12">
-          <Wand2 className="mx-auto h-12 w-12 text-primary" />
-          <CardTitle className="mt-4 text-3xl">שדרג ל-Tazrimoney Premium</CardTitle>
-          <CardDescription>
-            קח את ניהול הכספים שלך לשלב הבא עם כל יכולות ה-AI שלנו.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            {premiumFeatures.map((feature, index) => (
-              <div key={index} className="flex items-start gap-4">
-                <div className="flex-shrink-0 bg-primary/10 text-primary p-2 rounded-full">
-                    <feature.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="font-semibold">{feature.title}</p>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-            <div className="text-center">
-                <p className="text-4xl font-bold">₪19.90</p>
-                <p className="text-muted-foreground">לחודש</p>
+    <div className="bg-muted/40 min-h-screen w-full p-4 sm:p-8">
+        <div className="max-w-6xl mx-auto">
+            <div className="flex justify-end mb-4">
+                 <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 rounded-full bg-background"
+                    onClick={() => router.back()}
+                    >
+                    <X className="h-5 w-5" />
+                    <span className="sr-only">Close</span>
+                 </Button>
             </div>
-            <GooglePayButton />
-            <p className="text-xs text-muted-foreground text-center">
-                תוכל לבטל את המנוי בכל עת. התשלום יתבצע דרך Google Pay.
-            </p>
-        </CardFooter>
-      </Card>
+            <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold tracking-tight">שדרג את התוכנית שלך</h1>
+                <p className="mt-2 text-lg text-muted-foreground">בחר את התוכנית המתאימה ביותר לצרכים שלך.</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                {tiers.map((tier) => {
+                    const isCurrent = tier.name.toLowerCase() === currentTierName;
+                    const isRecommended = tier.name === 'Basic';
+
+                    return (
+                        <Card key={tier.name} className={cn("flex flex-col h-full", isRecommended && 'border-primary border-2 shadow-lg')}>
+                            {isRecommended && (
+                                <div className="py-2 px-4 bg-primary text-primary-foreground text-sm font-semibold text-center rounded-t-lg">
+                                    הכי פופולרי
+                                </div>
+                            )}
+                            <CardHeader className="text-center">
+                                <div className="flex justify-center items-center gap-2">
+                                    <CardTitle className="text-2xl">{tier.name}</CardTitle>
+                                    {tier.badge}
+                                </div>
+                                <div className="mt-4">
+                                    <span className="text-4xl font-bold">{tier.price}</span>
+                                    <span className="text-muted-foreground">{tier.priceDescription}</span>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="flex-1">
+                                <ul className="space-y-4 text-sm text-muted-foreground">
+                                    {tier.features.map((feature, index) => (
+                                        <li key={index} className="flex items-center gap-3">
+                                            <Check className="h-5 w-5 text-green-500" />
+                                            <span>{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </CardContent>
+                            <CardFooter>
+                                <Button 
+                                    className="w-full" 
+                                    disabled={isCurrent || tier.name === 'Pro'} 
+                                    variant={isRecommended ? 'default' : 'outline'}
+                                    onClick={() => handleChoosePlan(tier.name)}
+                                >
+                                    {isCurrent ? 'התוכנית הנוכחית' : tier.cta}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    )
+                })}
+            </div>
+
+            <div className="mt-8 text-center text-xs text-muted-foreground">
+                <p>התשלומים מאובטחים. ניתן לבטל את המנוי בכל עת.</p>
+            </div>
+        </div>
     </div>
   );
 }

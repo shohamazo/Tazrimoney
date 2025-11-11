@@ -86,7 +86,7 @@ export function ReportView() {
   const [error, setError] = useState<string | null>(null);
   const { firestore, user, userProfile, isUserLoading } = useFirebase();
 
-  const isPremium = userProfile?.tier === 'premium';
+  const canUseAI = userProfile?.tier === 'basic' || userProfile?.tier === 'pro';
   
   const reportStartDate = useMemo(() => startOfMonth(subMonths(new Date(), 5)), []);
   const reportEndDate = useMemo(() => endOfMonth(new Date()), []);
@@ -170,7 +170,7 @@ export function ReportView() {
     setTopExpenses(sortedExpenses.slice(0,3));
 
     // AI Summary Generation
-    if (isPremium) {
+    if (canUseAI) {
       startAiTransition(async () => {
         setError(null);
         try {
@@ -197,7 +197,7 @@ export function ReportView() {
     }
 
 
-  }, [isDataLoading, shifts, expenses, jobs, reportStartDate, reportEndDate, isPremium]);
+  }, [isDataLoading, shifts, expenses, jobs, reportStartDate, reportEndDate, canUseAI]);
 
 
   const onPieEnter = useCallback((_: any, index: number) => {
@@ -227,7 +227,7 @@ export function ReportView() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      {isPremium ? (
+      {canUseAI ? (
         <Card className="lg:col-span-2 bg-primary/5 border-primary/20">
             <CardHeader>
             <CardTitle className="flex items-center gap-2">

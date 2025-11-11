@@ -33,7 +33,7 @@
         },
         "tier": {
           "type": "string",
-          "enum": ["free", "premium"],
+          "enum": ["free", "basic", "pro"],
           "description": "The user's subscription tier."
         }
       },

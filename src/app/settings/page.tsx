@@ -59,7 +59,6 @@ export default function SettingsPage() {
   const [deleteConfirmation, setDeleteConfirmation] = React.useState('');
   const { theme, setTheme } = useTheme();
   const { startWizard } = useOnboarding();
-  const isPremium = userProfile?.tier === 'premium';
 
 
   const {
@@ -131,6 +130,17 @@ export default function SettingsPage() {
   const isGoogleLinked = user?.providerData.some(p => p.providerId === 'google.com');
   const identifier = user ? getIdentifierForUser(user) : 'לא זמין';
   const confirmationText = user?.email || identifier;
+
+  const getTierLabel = () => {
+    switch (userProfile?.tier) {
+        case 'basic':
+            return <PremiumBadge tier="Basic" />;
+        case 'pro':
+            return <PremiumBadge tier="Pro" />;
+        default:
+            return <span className="text-muted-foreground">Free</span>;
+    }
+  }
 
   if (isUserLoading || !user) {
     return (
@@ -236,21 +246,15 @@ export default function SettingsPage() {
                 <div>
                     <p className="font-medium">המנוי הנוכחי</p>
                     <div className="flex items-center gap-2">
-                        {isPremium ? <PremiumBadge /> : <span className="text-muted-foreground">Free</span>}
+                       {getTierLabel()}
                     </div>
                 </div>
-                {isPremium ? (
-                     <Button variant="outline" asChild>
-                        <Link href="/upgrade">נהל מנוי</Link>
-                    </Button>
-                ) : (
-                    <Button asChild>
-                        <Link href="/upgrade">
-                          <Sparkles className="ms-2 h-4 w-4" />
-                          שדרג לפרימיום
-                        </Link>
-                    </Button>
-                )}
+                <Button asChild>
+                    <Link href="/upgrade">
+                      <Sparkles className="ms-2 h-4 w-4" />
+                       נהל מנוי
+                    </Link>
+                </Button>
             </div>
         </CardContent>
       </Card>

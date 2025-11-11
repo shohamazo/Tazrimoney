@@ -9,6 +9,7 @@ import type { Expense } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { ReceiptUploadDialog } from '@/components/expenses/receipt-upload-dialog';
+import { UpgradeTierCard } from '@/components/premium/upgrade-tier-card';
 
 export default function ExpensesPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -17,7 +18,7 @@ export default function ExpensesPage() {
   const [prefilledData, setPrefilledData] = React.useState<Partial<Expense> | null>(null);
 
   const { firestore, user, userProfile, isUserLoading } = useFirebase();
-  const isPremium = userProfile?.tier === 'premium';
+  const canScanReceipts = userProfile?.tier === 'basic' || userProfile?.tier === 'pro';
 
   const expensesQuery = useMemoFirebase(
     () =>
@@ -41,9 +42,9 @@ export default function ExpensesPage() {
   };
 
   const handleScanNew = () => {
-    if (!isPremium) {
-      // Here you might open an upgrade dialog
-      alert('סריקת קבלות זמינה רק למשתמשי פרימיום.');
+    if (!canScanReceipts) {
+      // In a real app, you might open an upgrade dialog or redirect
+      alert('סריקת קבלות זמינה רק למנויי Basic ו-Pro.');
       return;
     }
     setReceiptDialogOpen(true);
@@ -72,8 +73,8 @@ export default function ExpensesPage() {
           <p className="text-muted-foreground">הצג, הוסף וערוך את ההוצאות שלך.</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleScanNew} variant="outline" disabled={!isPremium}>
-            {isPremium ? <ScanLine className="ms-2 h-4 w-4" /> : <Sparkles className="ms-2 h-4 w-4 text-accent" />}
+          <Button onClick={handleScanNew} variant="outline">
+            {canScanReceipts ? <ScanLine className="ms-2 h-4 w-4" /> : <Sparkles className="ms-2 h-4 w-4 text-accent" />}
             סרוק קבלה
           </Button>
           <Button onClick={handleAddNew}>
@@ -96,13 +97,18 @@ export default function ExpensesPage() {
             </Button>
         </div>
       )}
+      {!canScanReceipts && (
+          <div className="pt-4">
+              <UpgradeTierCard featureName="סריקת קבלות אוטומטית" />
+          </div>
+      )}
       <ExpenseDialog
         isOpen={dialogOpen}
         onOpenChange={handleDialogClose}
         expense={selectedExpense}
         prefilledData={prefilledData}
       />
-      {isPremium && <ReceiptUploadDialog
+      {canScanReceipts && <ReceiptUploadDialog
         isOpen={receiptDialogOpen}
         onOpenChange={setReceiptDialogOpen}
         onReceiptAnalyzed={handleReceiptAnalyzed}

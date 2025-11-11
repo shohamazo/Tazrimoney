@@ -16,11 +16,11 @@ import { AdBanner } from '../ads/ad-banner';
 export function MainLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const { userProfile } = useFirebase();
-    // Explicitly check if the user is NOT premium. Users without a tier will be treated as free.
-    const isFreeTier = userProfile?.tier !== 'premium';
+    const isFreeTier = userProfile?.tier === 'free';
     
-    // Don't render the main layout on the login, verification, or upgrade pages
-    if (pathname === '/login' || pathname === '/verify-email' || pathname === '/upgrade') {
+    const pagesWithoutNav = ['/login', '/verify-email', '/upgrade'];
+    
+    if (pagesWithoutNav.includes(pathname)) {
         return <>{children}</>;
     }
 

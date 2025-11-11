@@ -52,15 +52,24 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user, userProfile, isUserLoading } = useFirebase();
   const { isMobile, setOpenMobile } = useSidebar();
-
-  const isPremium = userProfile?.tier === 'premium';
-  const isFreeTier = userProfile?.tier !== 'premium';
+  const isFreeTier = userProfile?.tier === 'free';
 
   const handleLinkClick = () => {
     if (isMobile) {
       setOpenMobile(false);
     }
   };
+  
+  const getTierLabel = () => {
+    switch (userProfile?.tier) {
+      case 'basic':
+        return <PremiumBadge tier='Basic' />;
+      case 'pro':
+        return <PremiumBadge tier='Pro' />;
+      default:
+        return null;
+    }
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -101,7 +110,7 @@ export function AppSidebar() {
                 <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
                   <Link href="/upgrade">
                     <Sparkles className="ms-2" />
-                    שדרג לפרימיום
+                    שדרג
                   </Link>
                 </Button>
             </div>
@@ -120,7 +129,7 @@ export function AppSidebar() {
                 <div className="truncate flex-1">
                     <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-sidebar-foreground truncate">{user.displayName || 'משתמש'}</p>
-                        {isPremium && <PremiumBadge />}
+                        {getTierLabel()}
                     </div>
                     <p className="text-xs text-sidebar-foreground truncate">{user.email}</p>
                 </div>
