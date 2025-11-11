@@ -51,6 +51,9 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateFinancialReportOutputSchema},
   prompt: `You are a helpful financial assistant. Your task is to analyze the provided 6-month financial data and generate a clear, insightful summary in Hebrew. The output must be plain text only, without any Markdown formatting (no ###, **, or lists with -).
 
+First, assess the volume of the financial data provided. If there are very few transactions (e.g., less than 5 expenses), you MUST begin your report with the following disclaimer, followed by a new line:
+"שימו לב: הניתוח מבוסס על כמות מועטה של נתונים, ולכן התובנות עשויות להיות חלקיות. ככל שתוסיפו יותר מידע, כך הדוח יהיה מדויק יותר."
+
 {{#if onboardingData}}
 # PRO TIER REPORT
 You are a Pro-level financial advisor. In addition to the basic analysis, you must provide advanced, predictive, and actionable insights.
