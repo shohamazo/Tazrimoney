@@ -29,7 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 
 interface OnboardingDialogProps {
   isOpen: boolean;
-  onFinish: () => void;
+  onFinish: (data: InitialBudgetInput) => void;
 }
 
 const STEPS = [
@@ -88,27 +88,31 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
 
   const handleBack = () => setCurrentStep(prev => Math.max(prev - 1, 0));
 
+  const getOnboardingData = (): InitialBudgetInput => {
+    return {
+        monthlyIncome: income,
+        housing,
+        monthlyHousingCost: housingCost,
+        transportation,
+        diningOutFrequency: diningOut,
+        hasChildren: hasChildren === 'yes',
+        hasDebt: hasDebt === 'yes',
+        savingsGoal,
+        hasPets: hasPets === 'yes',
+        takesMeds: takesMeds === 'yes',
+        isStudent: isStudent === 'yes',
+        groceryStyle,
+        subscriptions,
+        clothingHabits,
+        entertainmentHabits,
+        groomingBudget,
+        travelPlans: travelPlans === 'yes',
+    };
+  }
+
   const handleGetSuggestions = () => {
     startTransition(() => {
-        const input: InitialBudgetInput = {
-            monthlyIncome: income,
-            housing,
-            monthlyHousingCost: housingCost,
-            transportation,
-            diningOutFrequency: diningOut,
-            hasChildren: hasChildren === 'yes',
-            hasDebt: hasDebt === 'yes',
-            savingsGoal,
-            hasPets: hasPets === 'yes',
-            takesMeds: takesMeds === 'yes',
-            isStudent: isStudent === 'yes',
-            groceryStyle,
-            subscriptions,
-            clothingHabits,
-            entertainmentHabits,
-            groomingBudget,
-            travelPlans: travelPlans === 'yes',
-        };
+        const input = getOnboardingData();
         const result = generateInitialBudget(input);
         setSuggestions(result);
         setCurrentStep(prev => prev + 1);
@@ -143,7 +147,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
     
         toast({ title: "התקציב שלך נוצר!", description: "התקציבים הראשוניים שלך נשמרו." });
         
-        onFinish();
+        onFinish(getOnboardingData());
       } catch (error) {
         console.error("Failed to save onboarding data:", error);
         toast({ variant: 'destructive', title: "שגיאה", description: "לא ניתן היה לשמור את נתוני התקציב." });
@@ -424,7 +428,7 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !isPending) onFinish(); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !isPending) onFinish(getOnboardingData()); }}>
       <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()} hideCloseButton={true}>
         <div className="p-2 space-y-4">
           <Progress value={progress} className="w-full" />
@@ -459,3 +463,5 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
     </Dialog>
   );
 }
+
+    

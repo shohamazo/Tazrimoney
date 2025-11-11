@@ -1,5 +1,6 @@
 import type { Timestamp } from "firebase/firestore";
 import type { EarningDetails } from "./calculator";
+import type { InitialBudgetInput } from "./budget-calculator";
 
 export type UserProfile = {
   id: string;
@@ -11,6 +12,7 @@ export type UserProfile = {
   tier?: 'free' | 'basic' | 'pro';
   lastReportDate?: Timestamp;
   cachedReport?: string;
+  onboardingData?: InitialBudgetInput;
 }
 
 export type DaySchedule = {
@@ -72,6 +74,8 @@ export type Budget = {
   spent: number;
   alertThreshold: number; // Percentage (0-100)
 };
+
+    
 
     
 

@@ -44,6 +44,29 @@
         "cachedReport": {
             "type": "string",
             "description": "The cached AI-generated financial report summary."
+        },
+        "onboardingData": {
+          "type": "object",
+          "description": "Stores the user's answers from the onboarding lifestyle questionnaire.",
+          "properties": {
+            "monthlyIncome": { "type": "number" },
+            "housing": { "type": "string" },
+            "monthlyHousingCost": { "type": "number" },
+            "transportation": { "type": "string" },
+            "diningOutFrequency": { "type": "string" },
+            "hasChildren": { "type": "boolean" },
+            "hasDebt": { "type": "boolean" },
+            "savingsGoal": { "type": "string" },
+            "hasPets": { "type": "boolean" },
+            "takesMeds": { "type": "boolean" },
+            "isStudent": { "type": "boolean" },
+            "groceryStyle": { "type": "string" },
+            "subscriptions": { "type": "array", "items": { "type": "string" } },
+            "clothingHabits": { "type": "string" },
+            "entertainmentHabits": { "type": "string" },
+            "groomingBudget": { "type": "number" },
+            "travelPlans": { "type": "boolean" }
+          }
         }
       },
       "required": [

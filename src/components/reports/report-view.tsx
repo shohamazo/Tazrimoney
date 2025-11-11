@@ -9,7 +9,7 @@ import { useFirebase, useCollection, useMemoFirebase, updateDocumentNonBlocking 
 import { generateFinancialReport } from '@/ai/flows/generate-financial-report';
 import type { Shift, Job, Expense, UserProfile } from '@/lib/types';
 import { collection, query, where, Timestamp, doc } from 'firebase/firestore';
-import { endOfMonth, startOfMonth, subMonths, format, subDays } from 'date-fns';
+import { endOfMonth, startOfMonth, subMonths, format, subDays, isBefore } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { calculateShiftEarnings } from '@/lib/calculator';
 import { UpgradeTierCard } from '../premium/upgrade-tier-card';
@@ -120,7 +120,7 @@ export function ReportView() {
   const isDataLoading = isUserLoading || jobsLoading || shiftsLoading || expensesLoading;
 
   const generateNewReport = useCallback(async (currentData: { shifts: Shift[], expenses: Expense[], jobs: Job[] }) => {
-    if (!canUseAI || !firestore || !user) return;
+    if (!canUseAI || !firestore || !user || !userProfile) return;
 
     startAiTransition(async () => {
       setError(null);
@@ -165,7 +165,11 @@ export function ReportView() {
           })),
         };
 
-        const result = await generateFinancialReport({ data: JSON.stringify(dataForAI, null, 2) });
+        const result = await generateFinancialReport({ 
+            data: JSON.stringify(dataForAI, null, 2),
+            tier: userProfile.tier as 'basic' | 'pro',
+            onboardingData: userProfile.onboardingData,
+        });
         
         const newSummary = result.summary;
         setSummary(newSummary);
@@ -182,7 +186,7 @@ export function ReportView() {
         setError(e instanceof Error ? e.message : "An unexpected error occurred while generating the summary.");
       }
     });
-  }, [canUseAI, firestore, user, reportStartDate, reportEndDate]);
+  }, [canUseAI, firestore, user, userProfile, reportStartDate, reportEndDate]);
   
   useEffect(() => {
     if (isDataLoading || !shifts || !expenses || !jobs) return;
@@ -240,12 +244,14 @@ export function ReportView() {
         const lastReportDate = userProfile.lastReportDate?.toDate();
         const tier = userProfile.tier;
 
-        let isCacheStale = true; // Assume stale by default
-        if(lastReportDate) {
+        let isCacheStale = true;
+        if (lastReportDate) {
             if (tier === 'pro') {
-                isCacheStale = now > subDays(lastReportDate, -1);
+                const oneDayAgo = subDays(now, 1);
+                isCacheStale = isBefore(lastReportDate, oneDayAgo);
             } else if (tier === 'basic') {
-                isCacheStale = now > subDays(lastReportDate, -7);
+                const sevenDaysAgo = subDays(now, 7);
+                isCacheStale = isBefore(lastReportDate, sevenDaysAgo);
             }
         }
         
@@ -411,3 +417,5 @@ export function ReportView() {
     </div>
   );
 }
+
+    
