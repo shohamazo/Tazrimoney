@@ -131,13 +131,13 @@ export function ShiftsTable({ shifts, jobs, onEdit }: { shifts: Shift[], jobs: J
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>עבודה</TableHead>
-                                <TableHead>תאריך</TableHead>
-                                <TableHead>התחלה</TableHead>
-                                <TableHead>סיום</TableHead>
-                                <TableHead>משך</TableHead>
-                                <TableHead>מכירות</TableHead>
-                                <TableHead>רווח (מוערך)</TableHead>
+                                <TableHead className="text-right">עבודה</TableHead>
+                                <TableHead className="text-right">תאריך</TableHead>
+                                <TableHead className="text-right">התחלה</TableHead>
+                                <TableHead className="text-right">סיום</TableHead>
+                                <TableHead className="text-right">משך</TableHead>
+                                <TableHead className="text-right">מכירות</TableHead>
+                                <TableHead className="text-right">רווח (מוערך)</TableHead>
                                 <TableHead className="text-left"></TableHead>
                             </TableRow>
                         </TableHeader>

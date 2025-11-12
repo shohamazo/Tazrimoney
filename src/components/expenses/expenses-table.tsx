@@ -89,11 +89,11 @@ export function ExpensesTable({ expenses, onEdit }: { expenses: Expense[], onEdi
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>תיאור</TableHead>
-                        <TableHead>קטגוריה</TableHead>
-                        <TableHead>סכום</TableHead>
-                        <TableHead>תאריך</TableHead>
-                        <TableHead>סוג</TableHead>
+                        <TableHead className="text-right">תיאור</TableHead>
+                        <TableHead className="text-right">קטגוריה</TableHead>
+                        <TableHead className="text-right">סכום</TableHead>
+                        <TableHead className="text-right">תאריך</TableHead>
+                        <TableHead className="text-right">סוג</TableHead>
                         <TableHead className="text-left"></TableHead>
                     </TableRow>
                 </TableHeader>
