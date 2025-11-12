@@ -32,7 +32,6 @@ export async function POST(req: Request) {
         const userProfile = userDoc.data();
         let customerId = userProfile?.stripeCustomerId;
 
-        // If the user does not have a Stripe Customer ID, create one.
         if (!customerId) {
             const customer = await stripe.customers.create({
                 email: userProfile?.email,
@@ -69,9 +68,7 @@ export async function POST(req: Request) {
         });
 
     } catch (error: any) {
-        // Log the detailed error from Stripe on the server
         console.error('[STRIPE_CHECKOUT_ERROR] Failed to create session:', error);
-        // Return a generic error message to the client
         return new NextResponse('Internal Error: Could not create checkout session.', { status: 500 });
     }
 }
