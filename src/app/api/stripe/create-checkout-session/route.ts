@@ -44,11 +44,12 @@ export async function POST(req: Request) {
             console.log(`[STRIPE] Created Stripe customer ${customerId} for user ${uid}`);
         }
 
-        const successUrl = `${appUrl}/`;
-        const cancelUrl = `${appUrl}/upgrade`;
+        const successUrl = `${appUrl}/?success=true&session_id={CHECKOUT_SESSION_ID}`;
+        const cancelUrl = `${appUrl}/upgrade?canceled=true`;
 
         const checkoutSession = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
+            billing_address_collection: 'auto',
             line_items: [
                 {
                     price: priceId,
