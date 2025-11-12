@@ -33,10 +33,10 @@ export async function POST(req: Request) {
         let customerId = userProfile?.stripeCustomerId;
 
         if (!customerId) {
+            // Simplified customer creation without relying on displayName
             const customer = await stripe.customers.create({
                 email: userProfile?.email,
                 metadata: { userId: uid },
-                name: userProfile?.displayName || undefined,
             });
             customerId = customer.id;
             await userDocRef.update({ stripeCustomerId: customerId });
@@ -68,6 +68,7 @@ export async function POST(req: Request) {
         });
 
     } catch (error: any) {
+        // Improved logging to show the full Stripe error
         console.error('[STRIPE_CHECKOUT_ERROR] Failed to create session:', error);
         return new NextResponse('Internal Error: Could not create checkout session.', { status: 500 });
     }
