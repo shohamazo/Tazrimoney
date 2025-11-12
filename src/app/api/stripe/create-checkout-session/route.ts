@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { getFirebaseAdmin } from '@/firebase/firebase-admin';
+import "dotenv/config";
 
 export async function POST(req: Request) {
     try {
@@ -55,8 +56,8 @@ export async function POST(req: Request) {
                 },
             ],
             mode: 'subscription',
-            customer: customerId, // CRITICAL FIX: Was 'customer_id', which is incorrect.
-            client_reference_id: uid, // Pass Firebase UID to identify user in webhook
+            customer: customerId,
+            client_reference_id: uid,
             success_url: successUrl,
             cancel_url: cancelUrl,
         });
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         // Log the detailed error from Stripe on the server
-        console.error('[STRIPE_CHECKOUT_ERROR] Failed to create session:', error.message);
+        console.error('[STRIPE_CHECKOUT_ERROR] Failed to create session:', error);
         // Return a generic error message to the client
         return new NextResponse('Internal Error: Could not create checkout session.', { status: 500 });
     }
