@@ -1,18 +1,21 @@
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, CheckCircle2, Wand2, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
-import { loadStripe } from '@stripe/stripe-js';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const tiers = [
   {
@@ -66,58 +69,19 @@ const tiers = [
 
 export default function UpgradePage() {
   const router = useRouter();
-  const { user, userProfile } = useFirebase();
+  const { userProfile } = useFirebase();
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
-  const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
+  const [selectedTier, setSelectedTier] = useState<(typeof tiers[0]) | null>(null);
 
-  const handleSubscribe = async (tier: typeof tiers[0]) => {
+  const handleTierSelect = (tier: typeof tiers[0]) => {
     if (tier.isFree) return;
-    const priceId = billingInterval === 'monthly' ? tier.priceId : tier.yearlyPriceId;
-    
-    if (!user || !priceId) {
-        toast({variant: 'destructive', title: 'שגיאה', description: 'משתמש או מזהה תוכנית לא נמצאו.'});
-        return;
-    }
-
-    startTransition(async () => {
-        try {
-            const response = await fetch('/api/stripe/create-checkout-session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: user.uid, priceId: priceId }),
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.text();
-                console.error("Checkout session creation failed:", errorBody);
-                throw new Error('Failed to create checkout session.');
-            }
-
-            const session = await response.json();
-
-            const stripe = await stripePromise;
-            if (!stripe) {
-                 throw new Error('Stripe.js has not loaded yet.');
-            }
-            
-            const { error } = await stripe.redirectToCheckout({ sessionId: session.id });
-
-            if(error) {
-                console.error(error);
-                toast({variant: 'destructive', title: 'שגיאת Stripe', description: error.message});
-            }
-
-        } catch (error) {
-            console.error(error);
-            toast({variant: 'destructive', title: 'שגיאה', description: 'לא ניתן היה להתחיל את תהליך התשלום. נסה שוב.'});
-        }
-    });
+    setSelectedTier(tier);
   };
 
   const currentTier = userProfile?.tier || 'free';
 
   return (
+    <>
     <div className="bg-muted/40 min-h-screen w-full p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
             <div className="flex justify-end mb-4">
@@ -184,10 +148,9 @@ export default function UpgradePage() {
                                 <Button 
                                     className="w-full" 
                                     variant={tier.isPro ? 'default' : 'outline'}
-                                    onClick={() => handleSubscribe(tier)}
-                                    disabled={isPending}
+                                    onClick={() => handleTierSelect(tier)}
                                 >
-                                    {isPending ? 'טוען...' : `בחר ${tier.name}`}
+                                    בחר {tier.name}
                                 </Button>
                             )}
                         </CardFooter>
@@ -200,5 +163,19 @@ export default function UpgradePage() {
             </div>
         </div>
     </div>
+    <AlertDialog open={!!selectedTier} onOpenChange={(open) => !open && setSelectedTier(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>תוכנית נבחרה</AlertDialogTitle>
+                <AlertDialogDescription>
+                    בחרת בתוכנית "{selectedTier?.name}" בעלות של ₪{billingInterval === 'monthly' ? selectedTier?.price : selectedTier?.yearlyPrice} / {billingInterval === 'monthly' ? 'חודש' : 'שנה'}.
+                    <br/><br/>
+                    כרגע, תהליך התשלום מושבת.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogAction onClick={() => setSelectedTier(null)}>הבנתי</AlertDialogAction>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
