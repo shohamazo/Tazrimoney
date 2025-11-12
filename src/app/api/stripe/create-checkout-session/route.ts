@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
+import { getFirebaseAdmin } from '@/firebase/firebase-admin';
 import { config } from 'dotenv';
 
 config(); // Ensure all environment variables are loaded
@@ -12,11 +13,35 @@ export async function POST(req: Request) {
             console.error('[STRIPE_CHECKOUT_ERROR] Missing uid or priceId');
             return new NextResponse('User ID and Price ID are required', { status: 400 });
         }
-
+        
         const appUrl = process.env.NEXT_PUBLIC_APP_URL;
         if (!appUrl) {
             console.error('[STRIPE_CHECKOUT_ERROR] NEXT_PUBLIC_APP_URL is not set in .env file');
             return new NextResponse('Server configuration error: App URL is not defined.', { status: 500 });
+        }
+        
+        const admin = await getFirebaseAdmin();
+        const firestore = admin.firestore();
+        const userDocRef = firestore.collection('users').doc(uid);
+        const userDoc = await userDocRef.get();
+
+        if (!userDoc.exists) {
+            return new NextResponse('User not found in database', { status: 404 });
+        }
+
+        const userProfile = userDoc.data();
+        let customerId = userProfile?.stripeCustomerId;
+
+        // If the user does not have a Stripe Customer ID, create one.
+        if (!customerId) {
+            const customer = await stripe.customers.create({
+                email: userProfile?.email,
+                metadata: { userId: uid },
+                name: userProfile?.displayName || undefined,
+            });
+            customerId = customer.id;
+            await userDocRef.update({ stripeCustomerId: customerId });
+            console.log(`Created Stripe customer ${customerId} for user ${uid}`);
         }
 
         const successUrl = `${appUrl}/`;
@@ -31,6 +56,7 @@ export async function POST(req: Request) {
                 },
             ],
             mode: 'subscription',
+            customer: customerId, // Associate the checkout with the Stripe Customer
             client_reference_id: uid, // Pass Firebase UID to identify user in webhook
             success_url: successUrl,
             cancel_url: cancelUrl,
