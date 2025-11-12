@@ -129,13 +129,13 @@ export default function UpgradePage() {
                          <CardHeader>
                             <CardTitle className="flex items-center gap-2">{tier.isPro && <Wand2 className="text-primary"/>}{tier.name}</CardTitle>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-4xl font-bold">₪{billingInterval === 'monthly' ? tier.price : Math.round(tier.yearlyPrice / 12)}</span>
-                                <span className="text-muted-foreground">/ חודש</span>
+                                <span className="text-4xl font-bold">₪{billingInterval === 'monthly' ? tier.price : tier.yearlyPrice}</span>
+                                <span className="text-muted-foreground">/ {billingInterval === 'monthly' ? 'חודש' : 'שנה'}</span>
                             </div>
                             <CardDescription>
                                 {billingInterval === 'monthly'
-                                ? `חויב חודשית. סה"כ ₪${tier.price} לחודש.`
-                                : `חויב שנתית. חסוך עד ${Math.round(100 - (tier.yearlyPrice / (tier.price * 12)) * 100)}%`}
+                                ? `חויב חודשית.`
+                                : `שווה ערך ל-₪${Math.round(tier.yearlyPrice / 12)} לחודש. חסוך ${Math.round(100 - (tier.yearlyPrice / (tier.price * 12)) * 100)}%!`}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1 space-y-3">
