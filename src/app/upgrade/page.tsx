@@ -2,7 +2,7 @@
 
 import React, { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, CheckCircle2, Wand2 } from 'lucide-react';
+import { X, CheckCircle2, Wand2, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,21 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 const tiers = [
   {
+    name: 'Free',
+    priceId: null,
+    yearlyPriceId: null,
+    price: 0,
+    yearlyPrice: 0,
+    features: [
+      'ניהול הכנסות והוצאות',
+      'ניהול תקציב',
+      'סריקת קבלות (עד 5 בחודש)',
+      'דוחות חודשיים בסיסיים',
+    ],
+    isPro: false,
+    isFree: true,
+  },
+  {
     name: 'Basic',
     priceId: process.env.NEXT_PUBLIC_STRIPE_BASIC_MONTHLY_PRICE_ID,
     yearlyPriceId: process.env.NEXT_PUBLIC_STRIPE_BASIC_YEARLY_PRICE_ID,
@@ -28,6 +43,7 @@ const tiers = [
       'דוחות AI (עדכון שבועי)',
     ],
     isPro: false,
+    isFree: false,
   },
   {
     name: 'Pro',
@@ -43,18 +59,20 @@ const tiers = [
       'תמיכה קודמת במייל',
     ],
     isPro: true,
+    isFree: false,
   },
 ];
 
 
 export default function UpgradePage() {
   const router = useRouter();
-  const { user } = useFirebase();
+  const { user, userProfile } = useFirebase();
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
   const handleSubscribe = async (tier: typeof tiers[0]) => {
+    if (tier.isFree) return;
     const priceId = billingInterval === 'monthly' ? tier.priceId : tier.yearlyPriceId;
     
     if (!user || !priceId) {
@@ -71,6 +89,8 @@ export default function UpgradePage() {
             });
 
             if (!response.ok) {
+                const errorBody = await response.text();
+                console.error("Checkout session creation failed:", errorBody);
                 throw new Error('Failed to create checkout session.');
             }
 
@@ -94,6 +114,8 @@ export default function UpgradePage() {
         }
     });
   };
+
+  const currentTier = userProfile?.tier || 'free';
 
   return (
     <div className="bg-muted/40 min-h-screen w-full p-4 sm:p-8">
@@ -123,20 +145,20 @@ export default function UpgradePage() {
                 </Tabs>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {tiers.map((tier) => (
-                    <Card key={tier.name} className={cn("flex flex-col", tier.isPro && "border-primary shadow-lg")}>
+                    <Card key={tier.name} className={cn("flex flex-col", tier.isPro && "border-primary shadow-lg", currentTier === tier.name.toLowerCase() && "ring-2 ring-primary")}>
                          <CardHeader>
                             <CardTitle className="flex items-center gap-2">{tier.isPro && <Wand2 className="text-primary"/>}{tier.name}</CardTitle>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-4xl font-bold">₪{billingInterval === 'monthly' ? tier.price : tier.yearlyPrice}</span>
-                                <span className="text-muted-foreground">/ {billingInterval === 'monthly' ? 'חודש' : 'שנה'}</span>
+                                <span className="text-4xl font-bold">₪{billingInterval === 'monthly' || tier.isFree ? tier.price : tier.yearlyPrice}</span>
+                                {!tier.isFree && <span className="text-muted-foreground">/ {billingInterval === 'monthly' ? 'חודש' : 'שנה'}</span>}
                             </div>
-                            <CardDescription>
+                            {!tier.isFree && <CardDescription>
                                 {billingInterval === 'monthly'
                                 ? `חויב חודשית.`
                                 : `שווה ערך ל-₪${Math.round(tier.yearlyPrice / 12)} לחודש. חסוך ${Math.round(100 - (tier.yearlyPrice / (tier.price * 12)) * 100)}%!`}
-                            </CardDescription>
+                            </CardDescription>}
                         </CardHeader>
                         <CardContent className="flex-1 space-y-3">
                             <p className="font-semibold">מה כלול:</p>
@@ -150,14 +172,24 @@ export default function UpgradePage() {
                             </ul>
                         </CardContent>
                         <CardFooter>
-                            <Button 
-                                className="w-full" 
-                                variant={tier.isPro ? 'default' : 'outline'}
-                                onClick={() => handleSubscribe(tier)}
-                                disabled={isPending}
-                            >
-                                {isPending ? 'טוען...' : `בחר ${tier.name}`}
-                            </Button>
+                            {currentTier === tier.name.toLowerCase() ? (
+                                <Button className="w-full" disabled variant="outline">
+                                    התוכנית הנוכחית שלך
+                                </Button>
+                            ) : tier.isFree ? (
+                                 <Button asChild className="w-full" variant="secondary">
+                                    <a href="/settings"><Settings className="ms-2 h-4 w-4"/>נהל מנוי</a>
+                                </Button>
+                            ) : (
+                                <Button 
+                                    className="w-full" 
+                                    variant={tier.isPro ? 'default' : 'outline'}
+                                    onClick={() => handleSubscribe(tier)}
+                                    disabled={isPending}
+                                >
+                                    {isPending ? 'טוען...' : `בחר ${tier.name}`}
+                                </Button>
+                            )}
                         </CardFooter>
                     </Card>
                 ))}

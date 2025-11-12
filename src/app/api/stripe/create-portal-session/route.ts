@@ -21,14 +21,17 @@ export async function POST(req: Request) {
         const userProfile = userDoc.data();
         let customerId = userProfile?.stripeCustomerId;
 
+        // If the user does not have a Stripe Customer ID, create one.
+        // This is crucial for users who have never subscribed but want to view the portal.
         if (!customerId) {
-            // This is a fallback. Ideally, the customer ID is created upon first checkout.
             const customer = await stripe.customers.create({
                 email: userProfile?.email,
                 metadata: { userId: uid },
+                name: userProfile?.displayName || undefined,
             });
             customerId = customer.id;
             await firestore.collection('users').doc(uid).update({ stripeCustomerId: customerId });
+             console.log(`Created Stripe customer ${customerId} for user ${uid}`);
         }
         
         const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/settings`;
