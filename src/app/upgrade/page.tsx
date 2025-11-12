@@ -1,15 +1,93 @@
-
 'use client';
 
+import React, { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, CheckCircle2, Wand2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
-import { StripePricingTable } from '@/components/premium/stripe-pricing-table';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+const tiers = [
+  {
+    name: 'Basic',
+    priceId: process.env.NEXT_PUBLIC_STRIPE_BASIC_MONTHLY_PRICE_ID,
+    price: 10,
+    yearlyPrice: 100,
+    features: [
+      'ניהול הכנסות והוצאות',
+      'ניהול תקציב',
+      'סריקת קבלות (עד 20 בחודש)',
+      'דוחות AI (עדכון שבועי)',
+    ],
+    isPro: false,
+  },
+  {
+    name: 'Pro',
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID,
+    price: 20,
+    yearlyPrice: 192,
+    features: [
+      'כל יכולות ה-Basic',
+      'סריקת קבלות ללא הגבלה',
+      'דוחות AI מתקדמים (עדכון יומי)',
+      'תחזיות והמלצות מותאמות אישית',
+      'תמיכה קודמת במייל',
+    ],
+    isPro: true,
+  },
+];
+
 
 export default function UpgradePage() {
   const router = useRouter();
   const { user } = useFirebase();
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
+  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
+
+  const handleSubscribe = async (priceId: string | undefined) => {
+    if (!user || !priceId) {
+        toast({variant: 'destructive', title: 'שגיאה', description: 'משתמש או מזהה תוכנית לא נמצאו.'});
+        return;
+    }
+
+    startTransition(async () => {
+        try {
+            const response = await fetch('/api/stripe/create-checkout-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid: user.uid, priceId: priceId }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to create checkout session.');
+            }
+
+            const session = await response.json();
+
+            const stripe = await stripePromise;
+            if (!stripe) {
+                 throw new Error('Stripe.js has not loaded yet.');
+            }
+            
+            const { error } = await stripe.redirectToCheckout({ sessionId: session.id });
+
+            if(error) {
+                console.error(error);
+                toast({variant: 'destructive', title: 'שגיאת Stripe', description: error.message});
+            }
+
+        } catch (error) {
+            console.error(error);
+            toast({variant: 'destructive', title: 'שגיאה', description: 'לא ניתן היה להתחיל את תהליך התשלום. נסה שוב.'});
+        }
+    });
+  };
 
   return (
     <div className="bg-muted/40 min-h-screen w-full p-4 sm:p-8">
@@ -30,9 +108,45 @@ export default function UpgradePage() {
                 <p className="mt-2 text-lg text-muted-foreground">בחר את התוכנית המתאימה ביותר לצרכים שלך.</p>
             </div>
             
-            {user && (
-              <StripePricingTable pricingTableId={process.env.NEXT_PUBLIC_STRIPE_PRICING_TABLE_ID!} publishableKey={process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!} userId={user.uid} />
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {tiers.map((tier) => (
+                    <Card key={tier.name} className={cn("flex flex-col", tier.isPro && "border-primary shadow-lg")}>
+                         <CardHeader>
+                            <CardTitle className="flex items-center gap-2">{tier.isPro && <Wand2 className="text-primary"/>}{tier.name}</CardTitle>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-4xl font-bold">₪{billingInterval === 'monthly' ? tier.price : Math.round(tier.yearlyPrice / 12)}</span>
+                                <span className="text-muted-foreground">/ חודש</span>
+                            </div>
+                            <CardDescription>
+                                {billingInterval === 'monthly'
+                                ? `חויב חודשית. סה"כ ₪${tier.price} לחודש.`
+                                : `חויב שנתית. חסוך עד ${Math.round(100 - (tier.yearlyPrice / (tier.price * 12)) * 100)}%`}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-1 space-y-3">
+                            <p className="font-semibold">מה כלול:</p>
+                             <ul className="space-y-2">
+                                {tier.features.map((feature, index) => (
+                                    <li key={index} className="flex items-center gap-2">
+                                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                        <span>{feature}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </CardContent>
+                        <CardFooter>
+                            <Button 
+                                className="w-full" 
+                                variant={tier.isPro ? 'default' : 'outline'}
+                                onClick={() => handleSubscribe(tier.priceId)}
+                                disabled={isPending}
+                            >
+                                {isPending ? 'טוען...' : `בחר ${tier.name}`}
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
 
             <div className="mt-8 text-center text-xs text-muted-foreground">
                 <p>התשלומים מאובטחים. ניתן לבטל את המנוי בכל עת דרך עמוד ההגדרות.</p>
