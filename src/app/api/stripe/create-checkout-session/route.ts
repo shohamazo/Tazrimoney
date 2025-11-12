@@ -2,9 +2,6 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { getFirebaseAdmin } from '@/firebase/firebase-admin';
-import { config } from 'dotenv';
-
-config(); // Ensure all environment variables are loaded
 
 export async function POST(req: Request) {
     try {

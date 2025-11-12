@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getFirebaseAdmin } from '@/firebase/firebase-admin';
 import { stripe } from '@/lib/stripe';
-import { config } from 'dotenv';
-
-config();
 
 export async function POST(req: Request) {
     try {
