@@ -55,7 +55,7 @@ export async function POST(req: Request) {
                 },
             ],
             mode: 'subscription',
-            customer: customerId, // Associate the checkout with the Stripe Customer
+            customer: customerId, // CRITICAL FIX: Was 'customer_id', which is incorrect.
             client_reference_id: uid, // Pass Firebase UID to identify user in webhook
             success_url: successUrl,
             cancel_url: cancelUrl,
