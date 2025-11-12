@@ -8,9 +8,9 @@ function priceIdToTier(priceId: string): 'basic' | 'pro' | null {
     if ([process.env.NEXT_PUBLIC_STRIPE_BASIC_MONTHLY_PRICE_ID, process.env.NEXT_PUBLIC_STRIPE_BASIC_YEARLY_PRICE_ID].includes(priceId)) {
         return 'basic';
     }
-    // if ([process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID, process.env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PRICE_ID].includes(priceId)) {
-    //     return 'pro';
-    // }
+    if ([process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID, process.env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PRICE_ID].includes(priceId)) {
+        return 'pro';
+    }
     return null;
 }
 
@@ -41,11 +41,11 @@ export async function POST(req: Request) {
         if (event.type === 'checkout.session.completed') {
             const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
             
-            const userId = session.metadata?.userId;
+            const userId = session.client_reference_id;
             const customerId = session.customer as string;
 
             if (!userId) {
-                console.error('Webhook Error: No userId in session metadata');
+                console.error('Webhook Error: No userId in session metadata (client_reference_id)');
                 return new NextResponse('User ID missing', { status: 400 });
             }
 
@@ -57,6 +57,7 @@ export async function POST(req: Request) {
                 return new NextResponse('Unrecognized Price ID', { status: 400 });
             }
 
+            // Create or update stripeCustomerId when checkout is complete
             await firestore.collection('users').doc(userId).update({
                 stripeCustomerId: customerId,
                 tier: newTier,
