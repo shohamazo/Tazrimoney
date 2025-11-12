@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
@@ -39,17 +40,27 @@ export async function POST(req: Request) {
 
         // Handle checkout session completion
         if (event.type === 'checkout.session.completed') {
+            if (!session?.subscription || !session.client_reference_id) {
+                 console.error('Webhook Error: checkout.session.completed event missing subscription or client_reference_id');
+                 return new NextResponse('Webhook error: session data missing', { status: 400 });
+            }
+
             const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
             
+            // CRITICAL FIX: Retrieve the correct priceId from the session line items, not the product from the subscription.
+            const checkoutSession = await stripe.checkout.sessions.retrieve(session.id, {
+                expand: ['line_items'],
+            });
+
+            const priceId = checkoutSession.line_items?.data[0]?.price?.id;
+            if (!priceId) {
+                console.error(`Webhook Error: Could not find Price ID in checkout session ${session.id}`);
+                return new NextResponse('Price ID missing from session', { status: 400 });
+            }
+
             const userId = session.client_reference_id;
             const customerId = session.customer as string;
 
-            if (!userId) {
-                console.error('Webhook Error: No userId in session metadata (client_reference_id)');
-                return new NextResponse('User ID missing', { status: 400 });
-            }
-
-            const priceId = subscription.items.data[0].price.id;
             const newTier = priceIdToTier(priceId);
 
             if (!newTier) {

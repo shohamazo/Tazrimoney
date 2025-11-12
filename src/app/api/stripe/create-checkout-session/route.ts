@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { getFirebaseAdmin } from '@/firebase/firebase-admin';
@@ -26,6 +27,7 @@ export async function POST(req: Request) {
         const userDoc = await userDocRef.get();
 
         if (!userDoc.exists) {
+            console.error(`[STRIPE_CHECKOUT_ERROR] User with UID ${uid} not found in database.`);
             return new NextResponse('User not found in database', { status: 404 });
         }
 
@@ -41,7 +43,7 @@ export async function POST(req: Request) {
             });
             customerId = customer.id;
             await userDocRef.update({ stripeCustomerId: customerId });
-            console.log(`Created Stripe customer ${customerId} for user ${uid}`);
+            console.log(`[STRIPE] Created Stripe customer ${customerId} for user ${uid}`);
         }
 
         const successUrl = `${appUrl}/`;
@@ -67,9 +69,9 @@ export async function POST(req: Request) {
             headers: { 'Content-Type': 'application/json' },
         });
 
-    } catch (error) {
+    } catch (error: any) {
         // Log the detailed error from Stripe on the server
-        console.error('[STRIPE_CHECKOUT_ERROR]', error);
+        console.error('[STRIPE_CHECKOUT_ERROR] Failed to create session:', error.message);
         // Return a generic error message to the client
         return new NextResponse('Internal Error: Could not create checkout session.', { status: 500 });
     }
