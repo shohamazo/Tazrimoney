@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getFirebaseAdmin } from '@/firebase/firebase-admin';
 import { stripe } from '@/lib/stripe';
+import { config } from 'dotenv';
+
+config();
 
 export async function POST(req: Request) {
     try {
@@ -34,7 +37,12 @@ export async function POST(req: Request) {
              console.log(`Created Stripe customer ${customerId} for user ${uid}`);
         }
         
-        const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/settings`;
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+        if (!appUrl) {
+            console.error('[STRIPE_PORTAL_ERROR] NEXT_PUBLIC_APP_URL is not set.');
+            return new NextResponse('Server configuration error.', { status: 500 });
+        }
+        const returnUrl = `${appUrl}/settings`;
 
         const portalSession = await stripe.billingPortal.sessions.create({
             customer: customerId,
