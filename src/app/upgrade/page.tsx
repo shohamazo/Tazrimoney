@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useTransition } from 'react';
@@ -70,6 +71,7 @@ export default function UpgradePage() {
   const { user, userProfile } = useFirebase();
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
   const [isPending, startTransition] = useTransition();
+  const [isPortalLoading, setIsPortalLoading] = useState(false);
   const { toast } = useToast();
 
   const handleSubscribe = (tier: typeof tiers[0]) => {
@@ -125,6 +127,30 @@ export default function UpgradePage() {
         }
     });
   };
+
+  const redirectToCustomerPortal = async () => {
+    if (!user) return;
+    setIsPortalLoading(true);
+    try {
+      const response = await fetch('/api/stripe/create-portal-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.uid }),
+      });
+      const { url } = await response.json();
+      window.location.href = url;
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not redirect to customer portal.',
+      });
+    } finally {
+      setIsPortalLoading(false);
+    }
+  };
+
 
   const currentTier = userProfile?.tier || 'free';
 
@@ -194,8 +220,9 @@ export default function UpgradePage() {
                                     התוכנית הנוכחית שלך
                                 </Button>
                             ) : tier.isFree ? (
-                                 <Button asChild className="w-full" variant="secondary">
-                                    <a href="/settings"><Settings className="ms-2 h-4 w-4"/>נהל מנוי</a>
+                                 <Button onClick={redirectToCustomerPortal} disabled={isPortalLoading} className="w-full" variant="secondary">
+                                    {isPortalLoading && <Loader2 className="ms-2 h-4 w-4 animate-spin" />}
+                                    <Settings className="ms-2 h-4 w-4"/>נהל מנוי
                                 </Button>
                             ) : (
                                 <Button 
