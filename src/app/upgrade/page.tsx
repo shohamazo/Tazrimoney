@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { loadStripe } from '@stripe/stripe-js';
+import { Badge } from '@/components/ui/badge';
 
 const tiers = [
   {
@@ -57,6 +58,7 @@ const tiers = [
     ],
     isPro: true,
     isFree: false,
+    isComingSoon: true,
   },
 ];
 
@@ -158,7 +160,13 @@ export default function UpgradePage() {
                 {tiers.map((tier) => (
                     <Card key={tier.name} className={cn("flex flex-col", tier.isPro && "border-primary shadow-lg", currentTier === tier.name.toLowerCase() && "ring-2 ring-primary")}>
                          <CardHeader>
-                            <CardTitle className="flex items-center gap-2">{tier.isPro && <Wand2 className="text-primary"/>}{tier.name}</CardTitle>
+                            <CardTitle className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  {tier.isPro && <Wand2 className="text-primary"/>}
+                                  {tier.name}
+                                </div>
+                                {tier.isComingSoon && <Badge variant="secondary">בקרוב</Badge>}
+                            </CardTitle>
                             <div className="flex items-baseline gap-2">
                                 <span className="text-4xl font-bold">₪{billingInterval === 'monthly' || tier.isFree ? tier.price : tier.yearlyPrice}</span>
                                 {!tier.isFree && <span className="text-muted-foreground">/ {billingInterval === 'monthly' ? 'חודש' : 'שנה'}</span>}
@@ -194,10 +202,10 @@ export default function UpgradePage() {
                                     className="w-full" 
                                     variant={tier.isPro ? 'default' : 'outline'}
                                     onClick={() => handleSubscribe(tier)}
-                                    disabled={isPending}
+                                    disabled={isPending || tier.isComingSoon}
                                 >
                                     {isPending && <Loader2 className="animate-spin ms-2 h-4 w-4" />}
-                                    בחר {tier.name}
+                                    {tier.isComingSoon ? "בקרוב" : `בחר ${tier.name}`}
                                 </Button>
                             )}
                         </CardFooter>
