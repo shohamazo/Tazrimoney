@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { loadStripe } from '@stripe/stripe-js';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -16,6 +18,7 @@ const tiers = [
   {
     name: 'Basic',
     priceId: process.env.NEXT_PUBLIC_STRIPE_BASIC_MONTHLY_PRICE_ID,
+    yearlyPriceId: process.env.NEXT_PUBLIC_STRIPE_BASIC_YEARLY_PRICE_ID,
     price: 10,
     yearlyPrice: 100,
     features: [
@@ -29,6 +32,7 @@ const tiers = [
   {
     name: 'Pro',
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID,
+    yearlyPriceId: process.env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PRICE_ID,
     price: 20,
     yearlyPrice: 192,
     features: [
@@ -50,7 +54,9 @@ export default function UpgradePage() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
-  const handleSubscribe = async (priceId: string | undefined) => {
+  const handleSubscribe = async (tier: typeof tiers[0]) => {
+    const priceId = billingInterval === 'monthly' ? tier.priceId : tier.yearlyPriceId;
+    
     if (!user || !priceId) {
         toast({variant: 'destructive', title: 'שגיאה', description: 'משתמש או מזהה תוכנית לא נמצאו.'});
         return;
@@ -107,6 +113,15 @@ export default function UpgradePage() {
                 <h1 className="text-4xl font-bold tracking-tight">שדרג את התוכנית שלך</h1>
                 <p className="mt-2 text-lg text-muted-foreground">בחר את התוכנית המתאימה ביותר לצרכים שלך.</p>
             </div>
+
+            <div className="flex justify-center mb-8">
+                 <Tabs value={billingInterval} onValueChange={(value) => setBillingInterval(value as any)} className="w-auto">
+                    <TabsList>
+                        <TabsTrigger value="monthly">חיוב חודשי</TabsTrigger>
+                        <TabsTrigger value="yearly">חיוב שנתי (חסוך עד 20%)</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {tiers.map((tier) => (
@@ -138,7 +153,7 @@ export default function UpgradePage() {
                             <Button 
                                 className="w-full" 
                                 variant={tier.isPro ? 'default' : 'outline'}
-                                onClick={() => handleSubscribe(tier.priceId)}
+                                onClick={() => handleSubscribe(tier)}
                                 disabled={isPending}
                             >
                                 {isPending ? 'טוען...' : `בחר ${tier.name}`}
