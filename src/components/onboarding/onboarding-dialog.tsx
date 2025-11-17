@@ -435,12 +435,15 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
           {renderStepContent()}
         </div>
         <DialogFooter className="flex justify-between w-full">
-            <div>
+            <div className="flex gap-2">
                  {currentStep > 0 && (
                     <Button variant="ghost" onClick={handleBack} disabled={isPending}>
                     חזור
                     </Button>
                 )}
+                <Button variant="link" onClick={() => onFinish(getOnboardingData())} disabled={isPending}>
+                    דלג לעת עתה
+                </Button>
             </div>
            <div>
             {currentStep < 3 ? (
@@ -463,5 +466,3 @@ export function OnboardingDialog({ isOpen, onFinish }: OnboardingDialogProps) {
     </Dialog>
   );
 }
-
-    
