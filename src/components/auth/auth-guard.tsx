@@ -4,7 +4,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useOnboarding } from '@/components/onboarding/onboarding-provider';
@@ -36,7 +36,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, isUserLoading, pathname, isPublicRoute, router]);
 
-  // Handle user profile fetching and initial onboarding trigger
+  // Handle user profile fetching, initial onboarding, and subscription status check
   useEffect(() => {
     if (isUserLoading || !user || !firestore) {
       if (!isUserLoading) {
@@ -47,13 +47,39 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
     const userProfileRef = doc(firestore, 'users', user.uid);
 
-    const fetchOrCreateProfile = async () => {
+    const processUserProfile = async () => {
       setProfileLoading(true);
       try {
         const docSnap = await getDoc(userProfileRef);
         
         if (docSnap.exists()) {
           const profile = docSnap.data() as UserProfile;
+
+          // **Subscription Status Check**
+          // If user has a paid tier and the subscription end date is in the past,
+          // downgrade them to 'free'. This is a safety net for missed webhooks.
+          if ((profile.tier === 'basic' || profile.tier === 'pro') && profile.stripeCurrentPeriodEnd) {
+            const subscriptionEndDate = profile.stripeCurrentPeriodEnd instanceof Date 
+                ? profile.stripeCurrentPeriodEnd 
+                : profile.stripeCurrentPeriodEnd.toDate();
+
+            if (new Date() > subscriptionEndDate) {
+              await updateDoc(userProfileRef, {
+                tier: 'free',
+                stripeSubscriptionId: null,
+                stripeCurrentPeriodEnd: null,
+              });
+              toast({
+                title: "המנוי שלך פג",
+                description: "הועברת למסלול החינמי.",
+              });
+              // The profile is now stale, so we can either reload or just let the listener catch up.
+              // For simplicity, we'll let the next auth state change refresh the profile.
+            }
+          }
+
+
+          // Onboarding check
           if (!profile.onboardingComplete) {
             startWizard();
           }
@@ -82,7 +108,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       }
     };
 
-    fetchOrCreateProfile();
+    processUserProfile();
   }, [user, isUserLoading, firestore, toast, startWizard]);
 
 
