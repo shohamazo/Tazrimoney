@@ -15,7 +15,7 @@ export type UserProfile = {
   onboardingData?: InitialBudgetInput;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
-  stripeCurrentPeriodEnd?: Date;
+  stripeCurrentPeriodEnd?: Date | Timestamp;
 }
 
 export type DaySchedule = {
@@ -83,3 +83,4 @@ export type Budget = {
     
 
     
+

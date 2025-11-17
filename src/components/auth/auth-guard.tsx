@@ -4,7 +4,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useOnboarding } from '@/components/onboarding/onboarding-provider';
@@ -59,9 +59,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           // If user has a paid tier and the subscription end date is in the past,
           // downgrade them to 'free'. This is a safety net for missed webhooks.
           if ((profile.tier === 'basic' || profile.tier === 'pro') && profile.stripeCurrentPeriodEnd) {
-            const subscriptionEndDate = profile.stripeCurrentPeriodEnd instanceof Date 
-                ? profile.stripeCurrentPeriodEnd 
-                : profile.stripeCurrentPeriodEnd.toDate();
+             const periodEnd = profile.stripeCurrentPeriodEnd as any;
+             let subscriptionEndDate: Date;
+             
+             if (periodEnd.toDate) { // It's a Firestore Timestamp
+                subscriptionEndDate = periodEnd.toDate();
+             } else { // It's likely a Date object or a string/number from serialization
+                subscriptionEndDate = new Date(periodEnd);
+             }
+
 
             if (new Date() > subscriptionEndDate) {
               await updateDoc(userProfileRef, {
